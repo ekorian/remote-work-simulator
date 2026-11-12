@@ -1,25 +1,26 @@
 # Game design: what is in the slice
 
-This describes the game as implemented. Numbers are in `scripts/core/config.gd`
-and next to the system that uses them.
+This describes the game as implemented. Numbers live in `scripts/core/config.gd`
+and in the resources under `resources/`.
 
 ## The loop
 
 A workday is 08:59 to 17:00 at 1.25 game minutes per real second (about 6.5
 minutes), followed by a free evening that ends when you sleep. A run is five
-days. Timed activities fast-forward the clock, so a typical run lands between
-20 and 40 minutes.
+days. Timed activities fast-forward the clock, so a run lands between 20 and
+40 minutes.
 
 The central tension: **the desk is where you defend yourself, and everywhere
 else is where you recover.**
 
-- At the desk you can answer messages, fake progress and manage gadgets, and you
-  show as Available. But sitting there slowly drains Health, and every lie costs
-  Energy.
+- At the desk you can answer messages, fake progress and manage gadgets, and
+  you show as Available. But sitting there slowly drains Health, and every lie
+  costs Energy.
 - Away from the desk you restore Health and Energy, but your status turns Away
   within minutes, Suspicion climbs, and you may not even notice messages.
 
-Everything else is a way to bend that trade-off.
+Everything else is a way to bend that trade-off: lies explain an absence,
+gadgets fake a presence, bureaucracy and favours make work disappear.
 
 ## Resources
 
@@ -27,91 +28,169 @@ Everything else is a way to bend that trade-off.
 | --- | --- | --- |
 | Health | Real work, accepted responsibilities, each meeting question, time at the desk | Leisure, food, sleep |
 | Energy | Lies, fake work, bureaucracy, walking, gadget upkeep | Food, coffee, naps, sleep |
-| Suspicion | Convincing answers, real work, Illusion above 60 | Unexplained absence, ignored messages, missed meetings, failed lies, contradictions, gadget failures, failed scans, missed deadlines |
-| Productivity Illusion | Time (faster when away), missed meetings and deadlines, failures | Fake updates, fake reports, emoji reactions, jargon, the Desk Bird, closed tickets |
+| Suspicion | Convincing answers, stories that check out, real work, Illusion above 60 | Unexplained absence, ignored messages, missed meetings, failed lies, contradictions, gadget failures, failed scans, missed deadlines |
+| Productivity Illusion | Time (faster when away), missed meetings and deadlines, failures | Fake updates, fake reports, emoji reactions, jargon, the Keyboard Duck, closed tickets |
 
 Illusion saturates: the more impressive you already look, the less each fake
-update adds, and the faster it fades. It has to be fed all week.
+update adds and the faster it fades. Suspicion has a floor of 12 that looking
+busy cannot get under.
 
-## Presence
+## Difficulty
 
-Your status is computed every minute: Offline (router unplugged), Updating
-(laptop), In a meeting, Focusing, Available (at the desk, recent input, a mug
-on the spacebar, or a running Mouse Jiggler), At lunch (12:00 to 12:45, free
-cover), otherwise Away. Away or Offline with no accepted story costs Suspicion
-every minute, and after 45 minutes Todd asks where you are.
+| | Suspicion | Work costs | Also |
+| --- | --- | --- | --- |
+| Intern | x0.6 | 2 HP | Forgiving boss, long reaction windows, generous recovery, cheaper gadgets |
+| Corporate Survivor | x1.0 | 8 HP | The intended experience |
+| Senior Bullshitter | x1.7 | 20 HP | More frequent checks, less reliable gadgets, harder lies |
+| Professional Unemployed | x1.5 | run over | Any legitimate work action ends the run |
 
 ## Actions and their classes
 
 Every action carries one class, shown as a badge wherever it is offered:
 
-- **REAL WORK**: costs Health (2 / 8 / 20 by difficulty) and logs worked
-  minutes. On Professional Unemployed it ends the run.
-- **RESPONSIBILITY**: volunteering and accepting duties. Costs Health, never
-  ends the run, usually hands you another ticket.
-- **FAKE WORK**, **DELEGATE**, **DECEPTION**, **BUREAUCRACY**, **SOCIAL**,
-  **LEISURE**, **UPKEEP**: all allowed, each with its own costs and risks.
+- **REAL WORK** costs Health and logs worked minutes. On Professional
+  Unemployed it ends the run.
+- **RESPONSIBILITY** (volunteering, accepting duties) costs Health, never ends
+  the run, and usually hands you another ticket.
+- **FAKE WORK**, **DELEGATE**, **AUTOMATION**, **DECEPTION**, **BUREAUCRACY**,
+  **SOCIAL**, **LEISURE**, **UPKEEP** are all allowed, each with its own costs
+  and risks.
+
+The distinction the game enforces: writing a real report is work, generating a
+fake one is not; fixing the bug is work, pretending to investigate is not;
+doing the ticket is work, handing it to a colleague or an AI clone is not.
 
 ## Deception
 
-Nine excuses. Each has a base credibility, modified by current Suspicion and
-Illusion, coffee jitters, exhaustion, outfit (on video), and how often you have
-used it.
+Every lie is remembered. Telling one creates a **claim** in the Alibi Ledger
+(ShadowIT on the work computer), and while it is active the game watches what
+you do.
 
-- **Evidence** makes an excuse much stronger: the router really unplugged, the
-  laptop really updating, a printed doctor's note, a calendar block that covers
-  the time, high Illusion for "deep work".
-- **Verification**: outage excuses are checked by IT about 12 minutes later. If
-  the router is still plugged in, that is a contradiction.
-- **Wear**: every reuse costs credibility; a fourth use is an automatic
-  contradiction.
-- An accepted excuse grants **cover**: a period during which absence is
-  explained and routine pings wait.
-- Everything is logged in the Alibi Notebook (ShadowIT), and the Friday review
-  is assembled from that record.
+**Example.** At 10:00 you tell Martin your internet is down. The claim is on
+record for an hour: you must not appear Available, send anything from your
+work computer, or join a call on camera. IT pings your router about twelve
+minutes later. If you join the 10:15 meeting on video, the game detects the
+contradiction: Suspicion rises, Martin trusts you less, and a few minutes
+later he asks, "You're on camera. In HD. I thought your internet wasn't
+working?" You then have to explain: "It just came back", "I'm tethering", or
+come clean. Joining from your phone would have been fine.
+
+Each of the ten categories has its own evidence, weak points and follow-up:
+
+| Category | Stronger with | Exposed by | May lead to |
+| --- | --- | --- | --- |
+| Internet outage | Router unplugged; a reported outage | Anything your computer does online; IT pinging the router | |
+| Computer crash | Laptop really updating | Posting, ticket updates, gadgets, video | IT opening a remote session |
+| Medical appointment | Doctor's note; calendar block | Showing as Available, desk activity | HR asking for the note |
+| Family emergency | | Cheerful chat in channels, video calls | Martin asking who it was (you must remember) |
+| Conflicting meeting | Calendar block over the time | Martin checking your calendar | Being asked for the notes |
+| Production incident | A real incident in progress | Nobody else knowing about it | Being asked to write the postmortem |
+| Data validation | Looking busy | Hard to disprove | Being asked for the results |
+| Waiting for another team | A clarification request on the ticket | That team denying it; touching the ticket | A call to "unblock" you |
+| Corporate process blocker | A Form 27-B on file | No paperwork; touching the ticket | Martin "expediting" the approval |
+| Hardware malfunction | A jammed printer | Joining any call on camera for five hours | An IT hardware diagnostic (a scan) |
+
+Rules that apply to all of them:
+
+- Credibility depends on Suspicion, Illusion, the listener's trust in you,
+  evidence, your outfit on video, coffee jitters, and how often you have used
+  that story. A fourth use backfires by itself.
+- Two stories that cannot both be true (at the doctor *and* firefighting an
+  incident) are caught the moment the second is told to someone who heard the
+  first. Colleagues gossip, so a story told to Kevin can reach Martin.
+- An accepted story gives **cover**: your absence is explained while it lasts.
+- A story that expires or is verified without incident counts as a successful
+  deception. From Wednesday, Martin checks far more of what he is told.
 
 ## Tickets
 
-Each ticket shows two bars: what Todd sees and what exists.
+Each ticket shows what Martin sees and what exists.
 
-- **Fake update** raises the visible bar. At 100% the ticket "looks done" and
-  usually auto-closes at its deadline. Three or more updates make Todd ask for
-  a live demo. If QA opens a faked ticket, it fails.
-- **Request clarification** pushes the deadline a day (once per ticket).
-- **Form 27-B** buries a ticket in a steering committee (one per day).
+- **Fake update** raises the visible bar. At 100% it "looks done" and usually
+  auto-closes at the deadline. Three or more make Martin ask for a demo.
+- **Tell Martin it's blocked** attaches a story to the ticket (another team,
+  process, data validation, an incident) and buys time. Touching the ticket
+  afterwards contradicts it.
+- **Clarification request** and **Form 27-B** are paperwork: they are the
+  evidence that makes those stories check out. The form may also bury the
+  ticket for good.
 - **Favour**: a colleague does it properly. Favours come from covering for
   colleagues, or a gift card.
-- **Delegatron** (gadget) does a ticket in the background, with a small chance
-  of hallucinating.
+- **AI Doppelganger** (level 2) works one ticket in the background.
 - **Do the actual work** is always available, clearly marked, and hurts.
 
 ## Meetings and calls
 
 Scheduled meetings ring at their start time; surprise calls come unannounced.
-You can join (from the computer, or camera-off from the phone), decline through
-a calendar conflict you created, send your LoopCam, make an excuse, or let it
-ring out. Inside a call each question is timed; every answer is classified like
-any other action, and silence is its own outcome. Friday's performance review
-cannot be avoided.
+You can join from the computer or (camera off) from the phone, decline through
+a calendar conflict you created, send your clone, make an excuse, or let it
+ring out. Inside a call each question is timed; every answer is classified
+like any other action, and silence is its own outcome. Friday's performance
+review cannot be avoided, and its questions are built from your week.
 
-## Gadgets
+## Automation
 
-Bought at the gaming PC, new stock each day, managed from ShadowIT or the
-keyboard. Running gadgets **wear** (worn gadgets fail far more often; servicing
-costs Energy) and generate **Heat**, which is what SynerWatch scans look for.
-Switch them off before a scan.
+Bought at the gaming PC, managed from ShadowIT or the keyboard. Each gadget
+has three levels, a reliability, a Heat (how visible it is to a SynerWatch
+scan), and a failure with its own consequences. Running gadgets wear, worn
+gadgets fail, and servicing costs Energy.
 
-| Gadget | Effect |
-| --- | --- |
-| Mouse Jiggler 3000 | Status stays Available while you are away |
-| Desk Bird Typist | Slowly raises Illusion |
-| Wrist Buzzer | You notice messages and calls anywhere |
-| Buzzword Generator Pro | Fake updates, reports and jargon cost no Energy |
-| ReplyGuy Auto-Responder | Answers routine pings for you |
-| Report-o-Matic | Sends the daily fake report at a time you choose |
-| LoopCam Nodding Rig | Attends meetings for you (record a loop daily) |
-| Delegatron AI Intern | Does one ticket in the background |
-| AltTab Pro Fake Screen | Passes screen-share checks |
+| Gadget | Does | Level 2 | Level 3 | When it fails |
+| --- | --- | --- | --- | --- |
+| MouseMover.exe (Tue) | Keeps your status Available | More reliable, less Heat | Passes activity scans | IT notices the identical circles and asks |
+| Keyboard Duck (Tue) | Slowly raises Illusion | Fake code window passes screen checks | Fake work costs no Energy | It posts gibberish to the team channel |
+| Chatbot Team (Wed) | Answers routine messages | Posts fictional ticket updates | Sends the daily report | It invents a project and a customer |
+| Meeting Assistant (Thu) | Offers to answer meeting questions | Steps in when you freeze | More reliable | It answers with something absurd |
+| AI Doppelganger (Thu) | Attends optional meetings | Works a ticket | More reliable, more independent | It melts down on camera |
+
+The Doppelganger needs the Chatbot Team and the Meeting Assistant first. It is
+autonomous: now and then it decides something on your behalf (volunteers you,
+asks for a raise, approves a pull request).
+
+**Combinations** switch on when both gadgets run:
+
+- **Ghost Shift** (MouseMover + Chatbot Team): routine messages are answered
+  at once and never reach you. More Heat.
+- **Desk Theatre** (MouseMover + Keyboard Duck): less Heat, more fragile.
+- **Empty Chair** (Meeting Assistant + Doppelganger): the clone can attend
+  mandatory meetings. Much higher risk of it going off-script.
+
+Gadgets also create facts. A chatbot answering while your "internet is down"
+contradicts you.
+
+## Martin, and everyone else
+
+Martin is corporate, slightly incompetent, obsessed with productivity and fond
+of meetings. The game tracks, for him and for every other character:
+
+- **Relationship**: rises when you help or flatter, falls when you are caught
+  or ignore them.
+- **Mood** (pleased to furious): shown in SynerTeams; it shifts how readily
+  they believe you.
+- **Knowledge**: which of your claims they have heard.
+- **Caught count**: how often they have seen a story fall apart.
+
+Martin additionally has an **escalation state** driven by Suspicion: Unbothered,
+Keeping an eye on you, Micromanaging (hourly status lines), Building a case
+(a formal warning, unannounced scans). Each step makes him contact you more
+often and scrutinise meetings harder.
+
+## The week
+
+| Day | Introduces | Notable events |
+| --- | --- | --- |
+| Monday | Controls, the workstation, messaging, fake progress, the first lie | Standup, sprint planning, first tickets, the timesheet |
+| Tuesday | Automation: MouseMover and the Keyboard Duck go on sale | Phishing test, the calendar-conflict trick, a reply-all storm |
+| Wednesday | "Trust, but verify": stories get checked; the Alibi Ledger | A device scan, a production incident, the connection-trouble question, Mandatory Fun |
+| Thursday | Gadget strain, failures and combinations | SynerWatch goes live, the skip-level with senior management, a productivity audit, a 1:1 |
+| Friday | The performance review | Another scan, a demo demand, the review at 15:30 |
+
+The ten events the design calls for: a surprise boss message, the daily
+standup, an urgent unfinished task (when a deadline is close and nothing is
+done), an accidental screen share (during a video call), the internet-outage
+excuse, a mouse-jiggler malfunction, a surprise video call, the corporate
+productivity audit, the meeting with senior management, and the Friday
+review. Around forty more fill the week.
 
 ## The apartment
 
@@ -122,10 +201,10 @@ Every interactive object has a purpose:
 | Office | Work Computer | SynerOS: Teams, Tasks, Calendar, Mail, ShadowIT |
 | | Keyboard & Mouse | Wiggle to stay Available; switch and service gadgets |
 | | Coffee Mug | A sip of Energy; wedge it on the spacebar to fake typing |
-| | Company Laptop | Force an update (30 excused minutes); record the LoopCam loop |
+| | Company Laptop | Force an update: 30 excused minutes, and evidence for a crash |
 | | Office Chair | Stage a busy desk; nap near the keyboard |
 | | Gaming PC | The shop |
-| | Printer | Forge a doctor's note (can jam) |
+| | Printer | Forge a doctor's note (can jam, which is evidence too) |
 | | Router | Create a real outage: evidence, but you go dark |
 | Living room | Sofa, Television, Console | Health and Energy; TV can inspire an excuse |
 | | Bookshelf | Fluent in Buzzword: better jargon |
@@ -136,31 +215,25 @@ Every interactive object has a purpose:
 | | Wardrobe | Outfit: a shirt helps on video, pajamas help you relax |
 | | Phone Charger | Dock to charge; a docked phone cannot be answered |
 
-## The week
-
-Each day has scripted beats plus scheduled filler scaled by difficulty.
-
-- **Monday**: onboarding, first tickets, standup, sprint planning, the timesheet.
-- **Tuesday**: a phishing test, the calendar-conflict trick, a reply-all storm.
-- **Wednesday**: a device scan, a production outage, compliance training,
-  Mandatory Fun.
-- **Thursday**: SynerWatch goes live (unannounced scans), the all-hands, a 1:1,
-  a blackmail attempt.
-- **Friday**: another scan, a demo demand, and the performance review.
-
 ## Winning and losing
 
-- **Win**: reach Friday 17:00. Surviving is only a pass. The grade is made of
-  **paid slacking**: minutes of leisure taken between 09:00 and 17:00. With zero
-  real work, 8 hours of it over the week earns an A and 14 hours an S. Any real
-  work caps the grade at B. This is what stops "sit at the desk all week" from
-  being the best strategy: the desk keeps you safe, but only the sofa scores.
+- **Win**: reach Friday 17:00 employed and alive.
 - **Fired**: Suspicion reaches 100.
 - **Burnout**: Health reaches 0.
 - **Disqualified**: any real work on Professional Unemployed.
 
+The final screen shows work avoidance (the share of paid time with no real
+work), salary earned, actual work time, successful deceptions, final suspicion,
+final health and automation efficiency. A week with zero real work earns the
+special rating **IMMACULATE**.
+
+The letter grade is separate and is made of *paid slacking*: leisure taken
+between 09:00 and 17:00. With zero real work, 8 hours of it over the week is
+an A and 14 hours an S; any real work caps the grade at B. This is what stops
+"sit at the desk all week" from being the best strategy.
+
 ## Not in the slice
 
-Listed so nobody goes looking: multiple weeks or a campaign, promotions and
-raises, more apartments, additional bosses, Steam features, localisation,
-gamepad support, and accessibility options beyond volume and camera-shake.
+Multiple weeks or a campaign, promotions and raises, more apartments, more
+bosses, the full AI-clone storyline, Steam features, localisation, gamepad
+support, and accessibility options beyond volume and camera shake.

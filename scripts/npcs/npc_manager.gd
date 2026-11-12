@@ -112,6 +112,16 @@ func record(id: String) -> Dictionary:
 
 # --- Relationship, mood, knowledge -------------------------------------------
 
+func suspicion(id: String) -> float:
+	## How suspicious this person is of you (0..100). For the manager this is
+	## the Suspicion resource itself; for everyone else it follows from how
+	## often they have caught you and how much they like you.
+	if id == _boss:
+		return Game.stats.get_value("susp")
+	var r := record(id)
+	return clampf(float(r.get("caught", 0)) * 18.0 + (50.0 - float(r.get("rel", 50.0))) * 0.6, 0.0, 100.0)
+
+
 func relationship(id: String) -> float:
 	return float(record(id).get("rel", 50.0))
 

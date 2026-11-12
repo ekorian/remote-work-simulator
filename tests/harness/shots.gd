@@ -209,6 +209,11 @@ func _scene_overlays() -> void:
 	await wait(0.5)
 	await snap("ov_phone")
 	main.phone.close()
+	Game.economy.money = 900
+	Game.time.day = 3
+	Game.automation.buy("mousemover")
+	Game.automation.buy("mousemover")
+	Game.automation.buy("chatbot")
 	Game.economy.money = 400
 	w.place_player(w.apartment.things["gaming_pc"].use_point(), 0.0)
 	main.open_shop()

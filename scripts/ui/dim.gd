@@ -13,6 +13,13 @@ func setup(alpha: float = 0.6) -> void:
 	add_child(bg)
 
 
+func _notification(what: int) -> void:
+	# Every modal fades in instead of popping.
+	if what == NOTIFICATION_VISIBILITY_CHANGED and is_visible_in_tree():
+		modulate.a = 0.0
+		create_tween().tween_property(self, "modulate:a", 1.0, 0.16)
+
+
 func center(child: Control) -> CenterContainer:
 	var cc := CenterContainer.new()
 	UI.full(cc)

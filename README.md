@@ -5,19 +5,21 @@
 A comedy stealth/management sim for PC. You are a remote employee of SynerCorp, a
 dysfunctional software company. You are paid to work from home. Your goal is to
 survive one working week, Monday to Friday, without doing any actual work, while
-convincing your boss that you are the most productive person on the team.
+convincing your manager Martin that you are the most productive person on the team.
+
+In Remote Work Simulator, productivity is the enemy.
 
 ![The apartment](docs/screenshots/apartment.png)
 
 | | |
 | --- | --- |
-| ![SynerTasks](docs/screenshots/synertasks.png) | ![Excuses](docs/screenshots/excuses.png) |
-| ![A meeting](docs/screenshots/meeting.png) | ![End of day](docs/screenshots/day_report.png) |
+| ![Choosing an excuse](docs/screenshots/excuses.png) | ![The Alibi Ledger and gadgets](docs/screenshots/ledger.png) |
+| ![A meeting](docs/screenshots/meeting.png) | ![The gadget shop](docs/screenshots/shop.png) |
 
 This repository is the playable vertical slice: one apartment, one week, four
 difficulties, 20 to 40 minutes per run.
 
-- Engine: Godot 4.7 (Forward+), GDScript only
+- Engine: Godot 4.7 (Forward+), typed GDScript only
 - Platforms: Linux and Windows
 - No imported art or audio: every mesh, icon and sound is generated in code
 
@@ -28,8 +30,14 @@ tools/setup_godot.sh   # once: downloads the pinned Godot 4.7.2 into .tools/ and
 ./run.sh               # play
 ```
 
-Or open the folder in the Godot 4.7 editor and press F5. `./run.sh` uses `.tools/godot`
-if present, otherwise `godot4`/`godot` from your PATH, or `GODOT=/path/to/godot ./run.sh`.
+`./run.sh` uses `.tools/godot` if present, otherwise `godot4`/`godot` from your
+PATH, or `GODOT=/path/to/godot ./run.sh`.
+
+To open the project in the editor:
+
+```bash
+.tools/godot --path . --editor
+```
 
 ## How to play
 
@@ -46,21 +54,28 @@ if present, otherwise `godot4`/`godot` from your PATH, or `GODOT=/path/to/godot 
 
 The workday runs 09:00 to 17:00. Four resources decide whether you make it:
 
-- **Health** is destroyed by real work, and worn down by meetings and long stretches
-  at the desk. Leisure, food and sleep restore it. At 0 you burn out.
+- **Health** is destroyed by real work, and worn down by meetings and long
+  stretches at the desk. Leisure, food and sleep restore it. At 0 you burn out.
 - **Energy** is spent on every lie, fake update and excuse. Eat, drink coffee, nap.
 - **Suspicion** rises when you are visibly absent, ignore messages, miss meetings
   or get caught lying. At 100 you are fired.
 - **Productivity Illusion** is how busy you look. Above 60 it drains Suspicion;
   below 25 it feeds it.
 
-Surviving the week is a pass. Your **grade** is the paid time you spent slacking:
-leisure taken between 09:00 and 17:00 (the clock card counts it for you).
-
 Anything tagged **REAL WORK** in red costs Health. Everything else is fair game:
-fake it, delegate it, excuse it, automate it, or bury it in paperwork. Standing
-still is not a strategy: an idle player is fired on Monday on every difficulty
-except Intern, where it takes until Tuesday.
+fake it, delegate it, excuse it, automate it, or bury it in paperwork.
+
+**Every lie is remembered.** Tell Martin your internet is down, then join a
+meeting on camera, and he will ask about it. The Alibi Ledger (ShadowIT, on the
+work computer) lists every story you have told and what would expose it.
+
+**Gadgets** keep you looking present while you are not: MouseMover.exe, the
+Keyboard Duck, Chatbot Team, the Meeting Assistant and the AI Doppelganger, each
+with three levels, a reliability, and its own way of going wrong.
+
+Surviving the week is a pass. Your **grade** is the paid time you spent slacking:
+leisure taken between 09:00 and 17:00. Standing still is not a strategy: an idle
+player is fired on Monday on every difficulty.
 
 | Difficulty | Suspicion | Work costs | Notes |
 | --- | --- | --- | --- |
@@ -69,48 +84,68 @@ except Intern, where it takes until Tuesday.
 | Senior Bullshitter | x1.7 | 20 HP | Frequent checks, unreliable gadgets |
 | Professional Unemployed | x1.5 | run over | Any legitimate work action ends the run |
 
-A full description of the systems is in [docs/GAME_DESIGN.md](docs/GAME_DESIGN.md).
+The systems are described in [docs/GAME_DESIGN.md](docs/GAME_DESIGN.md).
 
-## Tests
+## Validate and test
 
 ```bash
-tools/test.sh          # parse check + rules/balance + 3D world walk
+tools/validate.sh      # headless validation: compile, boot the main scene, load every
+                       # scene and resource, check every gameplay invariant
+tools/test.sh          # everything: the above plus full-week runs and the 3D world walk
 ```
 
-- `tests/sim_test` runs headless against the simulation core: content integrity,
-  the work classification rules, core rules, save/load round trip, and a balance
-  matrix of three bots (idle, honest worker, skilled slacker) on all four
-  difficulties. It fails if standing still can ever win, if an honest worker can
-  win Professional Unemployed, or if skilled avoidance stops being viable.
-- `tests/world_test` builds the real apartment and walks the player to every
+`tools/validate.sh` is the checked equivalent of `godot --headless --path . --quit`.
+A clean exit code alone proves little, so it also fails on any error or warning
+in the startup log and on any failed invariant.
+
+What the tests cover:
+
+- `tests/rules_test`: content integrity (every id referenced by every resource
+  exists), stat clamping, work penalties per difficulty, the Extreme-mode
+  instant defeat for every legitimate work action, claim creation, expiry and
+  contradiction for all ten categories, gadget activation, upgrades, failures
+  and combinations, event preconditions, pacing and modal conflicts, NPC state,
+  the economy, and a save/load round trip.
+- `tests/run_test`: three bots (idle, honest worker, skilled slacker) play whole
+  weeks on all four difficulties with invariants checked every simulated minute.
+  It fails if a run softlocks, if standing still can win, if an honest worker
+  can win Extreme, or if skilled avoidance stops being viable.
+- `tests/world_test`: builds the real apartment and walks the player to every
   object with physics and collisions on.
-- `tools/shots.sh <scene>` renders scripted screenshots offscreen (needs `xvfb`).
+- `tools/shots.sh <scene>` renders scripted screenshots offscreen (needs `xvfb`);
   `tools/shots.sh autoplay` has a bot play a week through the real UI.
 
 Useful while balancing:
 
 ```bash
-.tools/godot --headless --path . res://tests/sim_test.tscn -- --trace=slacker/senior --runs=30
+.tools/godot --headless --path . res://tests/run_test.tscn -- --trace=slacker/senior --runs=30
 ```
 
-prints win rate, per-day averages and where every point of Suspicion came from.
+prints win rate, per-day averages, where every point of Suspicion came from,
+how each claim ended and which events fired.
 
 ## Project layout
 
 ```
-scripts/core/     simulation: no scenes, no UI, fully headless-testable (autoloads)
-scripts/world/    the 3D apartment, character, player, camera, lighting
-scripts/ui/       HUD, SynerOS desktop and its apps, overlays, menus
-scripts/dev/      screenshot and autoplay harness (excluded from exports)
-assets/audio/     generated by tools/gen_audio.py
-assets/fonts/     Fredoka and Inter (SIL Open Font License)
-tests/            headless test scenes
-tools/            setup, checks, screenshots, audio generation
-docs/             architecture and game design
+scenes/              one folder per area: main_menu, apartment, player, workstation, ui, events
+scripts/core/        GameManager, TimeManager, PlayerStats, EconomyManager, SaveManager
+scripts/simulation/  WorkSystem, Comms, Home, Presence, Activities
+scripts/deception/   DeceptionManager and the Claim model
+scripts/automation/  AutomationManager
+scripts/events/      EventDirector, Dialogue, Tutorial
+scripts/npcs/        NPCManager
+scripts/data/        Resource classes for authored content
+scripts/player/      player controller, character, camera
+scripts/apartment/   the 3D flat and its objects
+scripts/ui/          HUD, the SynerOS desktop, dialogs and menus
+resources/           all content as Godot Resources: events, dialogue, gadgets,
+                     npcs, deception, tasks, balancing, text
+assets/              generated audio, fonts
+tests/  tools/  docs/
 ```
 
 See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for how the pieces fit together
-and where to add content.
+and how to add events, gadgets, excuses and characters as data.
 
 ## Building
 
@@ -126,6 +161,6 @@ Steam integration (achievements, cloud saves, overlay) is not part of this slice
 
 ## Licences
 
-Code is under the licence in [LICENSE](LICENSE). Fonts are under the SIL Open Font
-License (see `assets/fonts/*-OFL.txt`). Audio is generated by `tools/gen_audio.py`
-and carries no third-party rights.
+Code is under the licence in [LICENSE](LICENSE). Third-party material and its
+terms are tracked in [docs/CREDITS.md](docs/CREDITS.md): two fonts under the SIL
+Open Font License, and the Godot engine. Everything else is original.

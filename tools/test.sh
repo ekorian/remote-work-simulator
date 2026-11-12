@@ -10,8 +10,9 @@ echo "### parse: every script compiles"
 OUT="$(./tools/check.sh)"; echo "$OUT"
 echo "$OUT" | grep -q "failed: 0" || FAIL=1
 echo "### startup: the main scene boots headless with no errors"
-BOOT="$("$GODOT" --headless --path . --quit-after 120 2>&1 | clean)"
-if echo "$BOOT" | grep -qE 'ERROR|SCRIPT ERROR|Parse Error'; then echo "$BOOT" | head -20; FAIL=1; else echo "ok"; fi
+RAW="$("$GODOT" --headless --path . --quit-after 120 2>&1)"; RC=$?
+BOOT="$(echo "$RAW" | sed 's/\x1b\[[0-9;]*m//g' | grep -vE '^\s*$|Godot Engine')"
+if [ $RC -ne 0 ] || echo "$BOOT" | grep -qE 'ERROR|WARNING|Parse Error'; then echo "$BOOT" | head -20; FAIL=1; else echo "ok"; fi
 for T in rules_test run_test world_test; do
   echo "### $T"
   "$GODOT" --headless --path . "res://tests/$T.tscn" -- --runs="${RUNS:-12}" 2>&1 | clean

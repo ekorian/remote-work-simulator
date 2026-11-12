@@ -1,134 +1,270 @@
 # Architecture
 
-The project is split into three layers with a strict dependency direction:
+Three layers with one dependency direction:
 
 ```
-scripts/ui  ─┐
-             ├──>  scripts/core   (autoloads: rules + state, no scenes)
-scripts/world┘
+scripts/ui, scripts/apartment, scripts/player      views
+                 |
+                 v
+scripts/core, simulation, deception,               simulation: rules + state,
+        automation, events, npcs                   no scenes, no Controls
+                 |
+                 v
+scripts/data  +  resources/*.tres                  static content
 ```
 
-`core` never references a scene, a Control or a Node3D. The UI and the 3D world
-are views over it. That is what lets the whole game be played headlessly by the
-test bots.
+The simulation never references a scene, a Control or a Node3D. The UI and the
+3D world are views over it. That is what lets test bots play whole weeks
+headlessly through the same API the UI uses.
 
-## State
+## Directory layout
 
-The entire run lives in one plain Dictionary, `Game.s`. Every system reads and
-writes its own keys in it (`s.tasks`, `s.prompts`, `s.gadgets`, `s.things`, ...).
+```
+scenes/          main.tscn plus one folder per area: main_menu, apartment,
+                 player, workstation, ui, events
+scripts/core/        GameManager, TimeManager, PlayerStats, EconomyManager,
+                     SaveManager, Bus, Cfg, audio, prefs, main (screen flow)
+scripts/simulation/  WorkSystem, Comms, Home, Presence, Activities
+scripts/deception/   DeceptionManager, Claim
+scripts/automation/  AutomationManager
+scripts/events/      EventDirector, Dialogue, Tutorial
+scripts/npcs/        NPCManager
+scripts/data/        Resource classes (one per content type) and Db
+scripts/player/      Player, Character, CameraRig
+scripts/apartment/   World, Apartment, Interactable, Kit
+scripts/ui/          HUD, SynerOS desktop, dialogs, menus, shared widgets
+resources/           all authored content, as .tres
+tests/               headless tests and the screenshot/autoplay harness
+tools/               setup, validation, tests, screenshots, audio generation
+```
 
-- Saving is one call: `SaveSys.save()` writes `Game.s` with Godot's binary
-  Variant format (objects disabled), so ints stay ints and floats stay floats.
-- Loading replaces `Game.s` and emits `Bus.state_loaded`; views rebuild from it.
-- Nothing transient may hold gameplay state. If it matters after a reload, it
-  belongs in `Game.s`.
+## The systems
 
-## Autoloads (`scripts/core`)
+`Game` (GameManager) is the composition root: it creates one instance of each
+system as a child node and exposes it as a typed member.
 
-| Autoload | File | Owns |
+| Access | Class | Responsibility |
 | --- | --- | --- |
-| `Cfg` | `config.gd` | Tuning constants, difficulty table, input actions |
-| `Bus` | `bus.gd` | Global signals between core, world and UI |
-| `Content` | `content.gd` | All authored data: people, tickets, pings, mail, calls, the week |
-| `Game` | `game.gd` | Run lifecycle, clock, the four resources, presence, activities, day flow |
-| `Actions` | `actions.gd` | The action catalogue and the work classification |
-| `Deception` | `deception.gd` | Excuses, the ledger, credibility maths, contradiction checks |
-| `Interact` | `interact.gd` | What every apartment object does |
-| `Auto` | `automation.gd` | Gadgets: shop, wear, failures, heat |
-| `Corp` | `corp.gd` | Threads, prompts, tickets, calendar, calls, mail |
-| `Director` | `director.gd` | Schedules the day and reacts to how you are doing |
-| `SaveSys` | `save_system.gd` | Save slots |
-| `Sfx` | `audio.gd` | Sound effects, loops, music |
-| `Prefs` | `prefs.gd` | Player settings |
-| `Tutor` | `tutor.gd` | Tutorial checklist and one-off hints |
+| `Game` | GameManager | Run lifecycle, difficulty, day flow, victory and loss, run statistics |
+| `Game.time` | TimeManager | Simulated clock, calendar position, time advancement, timers |
+| `Game.stats` | PlayerStats | Health, energy, suspicion, productivity illusion, buffs |
+| `Game.economy` | EconomyManager | Money, salary and bonuses, prices, favours |
+| `Game.work` | WorkSystem | Work classification and penalties; tickets and deadlines |
+| `Game.deception` | DeceptionManager | Claims, facts, evidence, contradictions |
+| `Game.automation` | AutomationManager | Gadgets, levels, reliability, heat, combinations |
+| `Game.events` | EventDirector | Scheduling, conditions, pacing, firing events |
+| `Game.npcs` | NPCManager | Relationship, mood, knowledge, escalation per person |
+| `Game.saves` | SaveManager | Save slots, versioning |
+| `Game.presence` | Presence | Online status; whether an absence is explained |
+| `Game.activities` | Activities | The timed activity in progress |
+| `Game.home` | Home | What each apartment object does; state of the flat |
+| `Game.comms` | Comms | Threads, prompts, mail, calendar, meetings, live calls |
+| `Game.tutor` | Tutorial | Per-day checklist and one-off hints |
+
+Every system extends `GameSystem` and implements `setup_run()`, `new_day()`,
+`save_state()` and `load_state()`.
+
+### Autoloads
+
+There are four, each because it must exist before any scene does:
+
+- `Game`: the simulation root described above.
+- `Bus`: signals that cross from the simulation to the views (toasts, "a
+  prompt arrived", "an activity started"). It holds no state.
+- `Sfx` and `Prefs`: audio and player settings, needed by the menus before a
+  run exists.
+
+Everything else is reached through `Game` or is a static class (`Cfg`, `Db`,
+`UI`, `Kit`, `Dialogue`).
+
+### State and saving
+
+Each system owns its own state as members. There is no shared state object.
+`Game.save_state()` asks every system for its slice and adds a version number;
+`SaveManager` writes the result with Godot's binary Variant format (objects
+disabled), so ints stay ints. `Game.load_state()` refuses a save whose version
+does not match rather than half-loading it.
+
+State is a mix of typed classes and plain collections. Claims are a typed
+class (`Claim`) because the engine reasons about them; tickets, prompts,
+meetings and mails are Dictionaries in typed systems. Converting those to
+classes is a mechanical follow-up, not a redesign.
+
+### Static content is Resources
+
+Everything authored lives under `resources/` as `.tres` files of the classes
+in `scripts/data/`:
+
+| Folder | Class | Content |
+| --- | --- | --- |
+| `resources/events` | EventDef | Messages, mails, meetings, calls, system events |
+| `resources/dialogue` | DialogueDef | Meeting and call scripts |
+| `resources/deception` | ClaimDef | The ten excuse categories |
+| `resources/gadgets` | GadgetDef | Gadgets and their levels |
+| `resources/gadgets/combos` | ComboDef | Gadget combinations |
+| `resources/npcs` | NpcDef | People |
+| `resources/tasks` | TaskDef | Tickets |
+| `resources/balancing` | DifficultyDef | The four difficulties |
+| `resources/text` | TextBankDef | Flavour lines |
+
+`Db.load_all()` reads them once into dictionaries keyed by id. The files are
+the source of truth and can be edited in the Godot inspector or as text.
+`tests/rules_test` loads every one and checks every id they reference.
 
 ### The clock
 
-`Game.tick()` advances one game minute: presence, passive drains, the current
-activity, buffs, then `minute_passed`, which every other system listens to.
-In normal play `_process` calls it at `Cfg.MIN_PER_SEC` times `Game.speed`.
-Tests set `Game.manual = true` and call `Game.advance(n)`. Because everything
-is driven by the minute tick, the simulation is identical at any speed.
-
-### Resources: one write path
-
-Health, Energy, Suspicion and Productivity Illusion are only ever changed by
-`Game.add(stat, delta, reason)`. It applies difficulty multipliers, clamps,
-records statistics, emits `stat_changed`, and ends the run at 0 health or 100
-suspicion. Data-driven effect bundles go through `Game.apply_fx()`.
+`TimeManager.tick()` is one game minute, in a fixed order: presence, passive
+stat drift, the current activity, buffs, due timers, then `minute_passed`
+(which the other systems listen to), then the end-of-day check. In play,
+`_process` calls it at `Cfg.MIN_PER_SEC` times `speed`. Tests set
+`Game.time.manual` and call `advance(n)`. Because everything is driven by the
+minute tick, the simulation is identical at any speed.
 
 ### Work classification: one place
 
-`Actions.DEFS` declares every player action with a class (`WORK`, `STRESS`,
-`FAKE`, `DELEGATE`, `DECEIVE`, `BUREAU`, `SOCIAL`, `LEISURE`, `UPKEEP`,
-`NEUTRAL`). Gameplay code never applies a work penalty itself. It calls
+`WorkSystem.DEFS` declares every player action with a class (`WORK`, `STRESS`,
+`FAKE`, `DELEGATE`, `AUTOMATE`, `DECEIVE`, `BUREAU`, `SOCIAL`, `LEISURE`,
+`UPKEEP`, `NEUTRAL`). Gameplay code never applies a work penalty itself:
 
 ```gdscript
-if not Actions.perform("fake_update", ctx):
+if not Game.work.perform("fake_update", ctx):
     return
 ```
 
-and `perform` handles the energy cost, the health penalty, the worked-minutes
-log, and the Professional Unemployed instant loss. `Actions.badge(id)` is what
-every button uses to label itself, so "REAL WORK" looks the same everywhere.
-`tests/sim_test.gd` asserts that every `WORK` action ends an Unemployed run and
-that no other action does.
+`perform` handles the energy cost, the health penalty, the worked-minutes log
+and the Professional Unemployed instant loss. `badge(id)` is what every button
+uses to label itself, so "REAL WORK" looks the same everywhere. The tests
+assert that every `WORK` action ends an Extreme run and that no other action
+does.
 
-### Choices
+## The deception engine
 
-Chat prompts, mail and call questions all use one choice format, documented at
-the top of `content.gd`, and one resolver, `Corp.resolve()`. A choice names an
-action id, an optional bluff chance or gadget roll, requirements, and `ok`/`ko`
-outcome bundles.
+1. **Claims.** `Game.deception.attempt(type, context, listener, ...)` rolls
+   credibility and appends a `Claim` to the ledger: id, type, subject,
+   timestamp, expiry, witnesses, contradicting facts, evidence, risk, status.
+   Witnesses are recorded in `NPCManager` as things that person knows.
+2. **Facts.** Systems report what the player visibly does:
+   `Game.deception.observe("video_meeting")`. The fact vocabulary is
+   `DeceptionManager.FACTS`. Status ("you show as Available") is observed
+   every minute.
+3. **Contradictions.** A fact listed in a live claim's `contradicted_by`
+   marks it contradicted, raises suspicion, costs the witness's trust, and
+   schedules a confrontation prompt built from the claim type's `exposed`
+   line and `recoveries`.
+4. **Verification.** Claim types can schedule `followups`: `verify` (someone
+   checks a fact after a delay; the outcome depends on what is true then) or
+   `event` (a follow-up event, such as being asked for the doctor's note).
+5. **Evidence.** `has_evidence(id)` reads the state of the world (router
+   unplugged, calendar block, form filed). Evidence raises credibility and
+   makes verification pass.
 
-## World (`scripts/world`)
+A claim that expires or is verified without being caught counts as a
+successful deception.
 
-- `kit.gd`: primitive builders (boxes, low-poly cylinders and spheres with
-  flat shading), cached materials.
-- `apartment.gd`: builds the flat, colliders, mouse-pick volumes and an
-  `AStarGrid2D` navigation grid. Props are modelled facing +Z, then rotated.
-- `interactable.gd`: one usable object: where to stand, where to sit, the
-  highlight overlay. It only knows its `thing_id`; behaviour is in `Interact`.
-- `character.gd`: the procedural character and all its animations.
-- `player.gd`: movement, path following, sitting.
-- `camera_rig.gd`: orthographic isometric camera.
-- `world.gd`: lighting by time of day, cutaway walls, live prop visuals
-  (router LEDs, jiggler, screens), and the interaction flow.
+## Automation
 
-## UI (`scripts/ui`)
+A gadget level lists abilities in `can` (`presence`, `illusion`, `auto_reply`,
+`auto_updates`, `auto_report`, `meeting_answers`, `auto_answer`,
+`attend_meetings`, `do_tickets`, `screen_fake`, `free_jargon`, `pass_scan`,
+`autonomous`). Other systems ask `Game.automation.can("auto_reply")` and never
+name a gadget, so adding one is adding a resource file. Combinations
+(`ComboDef`) contribute named modifiers read with `effect(key)`.
 
-Everything is built in code from the helpers in `ui.gd`. There are no hand-edited
-scene files beyond the one-node roots.
+Reliability is rolled per use (or every half hour for continuous gadgets) and
+scaled by wear. A failure breaks the gadget and fires its `fail_event`.
 
-- `hud.gd`: clock, resources, inbox, tutorial card, prompts, toasts.
-- `desktop.gd`: SynerOS and its five apps.
-- `choices.gd`: the shared answer list, including the excuse picker.
-- `overlays.gd`: ring dialog, call screen, phone, shop.
-- `screens.gd`: main menu, new game, pause, day report, results.
-- `main.gd` owns the screen flow and decides who has input and whether the
-  clock runs (`_refresh()`).
+## Events
+
+An `EventDef` says how it can happen:
+
+- `schedule`: fixed slots `[{day, at}]`, optionally with `chance` or `diffs`.
+- `pool`: filler the director draws from each morning (`boss`, `peer`, `call`).
+- `trigger`: `state` (checked every minute against `conditions`) or
+  `call_join` (may inject dialogue beats when a call starts).
+- Otherwise it only fires when something calls `Game.events.fire(id, ctx)`:
+  a choice outcome, a claim follow-up, a gadget failure.
+
+`conditions` keys: `day_min`, `day_max`, `from`, `to`, `flag`, `not_flag`,
+`owns`, `ability`, `susp_min/max`, `ill_min/max`, `absent_min`, `status`,
+`escalation_min`, `claim`, `open_task`, `urgent_task`, `faked_task`.
+
+Pacing (`can_interrupt`): nothing interrupts a call; two calls never ring at
+once; a conversation with a pending prompt gets no second one; at most three
+prompts wait at a time; filler respects a minimum gap. A blocked event is
+deferred and retried, not dropped.
+
+### Choice format
+
+Used by chat events, mails, dialogue beats and claim recoveries, and resolved
+in one place (`Comms.resolve`):
+
+```
+{t: text, a: action id,
+ p: base % for a bluff roll | ability: gadget ability to roll |
+ evidence: id (succeeds only if true) | match: subject (memory check),
+ tags: [...], req: {ability|favor|money|evidence},
+ ok: {...}, ko: {...}}
+```
+
+Outcome keys: `susp`, `ill`, `hp`, `en`, `money`, `favor`, `rel`, `cover`,
+`buff`, `flag`, `say`, `end`, `task`, `progress`, `give`, `claim`,
+`claim_status`, `fix_gadget`, `due_in`, `event`, `later {in, ev}`, `stat`.
+
+## Views
+
+- `World` instantiates the apartment, player and camera from scenes, drives
+  lighting from the clock, and turns clicks into `Game.home.use(...)`.
+- `Apartment` builds meshes, colliders, pick volumes and an `AStarGrid2D`
+  procedurally. An `Interactable` only knows its `thing_id`.
+- `Character` is a procedural rig with code-driven animation.
+- UI is built in code from the helpers in `ui.gd`; each screen is a scene
+  with one script. `main.gd` owns the screen flow and decides who has input
+  and whether the clock runs.
+
+## Decisions worth knowing
+
+- **Procedural art and audio.** No imported models, textures or samples. It
+  keeps the slice free of licensing questions and makes the look consistent;
+  `Kit` and `tools/gen_audio.py` are the places to replace when real assets
+  arrive.
+- **UI in code, not hand-edited scenes.** Scenes exist per screen, but the
+  node trees are built by their scripts. Layout lives next to the logic that
+  fills it, and can be regenerated; the cost is that the editor shows an
+  empty root for those scenes.
+- **Explicit pacing over emergent pacing.** The director refuses and defers
+  events rather than letting systems fire freely, so "no two interruptions
+  at once" is a rule that is tested, not a hope.
+- **One suspicion number.** Management suspicion is the Suspicion resource.
+  NPCs add relationship, mood and knowledge on top rather than each holding
+  a separate hidden meter the player cannot read.
 
 ## Adding content
 
-- **A ping, mail or call**: add an entry to `Content.PINGS`, `MAILS` or `CALLS`,
-  then schedule it in `Content.WEEK_EVENTS` / `WEEK_MEETINGS` or add its id to
-  the pools in `director.gd`. The content test checks every action id, ticket
-  id and gadget id you reference, and that the prompt can be answered without
-  real work.
-- **A gadget**: add it to `Auto.GADGETS` and `Auto.ORDER`, then give it an
-  effect where it applies (see how `replyguy` or `fakescreen` are used).
-- **An apartment object**: add it to `Interact.THINGS`, give it options in
-  `Interact.options()`/`use()`, and build its mesh in `apartment.gd` with
-  `_thing()`. `tests/world_test` verifies it is reachable.
-- **A new action**: declare it in `Actions.DEFS` first. Undeclared ids are
+- **An event:** add an `EventDef` resource. Give it a `schedule`, a `pool` or
+  a `trigger`. Nothing else needs to change.
+- **A gadget:** add a `GadgetDef` with levels and abilities, and a failure
+  event. For a new ability, read it where it applies with
+  `Game.automation.can(...)`.
+- **An excuse category:** add a `ClaimDef`. For new evidence, add a case to
+  `DeceptionManager.has_evidence`; for a new fact, add it to `FACTS` and
+  call `observe` where it happens.
+- **A character:** add an `NpcDef`. They get relationship, mood and knowledge
+  tracking automatically and can be the `from` of any event.
+- **An apartment object:** add it to `Home.THINGS`, give it options in
+  `Home.options()`/`use()`, and build its mesh in `apartment.gd`.
+- **An action:** declare it in `WorkSystem.DEFS` first. Undeclared ids are
   rejected with a warning.
 
 After adding a `class_name`, run `tools/check.sh` (it re-imports so the class
-cache is refreshed).
+cache is refreshed). `tools/validate.sh` checks every reference.
 
-## Known limitations of the slice
+## Known limitations
 
-- One save format version; no migration yet.
+- Tickets, prompts, meetings and mails are Dictionaries, not typed classes.
+- One save version; older saves are rejected rather than migrated.
 - Ambience is not positional.
-- Text is English only and not yet routed through Godot's translation system.
+- Text is English only and not routed through Godot's translation system.
 - Keyboard and mouse only; no gamepad mapping or rebinding UI.
+- The AI Doppelganger is the simplified version: it attends meetings, works
+  one ticket and occasionally makes a decision for you. There is no clone
+  storyline.

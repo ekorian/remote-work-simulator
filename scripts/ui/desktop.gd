@@ -176,7 +176,10 @@ func open(which: String = "") -> void:
 		app = "teams"
 		thread = str(Game.comms.pending("chat")[0].thread)
 	visible = true
+	modulate.a = 0.0
+	create_tween().tween_property(self, "modulate:a", 1.0, 0.18)
 	excuse_for = ""
+	block_for = ""
 	_dirty = true
 
 

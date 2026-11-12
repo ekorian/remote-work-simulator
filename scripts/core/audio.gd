@@ -14,11 +14,13 @@ var _loops: Dictionary = {}
 var _music: AudioStreamPlayer
 var _music_name := ""
 var _last_play: Dictionary = {}
+var _silent := false             ## headless runs (tests, CI) have no audio device: play nothing
 var _music_tween: Tween
 
 
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
+	_silent = DisplayServer.get_name() == "headless"
 	for b in BUSES:
 		if AudioServer.get_bus_index(b) < 0:
 			AudioServer.add_bus()
@@ -74,6 +76,8 @@ func stream(name: String) -> AudioStream:
 
 
 func play(name: String, volume_db: float = 0.0, pitch_var: float = 0.04) -> void:
+	if _silent:
+		return
 	var s := stream(name)
 	if s == null:
 		return
@@ -93,7 +97,7 @@ func play(name: String, volume_db: float = 0.0, pitch_var: float = 0.04) -> void
 func loop(name: String, on: bool, volume_db: float = -8.0, bus: String = "Ambience") -> void:
 	## Start or stop a named looping sound (the sample itself is authored to loop).
 	if on:
-		if _loops.has(name):
+		if _loops.has(name) or _silent:
 			return
 		var s := stream(name)
 		if s == null:
@@ -121,7 +125,7 @@ func stop_loops() -> void:
 
 
 func music(name: String, volume_db: float = -14.0) -> void:
-	if name == _music_name:
+	if name == _music_name or _silent:
 		return
 	_music_name = name
 	var s := stream(name) if name != "" else null
