@@ -1,0 +1,11 @@
+[gd_resource type="Resource" script_class="ComboDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/combo_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = "empty_chair"
+display_name = "Empty Chair"
+needs = ["assistant", "doppelganger"]
+text = "The Meeting Assistant feeds your clone its lines: it can now attend MANDATORY meetings too. If it goes wrong, it goes very wrong."
+effects = {"attend_mandatory": 1, "chaos": 60, "heat": 8}

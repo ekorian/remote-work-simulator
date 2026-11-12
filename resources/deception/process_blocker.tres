@@ -1,0 +1,50 @@
+[gd_resource type="Resource" script_class="ClaimDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/claim_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = "process_blocker"
+title = "Corporate process blocker"
+ticket_scoped = true
+line = "It's stuck with the Change Advisory Board. I can't touch it until they approve."
+contexts = ["chat", "ticket"]
+base = 55
+duration = 240
+cover = 0
+reuse_penalty = 15
+risk = 35
+contradicted_by = ["no_form", "ticket_activity"]
+conflicts = []
+evidence = {"form_filed": 30}
+effect = {"extend": 1440}
+followups = [
+  {
+    "kind": "verify",
+    "fact": "no_form",
+    "after": [25, 45],
+    "ok_line": "I found your Form 27-B in the queue. You're 14th. Nothing we can do."
+  },
+  {"kind": "event", "event": "expedited_approval", "after": [60, 110], "chance": 45}
+]
+strength = "Nobody at SynerCorp questions process. With a Form 27-B on file it is airtight, and the ticket slips a day."
+weakness = "Without the paperwork there is nothing to find. Martin may 'expedite' the approval and expect results the same day."
+accepted = "The CAB. Say no more. Nothing gets past the CAB."
+rejected = "The CAB hasn't met since 2021."
+exposed = {
+  "default": "I called the Change Advisory Board. There is no request under your name.",
+  "ticket_activity": "You're updating a ticket you said you weren't allowed to touch."
+}
+recoveries = [
+  {
+    "t": "\"The form must be lost in the system. I'll resubmit.\"",
+    "a": "blame",
+    "p": 54,
+    "ok": {"claim_status": "patched", "say": "The system does eat forms. Resubmit and cc me."},
+    "ko": {
+      "susp": 7,
+      "claim_status": "exposed",
+      "say": "The system has never lost a form. It's the one thing that works."
+    }
+  }
+]

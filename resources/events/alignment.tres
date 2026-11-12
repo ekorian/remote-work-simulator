@@ -1,0 +1,12 @@
+[gd_resource type="Resource" script_class="EventDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/event_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = "alignment"
+title = "Cross-Functional Alignment Sync"
+kind = "meeting"
+from = "kevin"
+meeting = {"dur": 45, "script": "alignment", "mandatory": false, "who": "kevin"}
+schedule = [{"day": 1, "at": 660}]

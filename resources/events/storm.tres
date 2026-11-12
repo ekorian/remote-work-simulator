@@ -1,0 +1,29 @@
+[gd_resource type="Resource" script_class="EventDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/event_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = "storm"
+title = "RE: RE: RE: RE: Who took my stapler (REPLY ALL)"
+kind = "mail"
+from = "kevin"
+subject = "RE: RE: RE: RE: Who took my stapler (REPLY ALL)"
+body = "214 people are replying-all to ask everyone to stop replying-all.\n\nThe whole company is distracted. Martin is three replies deep defending the stapler policy."
+choices = [
+  {
+    "t": "Reply-all: \"Great discussion, +1 to alignment.\"",
+    "a": "reply_all",
+    "p": 62,
+    "ok": {"ill": 4, "say": "Martin liked your reply. Visibility!"},
+    "ko": {"susp": 4, "say": "The CEO replied to you: 'Who is this?'"}
+  },
+  {
+    "t": "Mute the thread and slip away while they fight.",
+    "a": "ignore",
+    "ok": {"cover": 35, "cover_cat": "chaos", "say": "Nobody will notice you for a while."}
+  }
+]
+expire = {"susp": 0}
+window = 60
+schedule = [{"day": 1, "at": 912}]

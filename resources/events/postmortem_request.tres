@@ -1,0 +1,37 @@
+[gd_resource type="Resource" script_class="EventDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/event_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = "postmortem_request"
+title = "Postmortem"
+kind = "chat"
+from = "martin"
+window = 24
+text = "Great work on the incident. Since you were in the middle of it: can you write the postmortem?"
+choices = [
+  {
+    "t": "\"On it.\"",
+    "a": "accept_duty",
+    "ok": {"susp": -5, "ill": 5, "task": "postmortem", "say": "Knew I could count on you."}
+  },
+  {
+    "t": "\"Kevin should. It's a growth opportunity.\"",
+    "a": "deflect",
+    "p": 60,
+    "tags": ["jargon"],
+    "ok": {"say": "Good call. Kevin, you're up."},
+    "ko": {"susp": 5, "task": "postmortem", "say": "You were the one firefighting. It's yours."}
+  },
+  {
+    "t": "Send a generated postmortem.",
+    "a": "fake_report",
+    "p": 58,
+    "tags": ["jargon"],
+    "ok": {"ill": 5, "say": "'Root cause: synergy drift.' Works for me."},
+    "ko": {"susp": 7, "say": "This postmortem is about a different company."}
+  }
+]
+expire = {"susp": 5, "task": "postmortem", "say": "Silence means yes. It's yours."}
+schedule = []

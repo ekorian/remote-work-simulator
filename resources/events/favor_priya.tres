@@ -1,0 +1,34 @@
+[gd_resource type="Resource" script_class="EventDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/event_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = "favor_priya"
+title = "Favor priya"
+kind = "chat"
+from = "priya"
+thread = ""
+text = "I'm drowning. Can you tell Martin the release notes are 'in review' so he stops pinging me?"
+choices = [
+  {
+    "t": "Run interference with Martin.",
+    "a": "do_favor",
+    "p": 78,
+    "ok": {"favor": 1, "say": "Thank you. Genuinely. I'll remember this."},
+    "ko": {"favor": 1, "susp": 4, "say": "He asked you follow-up questions, huh. Thanks for trying."}
+  },
+  {
+    "t": "Offer to write the release notes yourself",
+    "a": "help_colleague",
+    "ok": {"favor": 2, "ill": 4, "say": "Are you... offering to WORK? Who are you? Thank you."}
+  },
+  {"t": "Stay out of it.", "a": "honest", "ok": {"say": "Fair."}}
+]
+expire = {"susp": 0}
+window = 30
+routine = false
+no_excuse = true
+conditions = {}
+pool = ""
+schedule = [{"day": 2, "at": 790}]

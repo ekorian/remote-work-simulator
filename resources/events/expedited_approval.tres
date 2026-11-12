@@ -1,0 +1,34 @@
+[gd_resource type="Resource" script_class="EventDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/event_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = "expedited_approval"
+title = "Expedited approval"
+kind = "chat"
+from = "martin"
+window = 20
+text = "Good news! I leaned on the Change Advisory Board and they fast-tracked your request. Approved. So {task} lands today, right?"
+choices = [
+  {
+    "t": "\"Absolutely. Today.\"",
+    "a": "bluff",
+    "ok": {"due_in": 150, "susp": -2, "say": "That's what I like to hear."}
+  },
+  {
+    "t": "\"It still needs sign-off from Security.\"",
+    "a": "jargon",
+    "p": 52,
+    "tags": ["jargon"],
+    "ok": {"say": "Of course it does. Fine."},
+    "ko": {"susp": 7, "due_in": 150, "say": "Security signed off this morning. Today, {name}."}
+  },
+  {
+    "t": "Do the work now that it's approved",
+    "a": "work_task",
+    "ok": {"progress": 1, "susp": -4, "say": "Finally."}
+  }
+]
+expire = {"susp": 6, "due_in": 150, "say": "I'll assume that's a yes. Today."}
+schedule = []

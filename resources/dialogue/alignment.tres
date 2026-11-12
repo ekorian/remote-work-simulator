@@ -1,0 +1,27 @@
+[gd_resource type="Resource" script_class="DialogueDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/dialogue_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = "alignment"
+beats = [
+  {
+    "who": "kevin",
+    "text": "Welcome to the Cross-Functional Alignment Sync! Let's go around: one word for how you're feeling.",
+    "choices": [
+      {
+        "t": "\"Aligned.\"",
+        "a": "jargon",
+        "p": 86,
+        "tags": ["jargon"],
+        "ok": {"ill": 2, "say": "Yes!! Love that."},
+        "ko": {"susp": 2, "say": "Someone already said that. Pick another."}
+      },
+      {"t": "\"Tired.\"", "a": "honest", "ok": {"susp": 3, "say": "Oof. OK. Let's unpack that offline."}}
+    ]
+  }
+]
+pool = ["opinion", "own_notes", "silence"]
+pick = 2
+after = {"ill": 2}

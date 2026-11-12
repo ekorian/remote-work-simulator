@@ -1,0 +1,46 @@
+[gd_resource type="Resource" script_class="EventDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/event_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = "urgent_task"
+title = "Urgent unfinished task"
+kind = "chat"
+from = "martin"
+window = 16
+trigger = "state"
+cooldown = 45
+conditions = {"urgent_task": true}
+args = {"mark_task": "nagged"}
+text = "{task} is due in under two hours and the board says it's barely started. What's going on?"
+choices = [
+  {
+    "t": "\"It's much further along than the board shows.\"",
+    "a": "bluff",
+    "p": 58,
+    "ok": {"susp": -1, "ill": 2, "say": "Then update the board. I'm watching it."},
+    "ko": {"susp": 6, "say": "Show me.", "later": {"in": 12, "ev": "demo_demand"}}
+  },
+  {
+    "t": "Post a burst of fake updates right now.",
+    "a": "fake_update",
+    "p": 66,
+    "tags": ["jargon"],
+    "ok": {"ill": 4, "say": "There we go. Was that so hard?"},
+    "ko": {"susp": 5, "say": "Three updates in one minute. Sure."}
+  },
+  {
+    "t": "Call in a favour: get it done quietly.",
+    "a": "delegate_colleague",
+    "req": {"favor": 1},
+    "ok": {"give": "priya", "susp": -2, "say": "Priya says she's 'helping'. Fine by me."}
+  },
+  {
+    "t": "Drop everything and actually do it",
+    "a": "work_task",
+    "ok": {"progress": 1, "susp": -4, "say": "That's the spirit."}
+  }
+]
+expire = {"susp": 9, "say": "Silence. With two hours to go."}
+schedule = []

@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="NpcDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/npc_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = "it"
+display_name = "IT Helpdesk"
+role = "Have you tried rebooting?"
+color = Color(0.7059, 0.549, 1, 1)
+kind = "it"
+gullibility = -4.0
+start_relationship = 50.0
+look = {"skin": 4, "hair": 5, "hair_color": 7, "shirt": 3, "pants": 1, "accessory": 2}

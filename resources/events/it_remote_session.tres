@@ -1,0 +1,42 @@
+[gd_resource type="Resource" script_class="EventDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/event_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = "it_remote_session"
+title = "Remote session"
+kind = "chat"
+from = "it"
+window = 14
+no_excuse = true
+text = "We see you reported a crash. Opening a remote session on your laptop to take a look. OK?"
+choices = [
+  {
+    "t": "\"Sure, go ahead.\"",
+    "a": "ack",
+    "evidence": "laptop_updating",
+    "ok": {"susp": -3, "say": "Yep, it's stuck on update 61 of 114. Nothing we can do. Sorry!"},
+    "ko": {
+      "susp": 9,
+      "claim_status": "exposed",
+      "say": "We're in. It's running perfectly. There's a game of solitaire open."
+    }
+  },
+  {
+    "t": "\"It fixed itself! No need.\"",
+    "a": "bluff",
+    "p": 56,
+    "ok": {"claim_status": "patched", "say": "Great. Closing the ticket."},
+    "ko": {"susp": 6, "say": "We'd like to look anyway."}
+  },
+  {
+    "t": "\"Now's not a good time. I'm presenting.\"",
+    "a": "deflect",
+    "p": 48,
+    "ok": {"say": "No problem. We'll try tomorrow."},
+    "ko": {"susp": 6, "say": "Presenting. On the crashed laptop."}
+  }
+]
+expire = {"susp": 7, "say": "No reply. We remoted in anyway. Your manager has the screenshot."}
+schedule = []

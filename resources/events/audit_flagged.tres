@@ -1,0 +1,43 @@
+[gd_resource type="Resource" script_class="EventDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/event_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = "audit_flagged"
+title = "Scan: device disabled"
+kind = "chat"
+from = "it"
+window = 15
+no_excuse = true
+text = "SynerWatch disabled an unauthorised device on your machine ({gadget}). Explain within 15 minutes."
+choices = [
+  {
+    "t": "\"It's a USB desk fan.\"",
+    "a": "bluff",
+    "p": 46,
+    "ok": {"susp": -2, "say": "A fan. Logged as: fan."},
+    "ko": {"susp": 8, "say": "It identifies itself to the OS as 'TotallyNotAJiggler'."}
+  },
+  {
+    "t": "\"That's assistive tech. Re-enable it, please.\"",
+    "a": "bluff",
+    "p": 40,
+    "ok": {"fix_gadget": true, "say": "Apologies. Re-enabled and whitelisted."},
+    "ko": {"susp": 9, "say": "We checked with Occupational Health. No record."}
+  },
+  {
+    "t": "\"I have no idea what that is. Is my machine compromised?!\"",
+    "a": "deflect",
+    "p": 54,
+    "ok": {"susp": -1, "say": "Possibly. We'll reimage it tonight. Don't worry."},
+    "ko": {"susp": 7, "say": "It's plugged into your USB port."}
+  },
+  {
+    "t": "Admit to the gadget.",
+    "a": "honest",
+    "ok": {"susp": 9, "rel": 2, "say": "Noted. A confiscation form is in your inbox."}
+  }
+]
+expire = {"susp": 12, "say": "No explanation. Escalated."}
+schedule = []

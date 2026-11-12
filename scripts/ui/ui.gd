@@ -302,11 +302,11 @@ static func icon(name: String, size: float = 22.0, color: Color = TEXT) -> UIIco
 static func avatar(who: String, size: float = 34.0) -> Control:
 	## Round initial-badge for a person.
 	var p := PanelContainer.new()
-	var col := Content.person_color(who)
+	var col := Game.npcs.color(who)
 	p.add_theme_stylebox_override("panel", sb(col, int(size / 2.0)))
 	p.custom_minimum_size = Vector2(size, size)
 	p.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
-	var nm := Content.person_name(who)
+	var nm := Game.npcs.display_name(who)
 	var l := label(nm.substr(0, 1).to_upper(), int(size * 0.5), INK, true)
 	l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	l.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
@@ -338,8 +338,8 @@ static func choice(view: Dictionary, cb: Callable, light: bool = false, key_hint
 		meta.add_child(pill(str(badge.text), badge_color, 10, warn))
 	if float(view.odds) >= 0.0:
 		var pct := float(view.odds)
-		var oc: Color = Deception.odds_color(pct)
-		meta.add_child(pill("%s %d%%" % [Deception.odds_word(pct), int(round(pct))], oc.darkened(0.25) if light else oc, 10))
+		var oc: Color = DeceptionManager.odds_color(pct)
+		meta.add_child(pill("%s %d%%" % [DeceptionManager.odds_word(pct), int(round(pct))], oc.darkened(0.25) if light else oc, 10))
 	if float(view.get("cost", 0.0)) > 0.0:
 		meta.add_child(pill("-%d energy" % int(ceil(float(view.cost))), Color("9a7b12") if light else ACCENT, 10))
 	if not bool(view.ok):

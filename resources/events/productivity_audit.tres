@@ -1,0 +1,46 @@
+[gd_resource type="Resource" script_class="EventDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/event_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = "productivity_audit"
+title = "Corporate productivity audit"
+kind = "chat"
+from = "linda"
+thread = "general"
+window = 20
+no_excuse = true
+text = "CORPORATE PRODUCTIVITY AUDIT. {name}: you logged 8.0 hours yesterday. SynerWatch recorded 14 minutes of 'intentional input'. Please reconcile."
+choices = [
+  {
+    "t": "\"I think on paper. Real work isn't typing.\"",
+    "a": "jargon",
+    "p": 54,
+    "tags": ["jargon"],
+    "ok": {"susp": -3, "ill": 3, "say": "...Leadership actually agrees with that. Audit closed."},
+    "ko": {"susp": 9, "say": "Please submit the paper."}
+  },
+  {
+    "t": "\"SynerWatch can't see my second machine.\"",
+    "a": "bluff",
+    "p": 48,
+    "ok": {"susp": -2, "say": "We'll add it to the asset register. Audit closed."},
+    "ko": {"susp": 9, "say": "You were issued one machine."}
+  },
+  {
+    "t": "Show the Keyboard Duck's activity log as your own.",
+    "a": "use_gadget",
+    "ability": "illusion",
+    "req": {"ability": "illusion"},
+    "ok": {"susp": -5, "ill": 5, "say": "11,000 keystrokes an hour. Remarkable. Audit closed."},
+    "ko": {"susp": 10, "say": "The log is the letter J, eleven thousand times."}
+  },
+  {
+    "t": "Reconstruct yesterday honestly, line by line",
+    "a": "real_timesheet",
+    "ok": {"susp": -7, "ill": 5, "say": "Thorough. Audit closed with commendation."}
+  }
+]
+expire = {"susp": 12, "ill": -4, "say": "No response to a compliance audit. Your manager has been cc'd."}
+schedule = [{"day": 3, "at": 895}]

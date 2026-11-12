@@ -1,0 +1,23 @@
+[gd_resource type="Resource" script_class="DifficultyDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/difficulty_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = "unemployed"
+display_name = "Professional Unemployed"
+tag = "EXTREME"
+color = Color(1, 0.3647, 0.451, 1)
+susp = 1.5
+work_hp = 999.0
+lethal = true
+recover = 0.85
+window = 0.8
+gadget_fail = 1.3
+event_rate = 1.2
+boss_check = 1.4
+cost = 1.1
+cred = -5
+stress = 1.3
+score = 4.0
+desc = "ANY legitimate work action ends the run instantly. Survive the whole week on avoidance, delegation, deception and automation alone."

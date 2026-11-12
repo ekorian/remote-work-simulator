@@ -148,6 +148,12 @@ def ui():
     ph = np.cumsum(f) / SR
     voice = sum(a * np.sin(2 * np.pi * ph * h) for h, a in [(1, 1), (2, 0.6), (3, 0.5), (5, 0.25)])
     save("talk", lowpass(voice * (0.5 + 0.5 * np.sin(2 * np.pi * 9 * t(d))) * env(len(voice), 0.02, 0.1), 1500), 0.4)
+    # The boss has his own notification: lower, and one note too many.
+    save("boss", seq([note(67), note(72), note(67), note(60)], 0.085, 0.42, harm=(1, 0.5, 0.3, 0.1), k=8), 0.6)
+    # Gadgets: a cheerful power-up, and a sad mechanical wind-down.
+    save("gadget_on", mix(sweep(260, 880, 0.18) * env(int(SR * 0.18), 0.005, 0.08), at(tone(note(88), 0.3, (1, 0.4), 10), 0.16, 0.5)), 0.5)
+    down = sweep(620, 70, 0.55) * env(int(SR * 0.55), 0.005, 0.25) * (0.6 + 0.4 * np.sign(np.sin(2 * np.pi * 34 * t(0.55))))
+    save("gadget_fail", mix(down, at(lowpass(noise(0.12), 2500) * decay(int(SR * 0.12), 30), 0.5, 0.7)), 0.55)
     # Stingers
     save("win", seq([note(60), note(64), note(67), note(72), note(76), note(79), note(84)], 0.11, 1.1, harm=(1, 0.5, 0.25, 0.1), k=2.6), 0.65)
     save("fired", seq([note(57), note(56), note(55), note(48)], 0.3, 1.2, harm=(1, 0.7, 0.5, 0.3, 0.2), k=2.4), 0.65)

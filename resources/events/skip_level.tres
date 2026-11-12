@@ -1,0 +1,12 @@
+[gd_resource type="Resource" script_class="EventDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/event_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = "skip_level"
+title = "Skip-Level with Helena Voss (SVP)"
+kind = "meeting"
+from = "helena"
+meeting = {"dur": 30, "script": "senior", "mandatory": true, "who": "helena"}
+schedule = [{"day": 3, "at": 780}]

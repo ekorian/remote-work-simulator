@@ -1,0 +1,33 @@
+[gd_resource type="Resource" script_class="EventDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/event_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = "you_there"
+title = "You there"
+kind = "chat"
+from = "martin"
+thread = ""
+text = "You there?"
+choices = [
+  {
+    "t": "Yep! Heads down on the thing.",
+    "a": "bluff",
+    "p": 84,
+    "ok": {"susp": -1, "ill": 1, "say": "Good good. Carry on."},
+    "ko": {"susp": 5, "say": "Which thing? Never mind. Just... be around."}
+  },
+  {
+    "t": "Here. What do you need? (Invite more work)",
+    "a": "accept_duty",
+    "ok": {"susp": -4, "ill": 3, "say": "Love the attitude. I'll find you something."}
+  }
+]
+expire = {"susp": 8, "say": "Guess not."}
+window = 14
+routine = true
+no_excuse = false
+conditions = {}
+pool = "boss"
+schedule = []

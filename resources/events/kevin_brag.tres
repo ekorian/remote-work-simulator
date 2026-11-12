@@ -1,0 +1,33 @@
+[gd_resource type="Resource" script_class="EventDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/event_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = "kevin_brag"
+title = "Kevin brag"
+kind = "chat"
+from = "kevin"
+thread = "team"
+text = "Shipped the new dashboard at 2am! Would love feedback from {name} specifically."
+choices = [
+  {
+    "t": "\"Looks great! Love the colours.\"",
+    "a": "bluff",
+    "p": 78,
+    "ok": {"ill": 2, "say": "Thanks!! Means a lot."},
+    "ko": {"susp": 3, "say": "It's a command-line tool. It has no colours."}
+  },
+  {
+    "t": "Test it properly and file real bugs",
+    "a": "help_colleague",
+    "ok": {"favor": 1, "ill": 4, "say": "14 bugs?! OK, fair. Thank you. I owe you."}
+  }
+]
+expire = {"susp": 2}
+window = 26
+routine = true
+no_excuse = true
+conditions = {}
+pool = "peer"
+schedule = []

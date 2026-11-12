@@ -1,0 +1,33 @@
+[gd_resource type="Resource" script_class="EventDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/event_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = "favor_dave"
+title = "Favor dave"
+kind = "chat"
+from = "dave"
+thread = ""
+text = "Sneaking out to the driving range. If Martin asks, I'm in a 'vendor sync'. Cover for me?"
+choices = [
+  {
+    "t": "Cover for Dave.",
+    "a": "do_favor",
+    "p": 80,
+    "ok": {"favor": 1, "say": "Legend. I owe you one."},
+    "ko": {
+      "favor": 1,
+      "susp": 5,
+      "say": "Martin asked which vendor. You said 'the usual one'. He bought it, barely. Still owe you."
+    }
+  },
+  {"t": "Sorry, can't risk it.", "a": "honest", "ok": {"say": "Cold. OK."}}
+]
+expire = {"susp": 0, "say": "I'll take that as a no."}
+window = 30
+routine = false
+no_excuse = true
+conditions = {}
+pool = ""
+schedule = [{"day": 0, "at": 655}, {"day": 4, "at": 745}]

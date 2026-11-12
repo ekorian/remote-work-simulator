@@ -1,0 +1,45 @@
+[gd_resource type="Resource" script_class="EventDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/event_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = "task_status"
+title = "Task status"
+kind = "chat"
+from = "martin"
+thread = ""
+text = "Where are we on {task}?"
+choices = [
+  {
+    "t": "\"Nearly there, just polishing.\"",
+    "a": "fake_update",
+    "p": 70,
+    "tags": ["jargon"],
+    "ok": {"ill": 3, "susp": -1, "say": "Great. Keep polishing."},
+    "ko": {
+      "susp": 6,
+      "say": "You said that yesterday. Show me something soon.",
+      "later": {"in": 25, "ev": "demo_demand", "args": {}}
+    }
+  },
+  {
+    "t": "\"Blocked on another team.\"",
+    "a": "blame",
+    "p": 58,
+    "ok": {"cover": 15, "say": "Ugh. I'll chase them. (I won't.)"},
+    "ko": {"susp": 7, "say": "I just asked them. They've never heard of you."}
+  },
+  {
+    "t": "Stop everything and work on it now",
+    "a": "work_task",
+    "ok": {"progress": 1, "susp": -3, "say": "That's the spirit."}
+  }
+]
+expire = {"susp": 8, "say": "Silence is also an answer, I suppose."}
+window = 22
+routine = false
+no_excuse = false
+conditions = {"open_task": true}
+pool = "boss"
+schedule = []

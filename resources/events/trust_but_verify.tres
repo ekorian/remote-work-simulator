@@ -1,0 +1,13 @@
+[gd_resource type="Resource" script_class="EventDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/event_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = "trust_but_verify"
+title = "Trust but verify"
+kind = "say"
+from = "martin"
+thread = "team"
+text = "Team, new policy from today: trust, but verify. If you tell me something, I will check it. Nothing personal. It's a framework."
+schedule = [{"day": 2, "at": 543}]

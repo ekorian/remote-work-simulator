@@ -1,0 +1,41 @@
+[gd_resource type="Resource" script_class="EventDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/event_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = "thoughts"
+title = "Thoughts"
+kind = "chat"
+from = "martin"
+thread = ""
+text = "Thoughts on my email?"
+choices = [
+  {
+    "t": "Strongly agree. Especially the second part.",
+    "a": "bluff",
+    "p": 66,
+    "ok": {"ill": 2, "susp": -1, "say": "Right?! Glad someone gets it."},
+    "ko": {"susp": 6, "say": "It was one sentence. There is no second part."}
+  },
+  {
+    "t": "Could you summarise the key ask?",
+    "a": "clarify",
+    "p": 74,
+    "tags": ["jargon"],
+    "ok": {"ill": 1, "say": "Sure - the ask is: thoughts."},
+    "ko": {"susp": 4, "say": "The ask is that you read it."}
+  },
+  {
+    "t": "Actually read it and reply thoughtfully",
+    "a": "real_answer",
+    "ok": {"ill": 6, "susp": -4, "say": "This is genuinely helpful. Are you feeling OK?"}
+  }
+]
+expire = {"susp": 7}
+window = 22
+routine = true
+no_excuse = false
+conditions = {}
+pool = "boss"
+schedule = []

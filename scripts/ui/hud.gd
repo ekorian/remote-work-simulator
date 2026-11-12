@@ -34,6 +34,8 @@ var _why: Label
 var _why_until := 0.0
 var _money: Label
 var _favor: Label
+var _earned: Label
+var _claims: VBoxContainer
 var _battery: Label
 var _heat_chip: Control
 var _heat: Label
@@ -60,49 +62,6 @@ var _feed_last: Dictionary = {}
 var _t := 0.0
 
 
-class StatBar:
-	extends Control
-	## Smoothly animated bar with optional threshold ticks.
-	var value := 0.0
-	var shown := 0.0
-	var max_value := 100.0
-	var color := Color.WHITE
-	var ticks: Array = []
-	var pulse := false
-	var _t := 0.0
-
-	func _init() -> void:
-		mouse_filter = Control.MOUSE_FILTER_IGNORE
-		custom_minimum_size = Vector2(40, 12)
-
-	func _process(delta: float) -> void:
-		_t += delta
-		if not is_equal_approx(shown, value) or pulse:
-			shown = lerpf(shown, value, minf(1.0, delta * 9.0))
-			if absf(shown - value) < 0.05:
-				shown = value
-			queue_redraw()
-
-	func _draw() -> void:
-		var r := size.y / 2.0
-		var bg := StyleBoxFlat.new()
-		bg.bg_color = Color(0, 0, 0, 0.38)
-		bg.set_corner_radius_all(int(r))
-		draw_style_box(bg, Rect2(Vector2.ZERO, size))
-		var f := clampf(shown / max_value, 0.0, 1.0)
-		if f > 0.005:
-			var fill := StyleBoxFlat.new()
-			var c := color
-			if pulse:
-				c = c.lerp(Color.WHITE, 0.25 + 0.25 * sin(_t * 9.0))
-			fill.bg_color = c
-			fill.set_corner_radius_all(int(r))
-			draw_style_box(fill, Rect2(Vector2.ZERO, Vector2(maxf(size.y, size.x * f), size.y)))
-		for tk in ticks:
-			var x := size.x * float(tk) / max_value
-			draw_line(Vector2(x, 1), Vector2(x, size.y - 1), Color(1, 1, 1, 0.55), 1.5)
-
-
 func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	UI.full(self)
@@ -110,10 +69,10 @@ func _ready() -> void:
 	_build_column()
 	_build_bottom()
 	_build_toasts()
-	Game.stat_changed.connect(_on_stat)
-	Game.money_changed.connect(_on_money)
-	Game.buffs_changed.connect(func(): _dirty = true)
-	Game.favor_changed.connect(func(_v): _dirty = true)
+	Game.stats.changed.connect(_on_stat)
+	Game.economy.money_changed.connect(_on_money)
+	Game.stats.buffs_changed.connect(func(): _dirty = true)
+	Game.economy.favors_changed.connect(func(_v): _dirty = true)
 	Bus.toast.connect(toast)
 	Bus.comms_changed.connect(func(): _dirty = true)
 	Bus.meeting_changed.connect(func(_m): _dirty = true)
@@ -121,6 +80,9 @@ func _ready() -> void:
 	Bus.gadget_changed.connect(func(_g): _dirty = true)
 	Bus.state_loaded.connect(_on_loaded)
 	Game.day_started.connect(func(_d): _dirty = true)
+	Game.deception.claim_added.connect(func(_c): _dirty = true)
+	Game.deception.claim_changed.connect(func(_c): _dirty = true)
+	Game.time.minute_passed.connect(func(): if not Game.deception.live_claims().is_empty(): _dirty = true)
 
 
 func _on_loaded() -> void:
@@ -130,7 +92,7 @@ func _on_loaded() -> void:
 		(_deltas[st2] as Label).text = ""
 	UI.clear(_toasts)
 	for st in _bars:
-		(_bars[st] as StatBar).shown = Game.get_stat(st)
+		(_bars[st] as StatBar).shown = Game.stats.get_value(st)
 
 
 # ---------------------------------------------------------------------------
@@ -256,9 +218,12 @@ func _build_column() -> void:
 	(_bars.ill as StatBar).get_parent().tooltip_text = "Productivity Illusion: how productive you LOOK. Above 60 suspicion fades; below 25 it climbs."
 	var chips := UI.hbox(6)
 	v.add_child(chips)
-	var c1 := _chip("coin", UI.ACCENT, "Money. Salary lands at 17:00.")
+	var c1 := _chip("coin", UI.ACCENT, "Cash to spend. Salary lands at 17:00.")
 	_money = c1[1]
 	chips.add_child(c1[0])
+	var c0 := _chip("check", UI.GREEN, "Salary earned this week, for doing nothing.")
+	_earned = c0[1]
+	chips.add_child(c0[0])
 	var c2 := _chip("favor", Color("ff9ecb"), "Favours colleagues owe you. Spend them to delegate tickets.")
 	_favor = c2[1]
 	chips.add_child(c2[0])
@@ -284,6 +249,10 @@ func _build_column() -> void:
 	_column.add_child(_tut)
 	_tut_body = UI.vbox(6)
 	_tut.add_child(_tut_body)
+	# Live stories
+	_claims = UI.vbox(5)
+	_claims.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_column.add_child(_claims)
 	# Inbox
 	_inbox = UI.vbox(7)
 	_column.add_child(_inbox)
@@ -434,7 +403,7 @@ func _on_stat(stat: String, _value: float, delta: float, reason: String) -> void
 	dl.text = "%+d" % int(round(total))
 	dl.add_theme_color_override("font_color", UI.GREEN if good else UI.RED)
 	dl.modulate.a = 1.0
-	_why.text = "%s %+d: %s" % [str(Game.STAT_NAMES[stat]).get_slice(" ", -1) if stat == "ill" else str(Game.STAT_NAMES[stat]), int(round(total)), reason]
+	_why.text = "%s %+d: %s" % [str(PlayerStats.STAT_NAMES[stat]).get_slice(" ", -1) if stat == "ill" else str(PlayerStats.STAT_NAMES[stat]), int(round(total)), reason]
 	_why.add_theme_color_override("font_color", UI.GREEN if good else Color("ff9aa8"))
 	_why.modulate.a = 1.0
 	_why_until = now + 4.5
@@ -466,7 +435,7 @@ func open_menu(thing: Interactable) -> void:
 	head.add_child(t)
 	head.add_child(UI.pill("Esc", UI.DIM, 11))
 	v.add_child(head)
-	var opts := Interact.options(thing.thing_id)
+	var opts := Game.home.options(thing.thing_id)
 	for i in opts.size():
 		var o: Dictionary = opts[i]
 		var c := UI.Clicky.new()
@@ -481,7 +450,7 @@ func open_menu(thing: Interactable) -> void:
 		var hint: String = str(o.hint) if bool(o.ok) else str(o.why)
 		if hint != "":
 			col.add_child(UI.wrap(hint, 12, UI.DIM if bool(o.ok) else UI.RED))
-		var badge := Actions.badge(str(o.act))
+		var badge := Game.work.badge(str(o.act))
 		if str(badge.text) != "":
 			col.add_child(UI.pill(str(badge.text), badge.color, 10))
 		row.add_child(col)
@@ -525,7 +494,7 @@ func _unhandled_key_input(e: InputEvent) -> void:
 	if k == null or not k.pressed or k.echo:
 		return
 	var n := int(k.physical_keycode) - KEY_1
-	var opts := Interact.options(_menu_thing.thing_id) if _menu_thing != null else []
+	var opts := Game.home.options(_menu_thing.thing_id) if _menu_thing != null else []
 	if n >= 0 and n < opts.size() and bool(opts[n].ok):
 		get_viewport().set_input_as_handled()
 		_menu_pick(str(opts[n].id))
@@ -539,37 +508,36 @@ func _process(delta: float) -> void:
 	if not Game.active:
 		return
 	_t += delta
-	var s: Dictionary = Game.s
-	var evening: bool = s.phase == "evening"
+	var evening: bool = Game.time.phase == "evening"
 	# Clock
-	var t := Game.clock()
+	var t := Game.time.clock()
 	_time.text = Cfg.fmt_time(fposmod(t, 1440.0))
-	_day.text = "%s%s" % [Game.day_name().to_upper(), "  NIGHT" if evening else ""]
+	_day.text = "%s%s" % [Game.time.day_name().to_upper(), "  NIGHT" if evening else ""]
 	_day_bar.value = clampf(t - Cfg.WORK_START, 0.0, _day_bar.max_value)
 	_day_bar.color = UI.PURPLE if evening else UI.ACCENT
-	_speed.visible = Game.speed > 1.0
-	var st: String = "offline" if evening else str(s.pres.status)
+	_speed.visible = Game.time.speed > 1.0
+	var st: String = "offline" if evening else Game.presence.status
 	var pinfo: Dictionary = Cfg.PRESENCE[st]
 	_presence_label.text = "Off the clock" if evening else str(pinfo.label)
 	var pcol: Color = pinfo.color
-	if not evening and Game.absent() and Game.in_work_hours():
+	if not evening and Game.presence.absent() and Game.time.in_work_hours():
 		pcol = pcol.lerp(UI.RED, 0.5 + 0.5 * sin(_t * 6.0))
 		_presence_label.text += "  !"
-	elif not evening and Game.covered() and st in ["away", "offline"]:
+	elif not evening and Game.presence.covered() and st in ["away", "offline"]:
 		_presence_label.text += " (excused)"
 	_presence_dot.add_theme_stylebox_override("panel", UI.sb(pcol, 5))
 	if evening:
-		_next_label.text = "Sleep in the bed to start %s." % (Cfg.DAYS[int(s.day) + 1] if int(s.day) < 4 else "the weekend")
+		_next_label.text = "Sleep in the bed to start %s." % (Cfg.DAYS[Game.time.day + 1] if Game.time.day < 4 else "the weekend")
 	else:
-		var nm := Corp.next_meeting()
+		var nm := Game.comms.next_meeting()
 		if not nm.is_empty():
 			_next_label.text = "Next: %s at %s" % [str(nm.title), Cfg.fmt_time(float(nm.start))]
 		else:
 			_next_label.text = "No more meetings today."
-	_slack_label.text = "Slacked on the clock: %s" % Cfg.fmt_dur(float(s.today.get("slack_min", 0)))
+	_slack_label.text = "Slacked on the clock: %s" % Cfg.fmt_dur(float(Game.today.get("slack_min", 0)))
 	# Resources
 	for stat in _bars:
-		var v := Game.get_stat(stat)
+		var v := Game.stats.get_value(stat)
 		(_bars[stat] as StatBar).value = v
 		(_vals[stat] as Label).text = str(int(round(v)))
 	var now_s := Time.get_ticks_msec() / 1000.0
@@ -577,19 +545,20 @@ func _process(delta: float) -> void:
 		var left := float(_delta_state[stat].until) - now_s
 		(_deltas[stat] as Label).modulate.a = clampf(left / 0.6, 0.0, 1.0)
 	_why.modulate.a = clampf((_why_until - now_s) / 0.8, 0.0, 1.0)
-	(_bars.susp as StatBar).pulse = Game.get_stat("susp") >= 75.0
-	(_bars.health as StatBar).pulse = Game.get_stat("health") <= 25.0
-	_money.text = "$%d" % int(s.money)
-	_favor.text = str(int(s.favor))
-	_battery.text = "%d%%%s" % [int(s.things.phone_bat), "" if Interact.phone_carried() else " (dock)"]
-	var heat := Auto.heat()
+	(_bars.susp as StatBar).pulse = Game.stats.get_value("susp") >= 75.0
+	(_bars.health as StatBar).pulse = Game.stats.get_value("health") <= 25.0
+	_money.text = "$%d" % Game.economy.money
+	_earned.text = "$%d" % Game.economy.earned
+	_favor.text = str(Game.economy.favors)
+	_battery.text = "%d%%%s" % [int(Game.home.things.phone_bat), "" if Game.home.phone_carried() else " (dock)"]
+	var heat := Game.automation.heat()
 	_heat_chip.visible = heat > 0.0
 	_heat.text = "%d" % int(heat)
 	if _dirty:
 		_dirty = false
 		_rebuild_lists()
 	# Inbox countdowns
-	var now := float(Game.now()) + fposmod(Game.clock(), 1.0)
+	var now := float(Game.time.now()) + fposmod(Game.time.clock(), 1.0)
 	for row in _inbox_rows:
 		if is_instance_valid(row.bar):
 			var left := float(row.due) - now
@@ -605,10 +574,10 @@ func _process(delta: float) -> void:
 
 func _update_world_widgets() -> void:
 	var show_world := world != null and not desk_mode and world.interactive and not Game.paused
-	var busy := Game.busy()
+	var busy := Game.activities.busy()
 	_act.visible = busy and (show_world or desk_mode) and not Game.paused
 	if _act.visible:
-		var a: Dictionary = Game.s.act
+		var a: Dictionary = Game.activities.current
 		_act_label.text = "%s  -  %s left" % [str(a.label), Cfg.fmt_dur(float(a.left))]
 		_act_bar.max_value = float(a.total)
 		_act_bar.value = float(a.total) - float(a.left)
@@ -619,7 +588,7 @@ func _update_world_widgets() -> void:
 	_prompt.visible = f != null
 	_tag.visible = f != null
 	if f != null:
-		var opts := Interact.options(f.thing_id)
+		var opts := Game.home.options(f.thing_id)
 		_prompt_title.text = f.title
 		if opts.size() == 1:
 			_prompt_hint.text = str(opts[0].label) if bool(opts[0].ok) else str(opts[0].why)
@@ -638,46 +607,69 @@ func _update_world_widgets() -> void:
 func _rebuild_lists() -> void:
 	# Buffs
 	UI.clear(_buffs)
-	for id in Game.s.buffs:
-		var b: Dictionary = Game.BUFFS.get(id, {"name": id, "desc": "", "good": true})
+	for id in Game.stats.buffs:
+		var b: Dictionary = PlayerStats.BUFFS.get(id, {"name": id, "desc": "", "good": true})
 		var pl := UI.pill(str(b.name), UI.GREEN if bool(b.good) else UI.ORANGE, 11)
 		pl.mouse_filter = Control.MOUSE_FILTER_STOP
 		pl.tooltip_text = str(b.desc)
 		_buffs.add_child(pl)
-	if str(Game.s.outfit) != "casual":
-		var o: Dictionary = Interact.OUTFITS[str(Game.s.outfit)]
-		var pl := UI.pill("Wearing: %s" % ("shirt" if str(Game.s.outfit) == "shirt" else "pajamas"), UI.BLUE, 11)
+	if str(Game.home.outfit) != "casual":
+		var o: Dictionary = Home.OUTFITS[str(Game.home.outfit)]
+		var pl := UI.pill("Wearing: %s" % ("shirt" if str(Game.home.outfit) == "shirt" else "pajamas"), UI.BLUE, 11)
 		pl.mouse_filter = Control.MOUSE_FILTER_STOP
 		pl.tooltip_text = str(o.hint)
 		_buffs.add_child(pl)
-	if Interact.desk_staged():
+	if Game.home.desk_staged():
 		_buffs.add_child(UI.pill("Desk staged", UI.GREEN, 11))
 	_buffs.visible = _buffs.get_child_count() > 0
 	# Tutorial
-	_tut.visible = Tutor.active()
+	_tut.visible = Game.tutor.active()
 	if _tut.visible:
 		UI.clear(_tut_body)
-		var pr := Tutor.progress()
-		var st := Tutor.step()
+		var pr := Game.tutor.progress()
+		var st := Game.tutor.step()
 		var head := UI.hbox(6)
-		var ht := UI.title("FIRST DAY  %d/%d" % [pr.x, pr.y], 13, UI.ACCENT)
+		var ht := UI.title("%s  %d/%d" % [["FIRST DAY", "AUTOMATION", "THE LEDGER", "FAILURES", "REVIEW DAY"][clampi(Game.time.day, 0, 4)], pr.x, pr.y], 13, UI.ACCENT)
 		ht.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		head.add_child(ht)
-		var skip := UI.button("skip", Tutor.skip, "ghost", 11)
+		var skip := UI.button("skip", Game.tutor.skip, "ghost", 11)
 		head.add_child(skip)
 		_tut_body.add_child(head)
 		if not st.is_empty():
-			_tut_body.add_child(UI.title(str(st.title), 19))
-			_tut_body.add_child(UI.wrap(str(st.text), 13, Color("e6dcff")))
-		if bool(Game.s.get("hold", false)):
+			_tut_body.add_child(UI.title(Game.comms.fmt(str(st.title)), 19))
+			_tut_body.add_child(UI.wrap(Game.comms.fmt(str(st.text)), 13, Color("e6dcff")))
+		if bool(Game.time.hold):
 			_tut_body.add_child(UI.wrap("The clock is paused until you use something.", 12, UI.TEAL))
+	# Stories on record: what you must not do while each one lasts.
+	UI.clear(_claims)
+	var live := Game.deception.live_claims()
+	_claims.visible = not live.is_empty() and Game.time.phase == "work"
+	for c in live:
+		var d := Game.deception.describe(c)
+		var cp := PanelContainer.new()
+		var sbx := UI.sb(Color(UI.INK, 0.86), 12, 0, UI.PURPLE, 10, 7)
+		sbx.border_width_left = 4
+		cp.add_theme_stylebox_override("panel", sbx)
+		cp.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		var cv := UI.vbox(1)
+		cp.add_child(cv)
+		var ch := UI.hbox(6)
+		var ct := UI.label("STORY: %s" % str(d.title), 12, UI.PURPLE, true)
+		ct.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		ct.clip_text = true
+		ch.add_child(ct)
+		ch.add_child(UI.label("%s left" % Cfg.fmt_dur(float(d.left)), 11, UI.DIM, true))
+		cv.add_child(ch)
+		if not d.avoid.is_empty():
+			cv.add_child(UI.wrap("Don't %s." % str(d.avoid[0]), 11, Color("ffb3bd")))
+		_claims.add_child(cp)
 	# Inbox
 	UI.clear(_inbox)
 	_inbox_rows.clear()
-	if Game.s.phase != "work":
+	if Game.time.phase != "work":
 		return
-	var ring := Corp.ringing()
-	if not ring.is_empty() and not Corp.in_call():
+	var ring := Game.comms.ringing()
+	if not ring.is_empty() and not Game.comms.in_call():
 		var c := UI.Clicky.new()
 		c.setup(Color("7a2b3d"), UI.RED, 2, false, 14)
 		var h := UI.hbox(10)
@@ -694,8 +686,8 @@ func _rebuild_lists() -> void:
 		c.add_child(h)
 		c.pressed.connect(func(): ring_clicked.emit())
 		_inbox.add_child(c)
-	var list := Corp.prompts()
-	if not Game.can_notice():
+	var list := Game.comms.pending()
+	if not Game.presence.can_notice():
 		if not list.is_empty():
 			var p := UI.panel(Color(UI.INK, 0.7), 12, 10)
 			p.add_child(UI.wrap("Something buzzed in the office. You can't tell what from here (no phone on you).", 12, UI.DIM))
@@ -704,13 +696,13 @@ func _rebuild_lists() -> void:
 	for i in mini(list.size(), 4):
 		var pd: Dictionary = list[i]
 		var c := UI.Clicky.new()
-		c.setup(Color(UI.PANEL, 0.95), Color(Content.person_color(str(pd.from)), 0.8), 1, false, 12)
+		c.setup(Color(UI.PANEL, 0.95), Color(Game.npcs.color(str(pd.from)), 0.8), 1, false, 12)
 		var h := UI.hbox(9)
 		h.add_child(UI.avatar(str(pd.from), 30))
 		var col := UI.vbox(3)
 		col.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		var top := UI.hbox(6)
-		var nm := UI.label(Content.person_name(str(pd.from)), 13, UI.TEXT, true)
+		var nm := UI.label(Game.npcs.display_name(str(pd.from)), 13, UI.TEXT, true)
 		nm.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		nm.clip_text = true
 		top.add_child(nm)

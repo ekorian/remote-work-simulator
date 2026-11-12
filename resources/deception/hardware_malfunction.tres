@@ -1,0 +1,42 @@
+[gd_resource type="Resource" script_class="ClaimDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/claim_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = "hardware_malfunction"
+title = "Hardware malfunction"
+line = "My {subject} just died. I can hear you but that's about it."
+subjects = ["webcam", "microphone", "headset", "docking station"]
+contexts = ["chat", "meeting", "call"]
+base = 57
+duration = 300
+cover = 30
+reuse_penalty = 18
+risk = 30
+contradicted_by = ["video_meeting"]
+conflicts = []
+evidence = {"printer_jam": 12}
+followups = [{"kind": "event", "event": "it_hardware_check", "after": [40, 90], "chance": 50}]
+strength = "Gets you out of being on camera, and it lasts five hours."
+weakness = "For those five hours, joining ANY call on camera exposes it: use the phone. IT may run a hardware diagnostic, which is a device scan."
+accepted = "Tech, eh. Join by phone next time. I'll ask IT to send a replacement."
+rejected = "It worked fine in standup."
+exposed = {"default": "Your {subject} seems to have made a full recovery. I can see and hear you perfectly."}
+recoveries = [
+  {
+    "t": "\"I borrowed my neighbour's.\"",
+    "a": "bluff",
+    "p": 50,
+    "ok": {"claim_status": "patched", "say": "Resourceful. OK."},
+    "ko": {"susp": 7, "claim_status": "exposed", "say": "It's the same one. It has your sticker on it."}
+  },
+  {
+    "t": "\"It comes and goes. Loose cable. Very technical.\"",
+    "a": "jargon",
+    "p": 48,
+    "tags": ["jargon"],
+    "ok": {"claim_status": "patched", "say": "Get IT to look at it."},
+    "ko": {"susp": 6, "claim_status": "exposed", "say": "It's wireless."}
+  }
+]

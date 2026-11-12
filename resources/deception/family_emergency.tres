@@ -1,0 +1,45 @@
+[gd_resource type="Resource" script_class="ClaimDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/claim_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = "family_emergency"
+title = "Family emergency"
+line = "Family thing. It's my {subject}. I'd rather not get into it."
+subjects = ["grandmother", "brother", "aunt", "landlord (he's like family)"]
+contexts = ["chat", "meeting", "call"]
+base = 62
+duration = 120
+cover = 120
+reuse_penalty = 30
+risk = 15
+contradicted_by = ["social_post", "video_meeting", "auto_message"]
+conflicts = ["prod_incident", "conflicting_meeting", "medical"]
+followups = [{"kind": "event", "event": "family_checkin", "after": [90, 150], "chance": 70}]
+strength = "Nobody argues with it, and it covers two full hours."
+weakness = "Works once. Cheerful chat in group channels exposes it, and Martin WILL ask about your relative later: remember who it was."
+accepted = "Of course, of course. Family comes first. (After Q3.)"
+rejected = "That's a lot of family for one week. How big is this family?"
+exposed = {
+  "default": "For someone in the middle of a family emergency, you seem remarkably chipper.",
+  "social_post": "You just dropped a party emoji in #general. During your family emergency.",
+  "video_meeting": "You're in a meeting. Smiling. How is your {subject}?",
+  "auto_message": "You're replying 'Love this!' to Kevin. Is your {subject} OK or not?"
+}
+recoveries = [
+  {
+    "t": "\"It's how I cope. I keep busy.\"",
+    "a": "bluff",
+    "p": 50,
+    "ok": {"susp": -1, "claim_status": "patched", "say": "...Fair. Take care of yourself."},
+    "ko": {"susp": 9, "claim_status": "exposed", "say": "With party emojis."}
+  },
+  {
+    "t": "\"False alarm. Everyone's fine. Thanks for asking.\"",
+    "a": "bluff",
+    "p": 58,
+    "ok": {"claim_status": "patched", "say": "Glad to hear it. So you're back, then."},
+    "ko": {"susp": 7, "claim_status": "exposed", "say": "That was a fast emergency."}
+  }
+]

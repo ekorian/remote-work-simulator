@@ -1,0 +1,101 @@
+[gd_resource type="Resource" script_class="DialogueDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/dialogue_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = "senior"
+beats = [
+  {
+    "who": "helena",
+    "no_excuse": true,
+    "text": "Helena Voss. I have nine minutes. In one sentence: what do you do here, and why should I keep paying for it?",
+    "choices": [
+      {
+        "t": "\"I turn ambiguity into alignment at scale.\"",
+        "a": "jargon",
+        "p": 50,
+        "tags": ["jargon", "video"],
+        "ok": {
+          "ill": 6,
+          "susp": -3,
+          "say": "Helena: I have no idea what that means. I'm putting it in the board deck."
+        },
+        "ko": {"susp": 10, "say": "Helena: I wrote that sentence. In 2014. Try again next quarter."}
+      },
+      {
+        "t": "\"I keep Martin's numbers green.\"",
+        "a": "flatter",
+        "p": 58,
+        "tags": ["video"],
+        "ok": {"susp": -4, "rel": 4, "say": "Helena: Martin's numbers ARE green. Hm. Fine."},
+        "ko": {"susp": 8, "say": "Helena: Martin's numbers are the reason I'm here."}
+      },
+      {
+        "t": "Give a precise account of real responsibilities",
+        "a": "real_answer",
+        "ok": {"susp": -10, "ill": 8, "say": "Helena: Clear. Concrete. Rare. Thank you."}
+      }
+    ],
+    "silence": {"susp": 12, "say": "Helena: Nothing. Remarkable. Martin, who is this?"}
+  },
+  {
+    "who": "helena",
+    "no_excuse": true,
+    "text": "We are 'right-sizing'. Give me one name from your team I could lose tomorrow without noticing.",
+    "choices": [
+      {
+        "t": "\"Kevin.\"",
+        "a": "blame",
+        "p": 60,
+        "tags": ["video"],
+        "ok": {"susp": -3, "say": "Helena: The ninja. Yes. Interesting."},
+        "ko": {"susp": 7, "say": "Helena: Kevin said you."}
+      },
+      {
+        "t": "\"Honestly? Half the meetings.\"",
+        "a": "bluff",
+        "p": 46,
+        "tags": ["video"],
+        "ok": {"ill": 5, "susp": -4, "say": "Helena: Ha. Finally someone says it."},
+        "ko": {"susp": 8, "say": "Helena: I asked for a name."}
+      },
+      {
+        "t": "Volunteer to run the efficiency review yourself.",
+        "a": "volunteer",
+        "ok": {"susp": -8, "ill": 6, "task": "okr", "say": "Helena: Ambitious. You have until Friday."}
+      }
+    ],
+    "silence": {"susp": 9, "say": "Helena: Loyalty, or you weren't listening. Either way."}
+  },
+  {
+    "who": "martin",
+    "no_excuse": true,
+    "text": "(Martin, sweating.) Helena, {name} is one of my best. Aren't you, {name}? Tell her about... the thing. The initiative.",
+    "choices": [
+      {
+        "t": "Invent an initiative on the spot.",
+        "a": "bluff",
+        "p": 48,
+        "tags": ["video", "jargon"],
+        "ok": {
+          "ill": 6,
+          "rel": 6,
+          "task": "halibut",
+          "say": "Helena: 'Project Halibut'. I want it on my desk Monday."
+        },
+        "ko": {"susp": 9, "rel": -6, "say": "Helena: That is the plot of a film."}
+      },
+      {
+        "t": "\"Martin's being modest. It was all his idea.\"",
+        "a": "flatter",
+        "p": 66,
+        "tags": ["video"],
+        "ok": {"susp": -5, "rel": 10, "say": "Martin: ...I'll remember that, {name}."},
+        "ko": {"susp": 5, "say": "Helena: Then Martin can explain it."}
+      }
+    ],
+    "silence": {"susp": 10, "rel": -8, "say": "Martin: ...{name}. Please."}
+  }
+]
+after = {"susp": -2}

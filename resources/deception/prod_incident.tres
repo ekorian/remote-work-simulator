@@ -1,0 +1,51 @@
+[gd_resource type="Resource" script_class="ClaimDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/claim_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = "prod_incident"
+title = "Production incident"
+line = "I'm firefighting a production incident. All hands."
+contexts = ["chat", "meeting", "call", "ticket"]
+base = 42
+duration = 60
+cover = 60
+reuse_penalty = 18
+risk = 65
+contradicted_by = ["no_incident"]
+conflicts = ["internet_outage", "computer_crash", "medical", "family_emergency"]
+evidence = {"incident_active": 40}
+effect = {"ill": 5, "extend": 240}
+followups = [
+  {
+    "kind": "verify",
+    "fact": "no_incident",
+    "who": "priya",
+    "after": [8, 14],
+    "ok_line": "Confirmed, prod is on fire and {name} is in the channel. Leave them alone."
+  },
+  {"kind": "event", "event": "postmortem_request", "after": [45, 80], "chance": 70}
+]
+strength = "Makes you look like a hero: Productivity Illusion rises, and nobody interrupts a firefighter."
+weakness = "Only believable when something really is on fire. Otherwise Martin asks around. Heroes get asked to write the postmortem."
+accepted = "Go go go. I'll keep everyone off your back."
+rejected = "What incident? The dashboard is all green."
+exposed = {"default": "I asked Priya about the incident. She said 'what incident'. So did everyone else."}
+recoveries = [
+  {
+    "t": "\"I caught it before anyone noticed. You're welcome.\"",
+    "a": "bluff",
+    "p": 44,
+    "tags": ["jargon"],
+    "ok": {"ill": 4, "claim_status": "patched", "say": "...Proactive. I like it. Write it up."},
+    "ko": {"susp": 9, "claim_status": "exposed", "say": "There are no logs of anything happening. At all."}
+  },
+  {
+    "t": "\"It was in staging. Still counts.\"",
+    "a": "bluff",
+    "p": 50,
+    "ok": {"claim_status": "patched", "say": "Staging is not production. But fine."},
+    "ko": {"susp": 7, "claim_status": "exposed", "say": "Staging has been down since March."}
+  }
+]

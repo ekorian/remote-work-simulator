@@ -1,0 +1,13 @@
+[gd_resource type="Resource" script_class="EventDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/event_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = "combo_deals"
+title = "Combo deals"
+kind = "mail"
+from = "it"
+subject = "[SPAM?] ShadyDeals.biz - COMBO WEEK"
+body = "Some of our products are BETTER TOGETHER:\n\n- MouseMover + Chatbot Team = GHOST SHIFT (routine pings never reach you)\n- MouseMover + Keyboard Duck = DESK THEATRE (less Heat, but they jam together)\n- Meeting Assistant + AI Doppelganger = EMPTY CHAIR (your clone attends MANDATORY meetings)\n\nCombinations switch on by themselves when both gadgets are running. ShadowIT shows which are active.\n\nWARNING: worn gadgets FAIL. Failures have CONSEQUENCES. Service them."
+schedule = [{"day": 3, "at": 541}]

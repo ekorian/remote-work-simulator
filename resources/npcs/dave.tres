@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="NpcDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/npc_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = "dave"
+display_name = "Dave Kowalski"
+role = "Senior Engineer (allegedly)"
+color = Color(1, 0.8196, 0.4, 1)
+kind = "coworker"
+gullibility = 8.0
+start_relationship = 60.0
+look = {"skin": 2, "hair": 6, "hair_color": 1, "shirt": 4, "pants": 2, "accessory": 0, "stache": true}

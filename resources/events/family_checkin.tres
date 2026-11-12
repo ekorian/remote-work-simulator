@@ -1,0 +1,45 @@
+[gd_resource type="Resource" script_class="EventDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/event_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = "family_checkin"
+title = "How's the family?"
+kind = "chat"
+from = "martin"
+window = 24
+no_excuse = true
+text = "Meant to ask: how are things with your family emergency? Who was it again?"
+choices = [
+  {
+    "t": "\"My grandmother. She's much better.\"",
+    "a": "bluff",
+    "match": "grandmother",
+    "ok": {"susp": -2, "rel": 2, "say": "Glad to hear it. Give her my best."},
+    "ko": {"susp": 9, "claim_status": "exposed", "say": "Yesterday it was someone else. I wrote it down."}
+  },
+  {
+    "t": "\"My brother. Long story.\"",
+    "a": "bluff",
+    "match": "brother",
+    "ok": {"susp": -2, "rel": 2, "say": "Brothers, eh. Glad it's sorted."},
+    "ko": {"susp": 9, "claim_status": "exposed", "say": "Yesterday it was someone else. I wrote it down."}
+  },
+  {
+    "t": "\"My aunt. She's stable.\"",
+    "a": "bluff",
+    "match": "aunt",
+    "ok": {"susp": -2, "rel": 2, "say": "Good. Take the time you need."},
+    "ko": {"susp": 9, "claim_status": "exposed", "say": "Yesterday it was someone else. I wrote it down."}
+  },
+  {
+    "t": "\"My landlord. He's like family.\"",
+    "a": "bluff",
+    "match": "landlord (he's like family)",
+    "ok": {"susp": -1, "say": "...Right. Glad he's OK."},
+    "ko": {"susp": 9, "claim_status": "exposed", "say": "Yesterday it was someone else. I wrote it down."}
+  }
+]
+expire = {"susp": 5, "say": "No answer. Hope everything's alright. I'll ask again."}
+schedule = []

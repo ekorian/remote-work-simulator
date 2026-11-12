@@ -1,0 +1,38 @@
+[gd_resource type="Resource" script_class="EventDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/event_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = "vpn_trouble"
+title = "Internet outage excuse"
+kind = "chat"
+from = "martin"
+window = 18
+once = true
+text = "Half the team is reporting connection trouble this morning. Are you affected too?"
+choices = [
+  {
+    "t": "\"Yes! Totally down. I'm typing this from my phone.\"",
+    "a": "bluff",
+    "ok": {"claim": "internet_outage", "say": "Ugh. OK, sit tight. I'll have IT confirm it on your side."}
+  },
+  {
+    "t": "\"It's flaky. Comes and goes.\"",
+    "a": "bluff",
+    "p": 62,
+    "ok": {"cover": 20, "say": "Same as everyone. Do what you can."},
+    "ko": {"susp": 5, "say": "IT says your line is the only stable one."}
+  },
+  {
+    "t": "\"Nope, rock solid here.\"",
+    "a": "honest",
+    "ok": {
+      "susp": -2,
+      "task": "oncall",
+      "say": "Perfect. Then you can cover Kevin's on-call handover while the others are down."
+    }
+  }
+]
+expire = {"susp": 5, "say": "No answer. I'll assume you're fine."}
+schedule = [{"day": 2, "at": 625}]

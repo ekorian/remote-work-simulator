@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="TaskDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/task_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = "halibut"
+key = "SYN-142"
+title = "Project Halibut: deliver the Q3 milestone for Zentrix"
+desc = "Neither the project nor the customer exists. Somehow there is now a deadline."
+prio = 1
+effort = 3
+due_day = 1
+due_t = 960

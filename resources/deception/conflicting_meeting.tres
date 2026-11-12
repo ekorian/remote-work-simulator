@@ -1,0 +1,49 @@
+[gd_resource type="Resource" script_class="ClaimDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/claim_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = "conflicting_meeting"
+title = "Conflicting meeting"
+line = "I'm double-booked with the {subject}. Can't get out of it."
+subjects = ["vendor sync", "client discovery call", "architecture guild", "skip-level"]
+contexts = ["chat", "meeting"]
+base = 46
+duration = 45
+cover = 45
+reuse_penalty = 14
+risk = 55
+contradicted_by = ["calendar_free"]
+conflicts = ["internet_outage", "medical", "family_emergency"]
+evidence = {"calendar_block": 34}
+followups = [
+  {
+    "kind": "verify",
+    "fact": "calendar_free",
+    "after": [5, 9],
+    "ok_line": "Right, I see it on your calendar. Carry on."
+  },
+  {"kind": "event", "event": "other_meeting_notes", "after": [50, 80], "chance": 35}
+]
+strength = "Cheap and reusable. With a calendar block over the time, it checks out by itself."
+weakness = "Martin looks at your calendar within minutes. No block, no story. He may ask for notes afterwards."
+accepted = "Client first! Love the hustle."
+rejected = "Which meeting? I'm looking at your calendar and it's a desert."
+exposed = {"default": "I just checked your calendar. There is no {subject}. There is nothing. Explain?"}
+recoveries = [
+  {
+    "t": "\"It was an ad-hoc call. No invite.\"",
+    "a": "bluff",
+    "p": 48,
+    "ok": {"susp": -1, "claim_status": "patched", "say": "Put it in the calendar next time. Visibility!"},
+    "ko": {"susp": 8, "claim_status": "exposed", "say": "With whom? Give me a name."}
+  },
+  {
+    "t": "\"Calendar sync is broken again. Ask IT.\"",
+    "a": "blame",
+    "p": 44,
+    "ok": {"claim_status": "patched", "say": "Ugh. I'll raise a ticket. (I won't.)"},
+    "ko": {"susp": 7, "claim_status": "exposed", "say": "IT says sync is fine."}
+  }
+]

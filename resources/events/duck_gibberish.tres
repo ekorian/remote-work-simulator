@@ -1,0 +1,47 @@
+[gd_resource type="Resource" script_class="EventDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/event_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = "duck_gibberish"
+title = "Gibberish in chat"
+kind = "chat"
+from = "martin"
+thread = "team"
+window = 16
+no_excuse = true
+facts = ["auto_message", "social_post"]
+text = "{name}, you just posted 'jjjjjjjjjkkkkkl;;;;' to the whole team. Forty times. What does it mean?"
+choices = [
+  {
+    "t": "\"It's a regex. Don't worry about it.\"",
+    "a": "jargon",
+    "p": 54,
+    "tags": ["jargon"],
+    "ok": {"ill": 3, "say": "Oh. Regex. Say no more."},
+    "ko": {"susp": 7, "say": "Priya says that's not a regex."}
+  },
+  {
+    "t": "\"My cat walked across the keyboard.\"",
+    "a": "bluff",
+    "p": 52,
+    "ok": {"say": "Ha! Classic cat."},
+    "ko": {"susp": 7, "say": "For forty lines?"}
+  },
+  {
+    "t": "\"Encrypted status update. Security best practice.\"",
+    "a": "jargon",
+    "p": 42,
+    "tags": ["jargon"],
+    "ok": {"ill": 5, "say": "I love that. Everyone should do that."},
+    "ko": {"susp": 8, "say": "Security says please never do that again."}
+  },
+  {
+    "t": "Admit a machine was typing for you.",
+    "a": "honest",
+    "ok": {"susp": 11, "say": "A... duck. Was doing your job. I need to sit down."}
+  }
+]
+expire = {"susp": 9, "say": "No explanation for the keyboard smash. Noted."}
+schedule = []

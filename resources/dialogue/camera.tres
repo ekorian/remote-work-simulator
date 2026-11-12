@@ -1,0 +1,30 @@
+[gd_resource type="Resource" script_class="DialogueDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/dialogue_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = "camera"
+beats = [
+  {
+    "who": "martin",
+    "text": "{name}, your camera looks... are you in bed?",
+    "choices": [
+      {
+        "t": "\"It's an ergonomic floor desk.\"",
+        "a": "bluff",
+        "p": 58,
+        "tags": ["video"],
+        "ok": {"say": "Huh. Send me the link."},
+        "ko": {"susp": 6, "say": "That's a pillow."}
+      },
+      {
+        "t": "\"Bandwidth issues - turning my camera off.\"",
+        "a": "bluff",
+        "p": 70,
+        "ok": {"say": "OK, we'll miss your face."},
+        "ko": {"susp": 4, "say": "Everyone else's works fine."}
+      }
+    ]
+  }
+]

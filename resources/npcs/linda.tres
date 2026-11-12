@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="NpcDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/npc_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = "linda"
+display_name = "Linda from HR"
+role = "People & Culture & Compliance"
+color = Color(1, 0.6196, 0.7961, 1)
+kind = "hr"
+thread = "general"
+has_dm = false
+gullibility = -10.0
+start_relationship = 45.0
+look = {"skin": 0, "hair": 1, "hair_color": 4, "shirt": 5, "pants": 1, "accessory": 1}

@@ -1,0 +1,12 @@
+[gd_resource type="Resource" script_class="EventDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/event_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = "fun"
+title = "Mandatory Fun: Virtual Team Building"
+kind = "meeting"
+from = "linda"
+meeting = {"dur": 45, "script": "fun", "mandatory": true, "who": "linda"}
+schedule = [{"day": 2, "at": 900}]

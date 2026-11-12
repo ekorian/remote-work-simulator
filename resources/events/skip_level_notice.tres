@@ -1,0 +1,13 @@
+[gd_resource type="Resource" script_class="EventDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/event_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = "skip_level_notice"
+title = "Skip-level invite"
+kind = "mail"
+from = "martin"
+subject = "Thursday 13:00 - Skip-Level with Helena Voss"
+body = "{name},\n\nHelena (SVP, Vertical Synergy) is doing skip-levels and picked YOU. I don't know why. Please don't say anything that makes me look bad.\n\nShe asks real questions. She remembers the answers.\n\nMartin"
+schedule = [{"day": 2, "at": 905}]

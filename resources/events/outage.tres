@@ -1,0 +1,40 @@
+[gd_resource type="Resource" script_class="EventDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/event_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = "outage"
+title = "Outage"
+kind = "chat"
+from = "martin"
+thread = "team"
+text = "PROD IS DOWN. All hands on deck. {name}, what are you seeing?"
+choices = [
+  {
+    "t": "\"Looking at the logs now.\" (Look at nothing.)",
+    "a": "pretend_investigate",
+    "p": 70,
+    "ok": {"ill": 5, "susp": -2, "say": "Good. Keep digging."},
+    "ko": {"susp": 7, "say": "Which logs? Paste them. ...Hello?"}
+  },
+  {
+    "t": "\"Smells like the last deploy.\" (Kevin's.)",
+    "a": "blame",
+    "p": 60,
+    "ok": {"ill": 3, "say": "KEVIN."},
+    "ko": {"susp": 8, "say": "The last deploy was yours. From March."}
+  },
+  {
+    "t": "Roll up your sleeves and fix prod",
+    "a": "fix_bug",
+    "ok": {"susp": -10, "ill": 12, "say": "You FIXED it? I didn't know you could do that."}
+  }
+]
+expire = {"susp": 10, "ill": -5, "say": "Prod was down for an hour and you said nothing."}
+window = 16
+routine = false
+no_excuse = false
+conditions = {}
+pool = ""
+schedule = [{"day": 2, "at": 672}]

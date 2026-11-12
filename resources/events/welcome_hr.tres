@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="EventDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/event_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = "welcome_hr"
+title = "Welcome to Wellness Week!"
+kind = "mail"
+from = "linda"
+subject = "Welcome to Wellness Week!"
+body = "Hi {name},\n\nThis week we celebrate YOU by adding four mandatory meetings about work-life balance.\n\nReminder: remote employees are expected to be 'visibly available' between 09:00 and 17:00. Lunch is 12:00-12:45 and nobody will ask where you are.\n\nStay well (it's a KPI),\nLinda"
+choices = []
+expire = {}
+window = 90
+schedule = [{"day": 0, "at": 700}]

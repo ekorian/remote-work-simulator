@@ -1,0 +1,49 @@
+[gd_resource type="Resource" script_class="NpcDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/npc_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = "martin"
+display_name = "Martin Halloway"
+role = "Manager, Synergy Enablement"
+color = Color(1, 0.549, 0.3529, 1)
+kind = "manager"
+is_boss = true
+chattiness = 1.0
+gullibility = 0.0
+start_relationship = 50.0
+look = {
+  "skin": 0,
+  "hair": 4,
+  "hair_color": 5,
+  "shirt": 1,
+  "pants": 1,
+  "accessory": 1,
+  "tie": true,
+  "stache": true
+}
+mood_lines = {
+  "pleased": [
+    "Honestly, {name}, you're one of the few people I don't worry about.",
+    "Great energy this week. Keep leaning in."
+  ],
+  "annoyed": [
+    "Not loving the response times today, {name}.",
+    "Let's tighten up, yeah? I shouldn't have to chase."
+  ],
+  "suspicious": [
+    "I'm going to be honest: I can't picture what your day looks like.",
+    "I've started keeping notes. Just FYI. For alignment."
+  ],
+  "furious": [
+    "I am THIS close to looping in HR.",
+    "Every time I look for you, you're somewhere else. Explain that to me."
+  ]
+}
+escalation_lines = [
+  "",
+  "{name}, I'm getting... vibes. Not great ones. Let's be more visible, yeah?",
+  "New process, just for you: I want a status line from you every hour. I'll be checking.",
+  "Formal heads-up: I've opened a file with People & Culture. Every gap from now on gets written down."
+]

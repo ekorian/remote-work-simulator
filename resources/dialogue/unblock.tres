@@ -1,0 +1,38 @@
+[gd_resource type="Resource" script_class="DialogueDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/dialogue_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = "unblock"
+beats = [
+  {
+    "who": "priya",
+    "no_excuse": true,
+    "text": "Hi. Platform here. Martin says we're blocking you? We've never received anything from you. What do you need?",
+    "choices": [
+      {
+        "t": "\"I need the, uh, acceptance criteria. Signed.\"",
+        "a": "jargon",
+        "p": 54,
+        "tags": ["jargon"],
+        "ok": {"say": "Priya: ...I'll send you a doc. Give me a day."},
+        "ko": {"susp": 9, "say": "Martin: So you weren't blocked."}
+      },
+      {
+        "t": "\"It resolved itself while we were dialling in.\"",
+        "a": "bluff",
+        "p": 48,
+        "ok": {"say": "Martin: Great! Love a quick win."},
+        "ko": {"susp": 8, "say": "Priya: Nothing was ever open."}
+      },
+      {
+        "t": "Ask a real, specific technical question",
+        "a": "real_answer",
+        "ok": {"susp": -6, "ill": 5, "say": "Priya: Oh. That's a good question, actually. Here's the answer."}
+      }
+    ],
+    "silence": {"susp": 9, "say": "Martin: ...{name}? We're all here for YOU."}
+  }
+]
+after = {"susp": -1}

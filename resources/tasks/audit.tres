@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="TaskDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/task_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = "audit"
+key = "SYN-124"
+title = "Annual licence audit spreadsheet (1,100 rows)"
+desc = "Row 1: SynerCorp owns 400 licences for software that was discontinued in 2011."
+prio = 2
+effort = 2
+due_day = 1
+due_t = 1000

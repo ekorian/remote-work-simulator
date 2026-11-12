@@ -1,0 +1,31 @@
+[gd_resource type="Resource" script_class="EventDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/event_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = "it_survey"
+title = "It survey"
+kind = "chat"
+from = "it"
+thread = ""
+text = "MANDATORY SURVEY: rate your IT experience from 1 to 10."
+choices = [
+  {
+    "t": "\"10.\" (Fastest answer.)",
+    "a": "react",
+    "ok": {"ill": 1, "say": "Thank you for your feedback. Your ticket from 2023 remains open."}
+  },
+  {
+    "t": "Write detailed, constructive feedback",
+    "a": "real_answer",
+    "ok": {"ill": 4, "susp": -2, "say": "This is the first response we've ever received with words in it."}
+  }
+]
+expire = {"susp": 2, "say": "Survey incomplete. Your manager has been notified."}
+window = 30
+routine = true
+no_excuse = true
+conditions = {}
+pool = "peer"
+schedule = []

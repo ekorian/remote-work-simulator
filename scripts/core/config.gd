@@ -1,4 +1,5 @@
-extends Node
+class_name Cfg
+extends RefCounted
 ## Cfg — static tuning tables and helpers. No state lives here.
 
 const VERSION := "0.1.0"
@@ -50,37 +51,7 @@ const SLACK_A := 480           # one full paid day
 # cost        multiplier on shop prices
 # cred        flat bonus/penalty to excuse and bluff chances
 # stress      multiplier on meeting fatigue and desk "soul drain"
-const DIFF_ORDER := ["intern", "survivor", "senior", "unemployed"]
-const DIFFS := {
-	"intern": {
-		"name": "Intern", "tag": "RELAXED", "color": Color("5ad17a"),
-		"susp": 0.6, "work_hp": 2.0, "lethal": false, "recover": 1.4, "window": 1.6,
-		"gadget_fail": 0.6, "event_rate": 0.8, "boss_check": 0.7, "cost": 0.85, "cred": 10, "stress": 0.5,
-		"score": 1.0,
-		"desc": "Nobody expects anything from you. Low suspicion, generous recovery, a forgiving boss and long reaction windows. Work stings a little: 2 HP per action.",
-	},
-	"survivor": {
-		"name": "Corporate Survivor", "tag": "STANDARD", "color": Color("4fb3ff"),
-		"susp": 1.0, "work_hp": 8.0, "lethal": false, "recover": 1.0, "window": 1.0,
-		"gadget_fail": 1.0, "event_rate": 1.0, "boss_check": 1.0, "cost": 1.0, "cred": 0, "stress": 1.0,
-		"score": 1.6,
-		"desc": "The intended experience. Normal suspicion, regular interruptions, moderate automation costs. Work hurts: 8 HP per action.",
-	},
-	"senior": {
-		"name": "Senior Bullshitter", "tag": "HARD", "color": Color("ffb347"),
-		"susp": 1.7, "work_hp": 20.0, "lethal": false, "recover": 0.85, "window": 0.8,
-		"gadget_fail": 1.5, "event_rate": 1.25, "boss_check": 1.5, "cost": 1.15, "cred": -8, "stress": 1.4,
-		"score": 2.6,
-		"desc": "Suspicion x1.7. Frequent manager checks. Gadgets break when you need them most. Work is agony: 20 HP per action.",
-	},
-	"unemployed": {
-		"name": "Professional Unemployed", "tag": "EXTREME", "color": Color("ff5d73"),
-		"susp": 1.5, "work_hp": 999.0, "lethal": true, "recover": 0.85, "window": 0.8,
-		"gadget_fail": 1.3, "event_rate": 1.2, "boss_check": 1.4, "cost": 1.1, "cred": -5, "stress": 1.3,
-		"score": 4.0,
-		"desc": "ANY legitimate work action ends the run instantly. Survive the whole week on avoidance, delegation, deception and automation alone.",
-	},
-}
+const DIFF_ORDER := ["intern", "survivor", "senior", "unemployed"]   ## definitions: resources/balancing
 
 # --- Presence display -------------------------------------------------------
 const PRESENCE := {
@@ -108,18 +79,6 @@ const KEYS := {
 }
 
 
-func _init() -> void:
-	# Input actions are defined in code so the project file stays minimal.
-	for action in KEYS:
-		if InputMap.has_action(action):
-			continue
-		InputMap.add_action(action, 0.2)
-		for key in KEYS[action]:
-			var ev := InputEventKey.new()
-			ev.physical_keycode = key
-			InputMap.action_add_event(action, ev)
-
-
 static func fmt_time(t: float) -> String:
 	var m := int(floor(t))
 	return "%02d:%02d" % [int(m / 60.0), m % 60]
@@ -135,4 +94,5 @@ static func fmt_dur(mins: float) -> String:
 
 
 static func diff(id: String) -> Dictionary:
-	return DIFFS.get(id, DIFFS["survivor"])
+	Db.load_all()
+	return Db.difficulties.get(id, Db.difficulties.get("survivor", {}))

@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="TaskDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/task_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = "pipeline"
+key = "SYN-101"
+title = "Migrate the legacy synergy pipeline to the new synergy pipeline"
+desc = "The new pipeline is the old pipeline with a different logo. Nobody knows what either one does."
+prio = 2
+effort = 3
+due_day = 1
+due_t = 1000

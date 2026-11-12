@@ -1,0 +1,39 @@
+[gd_resource type="Resource" script_class="DialogueDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/dialogue_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = "sync"
+beats = [
+  {
+    "who": "martin",
+    "text": "Thanks for hopping on. Quick sync - what are you working on RIGHT now?",
+    "choices": [
+      {
+        "t": "Name your most urgent ticket with a straight face.",
+        "a": "bluff",
+        "p": 64,
+        "tags": ["video"],
+        "ok": {"susp": -3, "ill": 3, "say": "Good, good. That one matters."},
+        "ko": {"susp": 7, "say": "It doesn't look like you've opened it since Monday."}
+      },
+      {
+        "t": "\"Deep in discovery. Lots of moving parts.\"",
+        "a": "jargon",
+        "p": 66,
+        "tags": ["jargon", "video"],
+        "ok": {"ill": 3, "say": "Discovery. Love it."},
+        "ko": {"susp": 6, "say": "Discover faster."}
+      },
+      {
+        "t": "Walk him through real progress",
+        "a": "real_answer",
+        "ok": {"susp": -7, "ill": 8, "say": "This is great. You should talk more."}
+      }
+    ]
+  }
+]
+pool = ["camera", "opinion"]
+pick = 1
+after = {"susp": -1}

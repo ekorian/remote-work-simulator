@@ -16,10 +16,11 @@ const APPS := [
 ]
 
 var app := "teams"
-var thread := "todd"
+var thread := ""
 var task_id := ""
 var mail_id := ""
 var excuse_for := ""               ## meeting id whose excuse picker is open
+var block_for := ""                ## ticket id whose "it's blocked" picker is open
 var _content: Control
 var _side_buttons: Dictionary = {}
 var _badges: Dictionary = {}
@@ -119,7 +120,7 @@ func _ready() -> void:
 	th.add_child(_title)
 	th.add_child(UI.spacer())
 	var focus := UI.button("Set status: Focusing", func():
-		Corp.set_focus()
+		Game.comms.set_focus()
 		_dirty = true
 	, "os_ghost", 12)
 	focus.tooltip_text = "FAKE WORK. 40 minutes during which nobody expects you to be visibly active. Suspicious the third time in a day."
@@ -155,9 +156,9 @@ func _ready() -> void:
 	Bus.meeting_changed.connect(func(_m): _mark())
 	Bus.gadget_changed.connect(func(_g): _mark())
 	Bus.thing_changed.connect(func(_g): _mark())
-	Game.presence_changed.connect(func(_s): _mark())
-	Game.money_changed.connect(func(_a, _b, _c): _mark())
-	Game.favor_changed.connect(func(_v): _mark())
+	Game.presence.changed.connect(func(_s): _mark())
+	Game.economy.money_changed.connect(func(_a, _b, _c): _mark())
+	Game.economy.favors_changed.connect(func(_v): _mark())
 
 
 func _mark() -> void:
@@ -165,13 +166,15 @@ func _mark() -> void:
 
 
 func open(which: String = "") -> void:
+	if not Game.comms.threads.has(thread):
+		thread = Game.npcs.boss_id()
 	if which != "":
 		app = which
-	elif not Corp.ringing().is_empty():
+	elif not Game.comms.ringing().is_empty():
 		app = "cal"
-	elif not Corp.prompts("chat").is_empty():
+	elif not Game.comms.pending("chat").is_empty():
 		app = "teams"
-		thread = str(Corp.prompts("chat")[0].thread)
+		thread = str(Game.comms.pending("chat")[0].thread)
 	visible = true
 	excuse_for = ""
 	_dirty = true
@@ -186,12 +189,12 @@ func close() -> void:
 func open_app(id: String) -> void:
 	app = id
 	excuse_for = ""
-	Game.touch()
+	Game.presence.touch()
 	_dirty = true
 
 
 func open_prompt(pid: String) -> void:
-	var p := Corp.prompt(pid)
+	var p := Game.comms.prompt(pid)
 	if p.is_empty():
 		return
 	if str(p.kind) == "mail":
@@ -207,18 +210,18 @@ func _process(delta: float) -> void:
 	if not visible or not Game.active:
 		return
 	_t += delta
-	var st: String = str(Game.s.pres.status)
+	var st: String = str(Game.presence.status)
 	var info: Dictionary = Cfg.PRESENCE[st]
-	_status.text = str(info.label) if Game.s.phase == "work" else "After hours"
+	_status.text = str(info.label) if Game.time.phase == "work" else "After hours"
 	_status_dot.add_theme_stylebox_override("panel", UI.sb(info.color, 5))
-	_clock.text = "%s  %s" % [Cfg.DAYS_SHORT[clampi(int(Game.s.day), 0, 4)], Cfg.fmt_time(fposmod(Game.clock(), 1440.0))]
-	var now := float(Game.now()) + fposmod(Game.clock(), 1.0)
+	_clock.text = "%s  %s" % [Cfg.DAYS_SHORT[clampi(int(Game.time.day), 0, 4)], Cfg.fmt_time(fposmod(Game.time.clock(), 1440.0))]
+	var now := float(Game.time.now()) + fposmod(Game.time.clock(), 1.0)
 	for tm in _timers:
 		if not is_instance_valid(tm.bar):
 			continue
 		var left := float(tm.due) - now
-		(tm.bar as Hud.StatBar).value = clampf(left, 0.0, float(tm.window))
-		(tm.bar as Hud.StatBar).color = Color("d6455b") if left < 6.0 else (Color("e0a100") if left < 12.0 else Color("2f9e5b"))
+		(tm.bar as StatBar).value = clampf(left, 0.0, float(tm.window))
+		(tm.bar as StatBar).color = Color("d6455b") if left < 6.0 else (Color("e0a100") if left < 12.0 else Color("2f9e5b"))
 		if tm.label != null and is_instance_valid(tm.label):
 			(tm.label as Label).text = "%d min to answer" % int(maxf(0.0, ceil(left)))
 	if _dirty:
@@ -247,7 +250,7 @@ func _timer_row(due: int, window: int) -> Control:
 	var v := UI.vbox(3)
 	var l := UI.label("", 12, UI.OS_DIM, true)
 	v.add_child(l)
-	var bar := Hud.StatBar.new()
+	var bar := StatBar.new()
 	bar.max_value = maxf(1.0, float(window))
 	bar.custom_minimum_size = Vector2(0, 7)
 	v.add_child(bar)
@@ -265,16 +268,16 @@ func _rebuild() -> void:
 		b.add_theme_stylebox_override("panel", UI.sb(Color(1, 1, 1, 0.16 if on else 0.0), 10, 0, Color.TRANSPARENT, 6, 6))
 		if a.id == app:
 			_title.text = str(a.name)
-	_set_badge("teams", Corp.prompts("chat").size(), Corp.unread_total())
-	_set_badge("mail", Corp.prompts("mail").size(), Corp.unread_mail())
-	_set_badge("tasks", 0, Corp.open_tasks().size())
-	_set_badge("cal", 1 if not Corp.ringing().is_empty() else 0, 0)
-	_set_badge("shadow", 1 if Auto.any_broken() else 0, 0)
+	_set_badge("teams", Game.comms.pending("chat").size(), Game.comms.unread_total())
+	_set_badge("mail", Game.comms.pending("mail").size(), Game.comms.unread_mail())
+	_set_badge("tasks", 0, Game.work.open_tasks().size())
+	_set_badge("cal", 1 if not Game.comms.ringing().is_empty() else 0, 0)
+	_set_badge("shadow", 1 if Game.automation.any_broken() else 0, 0)
 	_build_banner()
-	if not Interact.internet_up():
+	if not Game.home.internet_up():
 		_build_offline()
 		return
-	if Game.s.phase != "work" and app != "shadow":
+	if Game.time.phase != "work" and app != "shadow":
 		var c := _card(30)
 		var v := UI.vbox(8)
 		v.alignment = BoxContainer.ALIGNMENT_CENTER
@@ -319,9 +322,20 @@ func _set_badge(id: String, urgent: int, soft: int) -> void:
 
 func _build_banner() -> void:
 	UI.clear(_banner)
-	var ring := Corp.ringing()
-	_banner.visible = not ring.is_empty() and not Corp.in_call()
+	var ring := Game.comms.ringing()
+	var risky := "desk_message" in Game.deception.forbidden_now()
+	_banner.visible = (not ring.is_empty() and not Game.comms.in_call()) or risky
 	if not _banner.visible:
+		return
+	if ring.is_empty() or Game.comms.in_call():
+		var titles: Array = []
+		for c in Game.deception.live_claims():
+			if "desk_message" in c.contradicted_by:
+				titles.append(str(Game.deception.def(c.type).title).to_lower())
+		var wh := UI.hbox(10)
+		_banner.add_child(wh)
+		wh.add_child(UI.icon("warn", 22, Color("b3243a")))
+		wh.add_child(UI.wrap("You told them: %s. Anything you send from this computer will contradict it. Use your phone, or wait it out." % ", ".join(titles), 14, Color("7a1626")))
 		return
 	var h := UI.hbox(12)
 	_banner.add_child(h)
@@ -362,15 +376,15 @@ func _build_teams() -> void:
 	split.add_child(lc)
 	var lv := UI.vbox(3)
 	lc.add_child(lv)
-	for tid in Content.THREAD_ORDER:
-		var th: Dictionary = Game.s.threads[tid]
-		var info: Dictionary = Content.THREADS[tid]
-		var pending := Corp.prompt_for_thread(tid)
+	for tid in Game.comms.thread_order():
+		var th: Dictionary = Game.comms.threads[tid]
+		var channel := Game.comms.is_channel(tid)
+		var pending := Game.comms.prompt_for_thread(tid)
 		var on: bool = tid == thread
 		var b := UI.Clicky.new()
 		b.setup(Color("e7ecfb") if on else UI.OS_PANEL, Color.TRANSPARENT, 0, true, 8)
 		var h := UI.hbox(8)
-		if str(info.kind) == "dm":
+		if not channel:
 			h.add_child(UI.avatar(tid, 30))
 		else:
 			var hash_l := UI.title("#", 22, UI.OS_DIM)
@@ -379,7 +393,7 @@ func _build_teams() -> void:
 			h.add_child(hash_l)
 		var col := UI.vbox(0)
 		col.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		col.add_child(UI.label(str(info.name).trim_prefix("# "), 14, UI.OS_TEXT, true))
+		col.add_child(UI.label(Game.comms.thread_name(tid).trim_prefix("# "), 14, UI.OS_TEXT, true))
 		var last := ""
 		if not th.msgs.is_empty():
 			last = str(th.msgs[th.msgs.size() - 1].text)
@@ -395,7 +409,7 @@ func _build_teams() -> void:
 		b.add_child(h)
 		b.pressed.connect(func():
 			thread = tid
-			Game.touch()
+			Game.presence.touch()
 			_dirty = true
 		)
 		lv.add_child(b)
@@ -408,14 +422,21 @@ func _build_teams() -> void:
 	var head := UI.margin(null, 16, 12, 16, 10)
 	var hh := UI.hbox(10)
 	head.add_child(hh)
-	var tinfo: Dictionary = Content.THREADS[thread]
-	hh.add_child(_h(str(tinfo.name), 18))
-	if str(tinfo.kind) == "dm" and Content.PEOPLE.has(thread):
-		hh.add_child(UI.label(str(Content.PEOPLE[thread].role), 12, UI.OS_DIM))
+	hh.add_child(_h(Game.comms.thread_name(thread), 18))
+	if not Game.comms.is_channel(thread) and Game.npcs.has(thread):
+		hh.add_child(UI.label(Game.npcs.role(thread), 12, UI.OS_DIM))
+		var mood := Game.npcs.mood(thread)
+		var mcol: Color = NPCManager.MOOD_INFO[mood].color
+		var mp := UI.pill(Game.npcs.mood_label(thread).to_upper(), mcol.darkened(0.35), 9)
+		mp.mouse_filter = Control.MOUSE_FILTER_STOP
+		mp.tooltip_text = "How %s feels about you right now. It changes how readily your lies are believed (%+d%%)." % [Game.npcs.first_name(thread), int(round(Game.npcs.trust(thread)))]
+		hh.add_child(mp)
+		if thread == Game.npcs.boss_id() and Game.npcs.escalation > 0:
+			hh.add_child(UI.pill(Game.npcs.escalation_name().to_upper(), Color("b3243a"), 9, true))
 	hh.add_child(UI.spacer())
-	if Corp.can_react(thread):
+	if Game.comms.can_react(thread):
 		var rb := UI.button("React with an emoji", func():
-			Corp.react(thread)
+			Game.comms.react(thread)
 		, "os_ghost", 12)
 		rb.tooltip_text = "FAKE WORK. Visible engagement: a little Productivity Illusion for 1 energy."
 		hh.add_child(rb)
@@ -428,14 +449,14 @@ func _build_teams() -> void:
 	var sc := UI.scroll(UI.margin(msgs, 16, 12, 16, 12))
 	rv.add_child(sc)
 	_scroll_bottom = sc
-	var list: Array = Game.s.threads[thread].msgs
+	var list: Array = Game.comms.threads[thread].msgs
 	if list.is_empty():
 		msgs.add_child(_dimtext("Nothing here yet. Enjoy it while it lasts."))
 	for m in list.slice(maxi(0, list.size() - 40)):
 		msgs.add_child(_bubble(m))
-	Corp.mark_read(thread) if int(Game.s.threads[thread].unread) > 0 else null
+	Game.comms.mark_read(thread) if int(Game.comms.threads[thread].unread) > 0 else null
 	# Composer / choices
-	var pending := Corp.prompt_for_thread(thread)
+	var pending := Game.comms.prompt_for_thread(thread)
 	var foot := PanelContainer.new()
 	foot.add_theme_stylebox_override("panel", UI.sb(UI.OS_SOFT, 0, 0, Color.TRANSPARENT, 16, 12))
 	rv.add_child(foot)
@@ -450,7 +471,7 @@ func _build_teams() -> void:
 	trow.add_child(timer)
 	if not bool(pending.stalled):
 		var sb := UI.button("\"On it!\"  (stall)", func():
-			Corp.stall(str(pending.id))
+			Game.comms.stall(str(pending.id))
 		, "os_ghost", 12)
 		sb.tooltip_text = "DECEPTION. Buys extra time once. Costs 2 energy."
 		trow.add_child(sb)
@@ -458,10 +479,17 @@ func _build_teams() -> void:
 	var cl := ChoiceList.new()
 	cl.light = true
 	cl.hotkeys = true
+	cl.picker_height = 470.0
 	fv.add_child(cl)
-	cl.show_choices(Corp.choices_of(pending), "chat")
+	# The excuse picker needs the room: it takes over the conversation area.
+	cl.picking_changed.connect(func(on: bool):
+		sc.visible = not on
+		foot.size_flags_vertical = Control.SIZE_EXPAND_FILL if on else Control.SIZE_FILL
+		cl.size_flags_vertical = Control.SIZE_EXPAND_FILL if on else Control.SIZE_FILL
+	)
+	cl.show_choices(Game.comms.choices_of(pending), "chat", str(pending.from))
 	cl.chosen.connect(func(i: int, ex: String):
-		Corp.answer(str(pending.id), i, ex)
+		Game.comms.answer(str(pending.id), i, ex, "desk")
 	)
 
 
@@ -484,7 +512,7 @@ func _bubble(m: Dictionary) -> Control:
 	var meta := UI.hbox(6)
 	if me:
 		meta.alignment = BoxContainer.ALIGNMENT_END
-	meta.add_child(UI.label("You" if me else Content.person_name(who), 12, UI.OS_TEXT, true))
+	meta.add_child(UI.label("You" if me else Game.npcs.display_name(who), 12, UI.OS_TEXT, true))
 	meta.add_child(UI.label(Cfg.fmt_time(float(m.t)), 11, UI.OS_DIM))
 	if kind == "auto":
 		meta.add_child(UI.pill("generated", Color("1f8f4a"), 9))
@@ -526,27 +554,27 @@ func _build_tasks() -> void:
 	var rv := UI.vbox(7)
 	rep.add_child(rv)
 	rv.add_child(_h("Daily status report"))
-	var sent := Game.flag("report_day_%d" % int(Game.s.day))
+	var sent := Game.flag("report_day_%d" % int(Game.time.day))
 	if sent:
-		rv.add_child(_dimtext("Sent. Todd may even have opened it."))
+		rv.add_child(_dimtext("Sent. %s may even have opened it." % Game.npcs.boss_name()))
 	else:
 		rv.add_child(_dimtext("Management loves a report. Nobody reads them, usually."))
-		rv.add_child(_action_button("Generate a fake corporate report", "fake_report", "Big Productivity Illusion boost. Small chance Todd actually reads it.", func(): Corp.fake_report(false)))
-		rv.add_child(_action_button("Write a real, accurate report", "write_report", "", func(): Corp.real_report()))
+		rv.add_child(_action_button("Generate a fake corporate report", "fake_report", "Big Productivity Illusion boost. Small chance %s actually reads it." % Game.npcs.boss_name(), func(): Game.work.fake_report(false)))
+		rv.add_child(_action_button("Write a real, accurate report", "write_report", "", func(): Game.work.real_report()))
 	# Ticket list
 	var lc := _card(8)
 	lc.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	left.add_child(lc)
 	var lv := UI.vbox(5)
 	lc.add_child(UI.scroll(lv))
-	var tasks: Array = Game.s.tasks.duplicate()
+	var tasks: Array = Game.work.tasks.duplicate()
 	tasks.sort_custom(func(a, b):
 		if (a.status == "open") != (b.status == "open"):
 			return a.status == "open"
 		return int(a.due) < int(b.due))
 	if tasks.is_empty():
 		lv.add_child(UI.margin(_dimtext("No tickets. A beautiful, empty board."), 8, 8, 8, 8))
-	var sel := Corp.task(task_id)
+	var sel := Game.work.task(task_id)
 	if sel.is_empty() and not tasks.is_empty():
 		sel = tasks[0]
 		task_id = str(sel.id)
@@ -567,11 +595,11 @@ func _build_tasks() -> void:
 			var pb := UI.bar(Color("2f9e5b"), 6)
 			pb.value = float(t.fake)
 			col.add_child(pb)
-			col.add_child(UI.label("Due %s" % Corp.due_text(int(t.due)), 11, Color("b3243a") if int(t.due) - Game.now() < 90 else UI.OS_DIM, true))
+			col.add_child(UI.label("Due %s" % Game.work.due_text(int(t.due)), 11, Color("b3243a") if int(t.due) - Game.time.now() < 90 else UI.OS_DIM, true))
 		b.add_child(col)
 		b.pressed.connect(func():
 			task_id = str(t.id)
-			Game.touch()
+			Game.presence.touch()
 			_dirty = true
 		)
 		lv.add_child(b)
@@ -596,7 +624,7 @@ func _build_tasks() -> void:
 	grid.add_theme_constant_override("h_separation", 16)
 	grid.add_theme_constant_override("v_separation", 8)
 	dv.add_child(grid)
-	grid.add_child(UI.label("What Todd sees", 13, UI.OS_DIM, true))
+	grid.add_child(UI.label("What %s sees" % Game.npcs.boss_name(), 13, UI.OS_DIM, true))
 	var fb := UI.bar(Color("2f9e5b"), 12)
 	fb.value = float(sel.fake)
 	fb.custom_minimum_size = Vector2(260, 12)
@@ -613,28 +641,55 @@ func _build_tasks() -> void:
 	rh.add_child(UI.label("%d of %d work sessions" % [int(sel.real), int(sel.effort)], 13, UI.OS_TEXT, true))
 	grid.add_child(rh)
 	grid.add_child(UI.label("Deadline", 13, UI.OS_DIM, true))
-	grid.add_child(UI.label(Corp.due_text(int(sel.due)), 13, UI.OS_TEXT, true))
+	grid.add_child(UI.label(Game.work.due_text(int(sel.due)), 13, UI.OS_TEXT, true))
 	if str(sel.by) != "":
 		grid.add_child(UI.label("Being done by", 13, UI.OS_DIM, true))
-		var who: String = "Delegatron AI Intern" if str(sel.by) == "delegatron" else Content.person_name(str(sel.by))
+		var who: String = str(Game.automation.def(str(sel.by)).get("display_name", Game.npcs.display_name(str(sel.by))))
 		grid.add_child(UI.label(who + " (not you)", 13, Color("1f8f4a"), true))
 	if str(sel.status) != "open":
 		dv.add_child(_dimtext(_closed_text(sel), 14))
 		return
+	if str(sel.blocked) != "":
+		grid.add_child(UI.label("Officially", 13, UI.OS_DIM, true))
+		grid.add_child(UI.label("Blocked: %s" % str(Db.claims[str(sel.blocked)].title), 13, Color("9a5b00"), true))
 	dv.add_child(UI.gap(1, 4))
 	dv.add_child(_h("Ways to not do this"))
+	var boss := Game.npcs.boss_name()
 	if float(sel.fake) < 100.0:
-		dv.add_child(_dimtext("At 100% it 'looks done' and usually auto-closes at the deadline. Three or more fake updates make Todd ask for a demo.", 12))
+		dv.add_child(_dimtext("At 100%% it 'looks done' and usually auto-closes at the deadline. Three or more fake updates make %s ask for a demo." % boss, 12))
 	var id: String = str(sel.id)
-	dv.add_child(_action_button("Post a fake progress update", "fake_update", "+22 to 34% reported progress, +Illusion.", func(): Corp.task_fake(id), not Corp.task_looks_done(sel), "Already looks 100% done."))
-	dv.add_child(_action_button("Request clarification of the requirements", "clarify", "Pushes the deadline a full day if Todd buys it. Once per ticket.", func(): Corp.task_clarify(id), not bool(sel.clarified), "Already tried on this ticket."))
-	dv.add_child(_action_button("File a Form 27-B (Scope Change Request)", "change_request", "Buries the ticket in a steering committee forever. One form per day.", func(): Corp.task_change_request(id), not Game.flag("cr_day_%d" % int(Game.s.day)), "Today's form is already filed."))
-	dv.add_child(_action_button("Call in a favour: have Dave do it", "delegate_colleague", "Costs 1 favour (you have %d). Dave does it properly, in the background." % int(Game.s.favor), func(): Corp.task_delegate(id), str(sel.by) == "" and int(Game.s.favor) > 0, "Already delegated." if str(sel.by) != "" else "Nobody owes you a favour. Cover for colleagues to earn one."))
-	if Auto.owns("delegatron"):
-		dv.add_child(_action_button("Delegate to the Delegatron AI Intern", "delegate_ai", "Works in the background while switched on. May hallucinate.", func(): Corp.task_ai(id), str(sel.by) == "" and Auto.working("delegatron") and str(Game.s.autos.ai_task) == "", "Delegatron is off, broken or busy."))
+	dv.add_child(_action_button("Post a fake progress update", "fake_update", "+22 to 34% reported progress, +Illusion.", func(): Game.work.task_fake(id), not Game.work.task_looks_done(sel), "Already looks 100% done."))
+	if block_for == id:
+		var bp := UI.panel(UI.OS_SOFT, 8, 10, 1, UI.OS_LINE)
+		var bv := UI.vbox(6)
+		bp.add_child(bv)
+		var cl := ChoiceList.new()
+		cl.light = true
+		bv.add_child(cl)
+		cl.show_excuses("ticket", Game.npcs.boss_id(), Game.work.blockers())
+		cl.chosen.connect(func(_i: int, ex: String):
+			block_for = ""
+			if ex != "":
+				Game.work.task_block(id, ex)
+			_dirty = true
+		)
+		bv.add_child(UI.button("Never mind", func():
+			block_for = ""
+			_dirty = true
+		, "os_ghost", 12))
+		dv.add_child(bp)
+	else:
+		dv.add_child(_action_button("Tell %s it's blocked..." % boss, "excuse", "Pick a reason. It buys the ticket time, and goes on record: touching the ticket afterwards contradicts it.", func():
+			block_for = id
+		, str(sel.blocked) == "", "Already reported as blocked."))
+	dv.add_child(_action_button("Open a clarification request with another team", "clarify", "A paper trail: 'waiting for another team' will check out. Once per ticket.", func(): Game.work.task_clarify(id), not bool(sel.clarified), "Already open on this ticket."))
+	dv.add_child(_action_button("File a Form 27-B (Scope Change Request)", "change_request", "May bury the ticket in a steering committee forever. Either way the form backs up a 'process blocker'. One per day.", func(): Game.work.task_change_request(id), not Game.flag("cr_day_%d" % Game.time.day), "Today's form is already filed."))
+	dv.add_child(_action_button("Call in a favour: have Dave do it", "delegate_colleague", "Costs 1 favour (you have %d). Dave does it properly, in the background." % Game.economy.favors, func(): Game.work.task_delegate(id), str(sel.by) == "" and Game.economy.favors > 0, "Already delegated." if str(sel.by) != "" else "Nobody owes you a favour. Cover for colleagues to earn one."))
+	if Game.automation.can("do_tickets") or str(Game.automation.autos.ai_task) != "":
+		dv.add_child(_action_button("Hand it to your AI Doppelganger", "delegate_ai", "It works the ticket in the background while switched on. It may hallucinate.", func(): Game.work.task_ai(id), str(sel.by) == "" and Game.automation.can("do_tickets") and str(Game.automation.autos.ai_task) == "", "Your clone is off, broken or busy."))
 	dv.add_child(UI.gap(1, 6))
 	dv.add_child(_h("The other way"))
-	dv.add_child(_action_button("Do the actual work (45 min session)", "work_task", "Real progress. Todd would be thrilled. You would not.", func(): Corp.task_work(id), not Game.busy(), "You're busy."))
+	dv.add_child(_action_button("Do the actual work (45 min session)", "work_task", "Real progress. %s would be thrilled. You would not." % boss, func(): Game.work.task_work(id), not Game.activities.busy(), "You're busy."))
 
 
 func _closed_text(t: Dictionary) -> String:
@@ -645,14 +700,14 @@ func _closed_text(t: Dictionary) -> String:
 					return "Closed. It 'looked done', so the system closed it. Nothing was ever built."
 				"me":
 					return "Closed. You did this one. With your own hands. We don't talk about it."
-				"delegatron":
-					return "Closed by your AI intern. You contributed the electricity."
 				_:
-					return "Closed by %s on your behalf. Teamwork." % Content.person_name(str(t.how))
+					if Db.gadgets.has(str(t.how)):
+						return "Closed by your AI clone. You contributed the electricity."
+					return "Closed by %s on your behalf. Teamwork." % Game.npcs.display_name(str(t.how))
 		"cancelled":
 			return "Descoped: pending steering committee review (est. Q4). It will never come back."
 		"failed":
-			return "Failed. The deadline came and there was nothing to show. Todd remembers."
+			return "Failed. The deadline came and there was nothing to show. %s remembers." % Game.npcs.boss_name()
 	return ""
 
 
@@ -680,24 +735,24 @@ func _status_pill(t: Dictionary) -> Control:
 func _action_button(text: String, act: String, hint: String, cb: Callable, ok: bool = true, why: String = "") -> Control:
 	## A SynerOS action row. The badge and cost come straight from Actions,
 	## so real work is always labelled the same way.
-	var badge := Actions.badge(act)
-	var check := Actions.can(act)
+	var badge := Game.work.badge(act)
+	var check := Game.work.can(act)
 	if ok and not check.ok:
 		ok = false
 		why = str(check.why)
-	var view := {"text": text, "badge": badge, "odds": -1.0, "ok": ok, "why": why, "cost": Actions.energy_cost(act)}
+	var view := {"text": text, "badge": badge, "odds": -1.0, "ok": ok, "why": why, "cost": Game.work.energy_cost(act)}
 	var c := UI.choice(view, Callable(), true)
 	if hint != "" and ok:
 		var col: VBoxContainer = c.get_child(0).get_child(0)
 		col.add_child(UI.wrap(hint, 11, UI.OS_DIM))
 	var armed := [false]
 	c.pressed.connect(func():
-		if Actions.lethal(act) and not armed[0]:
+		if Game.work.lethal(act) and not armed[0]:
 			armed[0] = true
 			Bus.sfx.emit("bad")
 			Bus.toast.emit("That is REAL WORK. On this difficulty it ends your run. Click again if you mean it.", "bad")
 			return
-		Game.touch()
+		Game.presence.touch()
 		cb.call()
 		_dirty = true
 	)
@@ -713,17 +768,19 @@ func _meeting_buttons(parent: Control, m: Dictionary) -> void:
 	var st: String = str(m.state)
 	if st == "ringing":
 		parent.add_child(UI.button("Join", func(): join_requested.emit(mid), "os", 13))
-	if not Corp.can_dodge(m):
+	if not Game.comms.can_dodge(m):
 		if bool(m.no_dodge) and st in ["upcoming", "ringing"]:
 			parent.add_child(UI.pill("CANNOT BE AVOIDED", Color("b3243a"), 10))
 		return
-	if Auto.owns("loopcam"):
-		var lb := UI.button("Send LoopCam", func(): Corp.send_loop(mid), "os_ghost", 12)
-		lb.tooltip_text = "DELEGATE. Your webcam loop attends instead. Needs LoopCam switched on and today's loop recorded at the company laptop."
+	if Game.automation.has("attend_meetings"):
+		var lb := UI.button("Send your clone", func(): Game.comms.send_clone(mid), "os_ghost", 12)
+		var why := Game.comms.can_send_clone(m)
+		lb.tooltip_text = "AUTOMATION. Your AI Doppelganger attends instead of you." if why == "" else why
+		lb.disabled = why != ""
 		parent.add_child(lb)
-	var cb := UI.button("Decline: conflict", func(): Corp.decline_conflict(mid), "os_ghost", 12)
+	var cb := UI.button("Decline: conflict", func(): Game.comms.decline_conflict(mid), "os_ghost", 12)
 	cb.tooltip_text = "BUREAUCRACY. Only works if one of your own calendar blocks overlaps this meeting. The system approves it automatically."
-	cb.disabled = not Corp.conflicts(m)
+	cb.disabled = not Game.comms.conflicts(m)
 	parent.add_child(cb)
 	if not bool(m.excuse_tried):
 		parent.add_child(UI.button("Excuse...", func():
@@ -731,7 +788,7 @@ func _meeting_buttons(parent: Control, m: Dictionary) -> void:
 			_dirty = true
 		, "os_ghost", 12))
 	if st == "ringing" and bool(m.surprise):
-		parent.add_child(UI.button("Reject", func(): Corp.reject_call(mid), "os_danger", 12))
+		parent.add_child(UI.button("Reject", func(): Game.comms.reject_call(mid), "os_danger", 12))
 
 
 func _build_cal() -> void:
@@ -742,11 +799,11 @@ func _build_cal() -> void:
 	split.add_child(lc)
 	var lv := UI.vbox(8)
 	lc.add_child(UI.scroll(lv))
-	lv.add_child(_h("%s - today" % Game.day_name(), 18))
-	var meetings := Corp.meetings_today()
+	lv.add_child(_h("%s - today" % Game.time.day_name(), 18))
+	var meetings := Game.comms.meetings_today()
 	if meetings.is_empty():
 		lv.add_child(_dimtext("No meetings. Suspicious."))
-	var now_t := int(Game.s.t)
+	var now_t := int(Game.time.minute)
 	for m in meetings:
 		var is_block: bool = str(m.kind) == "block"
 		var st: String = str(m.state)
@@ -793,13 +850,11 @@ func _build_cal() -> void:
 				var cl := ChoiceList.new()
 				cl.light = true
 				v.add_child(cl)
-				cl.show_choices([{"t": "Make an excuse...", "a": "excuse", "excuse": true}], "chat")
-				cl._picking = 0
-				cl.refresh()
+				cl.show_excuses("meeting", str(m.who) if Game.npcs.has(str(m.who)) else Game.npcs.boss_id())
 				cl.chosen.connect(func(_i: int, ex: String):
 					excuse_for = ""
 					if ex != "":
-						Corp.decline_excuse(str(m.id), ex)
+						Game.comms.decline_excuse(str(m.id), ex)
 					_dirty = true
 				)
 		lv.add_child(p)
@@ -810,8 +865,8 @@ func _build_cal() -> void:
 	var rv := UI.vbox(8)
 	rc.add_child(rv)
 	rv.add_child(_h("Block your calendar", 18))
-	rv.add_child(_dimtext("A fake meeting shows you as 'In a meeting' (no suspicion for being away), keeps Todd from calling, and lets you auto-decline anything it overlaps. Max 2 per day. Todd sometimes asks what it was."))
-	var badge := Actions.badge("fake_block")
+	rv.add_child(_dimtext("A fake meeting shows you as 'In a meeting' (no suspicion for being away), is evidence for a 'conflicting meeting' excuse, and lets you auto-decline anything it overlaps. Max 2 per day. %s sometimes asks what it was." % Game.npcs.boss_name()))
+	var badge := Game.work.badge("fake_block")
 	rv.add_child(UI.pill(str(badge.text), badge.color.darkened(0.3), 10))
 	var grid := GridContainer.new()
 	grid.columns = 4
@@ -822,26 +877,26 @@ func _build_cal() -> void:
 	while slot < Cfg.WORK_END:
 		var s0 := slot
 		var b := UI.button(Cfg.fmt_time(float(s0)), func():
-			Corp.add_block(s0, 30)
+			Game.comms.add_block(s0, 30)
 			_dirty = true
 		, "os_ghost", 12)
 		var taken := false
 		for m in meetings:
 			if str(m.kind) == "block" and int(m.start) <= s0 and s0 < int(m.start) + int(m.dur):
 				taken = true
-		b.disabled = s0 + 30 <= now_t or taken or Corp.blocks_today() >= 2 or s0 < now_t
+		b.disabled = s0 + 30 <= now_t or taken or Game.comms.blocks_today() >= 2 or s0 < now_t
 		if taken:
 			b.text = "blocked"
 		grid.add_child(b)
 		slot += 30
-	rv.add_child(_dimtext("Blocks used today: %d / 2" % Corp.blocks_today(), 12))
+	rv.add_child(_dimtext("Blocks used today: %d / 2" % Game.comms.blocks_today(), 12))
 	rv.add_child(UI.spacer())
 	rv.add_child(_h("This week"))
 	var wk := UI.hbox(5)
 	rv.add_child(wk)
 	for d in 5:
-		var cur: bool = d == int(Game.s.day)
-		var wp := UI.panel(Color("3b5bdb") if cur else (Color("eef1f8") if d > int(Game.s.day) else Color("dfe3ec")), 8, 8)
+		var cur: bool = d == int(Game.time.day)
+		var wp := UI.panel(Color("3b5bdb") if cur else (Color("eef1f8") if d > int(Game.time.day) else Color("dfe3ec")), 8, 8)
 		wp.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		var wl := UI.label(Cfg.DAYS_SHORT[d], 12, Color.WHITE if cur else UI.OS_DIM, true)
 		wl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -881,7 +936,7 @@ func _build_mail() -> void:
 	split.add_child(lc)
 	var lv := UI.vbox(4)
 	lc.add_child(UI.scroll(lv))
-	var mails: Array = Game.s.mails.duplicate()
+	var mails: Array = Game.comms.mails.duplicate()
 	mails.reverse()
 	if mails.is_empty():
 		lv.add_child(UI.margin(_dimtext("Inbox zero. Savour it."), 8, 8, 8, 8))
@@ -894,12 +949,12 @@ func _build_mail() -> void:
 		mail_id = str(sel.id)
 	for m in mails:
 		var on: bool = str(m.id) == mail_id
-		var pending := Corp.prompt_for_mail(str(m.id))
+		var pending := Game.comms.prompt_for_mail(str(m.id))
 		var b := UI.Clicky.new()
 		b.setup(Color("e7ecfb") if on else UI.OS_PANEL, UI.OS_LINE, 1, true, 8)
 		var col := UI.vbox(2)
 		var top := UI.hbox(6)
-		var from: String = "You" if bool(m.sent) else Content.person_name(str(m.from))
+		var from: String = "You" if bool(m.sent) else Game.npcs.display_name(str(m.from))
 		top.add_child(UI.label(from, 13, UI.OS_TEXT, not bool(m.read)))
 		top.add_child(UI.spacer())
 		if not pending.is_empty():
@@ -915,7 +970,7 @@ func _build_mail() -> void:
 		b.add_child(col)
 		b.pressed.connect(func():
 			mail_id = str(m.id)
-			Game.touch()
+			Game.presence.touch()
 			_dirty = true
 		)
 		lv.add_child(b)
@@ -934,14 +989,14 @@ func _build_mail() -> void:
 	var fh := UI.hbox(8)
 	if not bool(sel.sent):
 		fh.add_child(UI.avatar(str(sel.from), 30))
-	fh.add_child(UI.label("From: %s" % ("You" if bool(sel.sent) else Content.person_name(str(sel.from))), 13, UI.OS_DIM, true))
+	fh.add_child(UI.label("From: %s" % ("You" if bool(sel.sent) else Game.npcs.display_name(str(sel.from))), 13, UI.OS_DIM, true))
 	rv.add_child(fh)
 	var sep := ColorRect.new()
 	sep.color = UI.OS_LINE
 	sep.custom_minimum_size = Vector2(0, 1)
 	rv.add_child(sep)
 	rv.add_child(UI.wrap(str(sel.body), 15, UI.OS_TEXT))
-	var pending := Corp.prompt_for_mail(str(sel.id))
+	var pending := Game.comms.prompt_for_mail(str(sel.id))
 	if not pending.is_empty():
 		rv.add_child(UI.gap(1, 6))
 		rv.add_child(_timer_row(int(pending.due), int(pending.window)))
@@ -949,9 +1004,9 @@ func _build_mail() -> void:
 		cl.light = true
 		cl.hotkeys = true
 		rv.add_child(cl)
-		cl.show_choices(Corp.choices_of(pending), "chat")
+		cl.show_choices(Game.comms.choices_of(pending), "chat", str(pending.from))
 		cl.chosen.connect(func(i: int, ex: String):
-			Corp.answer(str(pending.id), i, ex)
+			Game.comms.answer(str(pending.id), i, ex, "desk")
 		)
 
 
@@ -960,8 +1015,11 @@ func _build_mail() -> void:
 # ---------------------------------------------------------------------------
 
 func _build_shadow() -> void:
+	Game.tutor.opened_ledger()
+	var auto := Game.automation
 	var split := UI.hbox(14)
 	_content.add_child(split)
+	# --- Gadgets ---
 	var lc := _card(16)
 	lc.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	split.add_child(lc)
@@ -970,106 +1028,142 @@ func _build_shadow() -> void:
 	var head := UI.hbox(10)
 	head.add_child(_h("Your gadgets", 18))
 	head.add_child(UI.spacer())
-	var svc := UI.button("Service all gadgets", func():
-		Auto.maintain()
+	var heat := auto.heat()
+	var hp := UI.pill("HEAT %d%%" % int(heat), Color("d6455b") if heat >= 40.0 else (Color("e07b00") if heat >= 20.0 else Color("2f9e5b")), 11, heat >= 40.0)
+	hp.mouse_filter = Control.MOUSE_FILTER_STOP
+	hp.tooltip_text = "The chance a SynerWatch scan spots non-human input right now (halved while you sit here). Switch gadgets off before a scan and back on after."
+	head.add_child(hp)
+	var svc := UI.button("Service all", func():
+		auto.maintain()
 		_dirty = true
 	, "os_ghost", 12)
 	svc.tooltip_text = "UPKEEP. Costs 8 energy. Repairs breakage and resets wear. Worn gadgets fail far more often."
 	head.add_child(svc)
 	lv.add_child(head)
 	var owned := 0
-	for id in Auto.ORDER:
-		if not Auto.owns(id):
+	for id in Db.gadget_order():
+		if not auto.owns(id):
 			continue
 		owned += 1
-		var def: Dictionary = Auto.GADGETS[id]
-		var st := Auto.g(id)
+		var def := auto.def(id)
+		var st := auto.g(id)
 		var p := UI.panel(UI.OS_SOFT, 8, 12, 1, UI.OS_LINE)
-		var v := UI.vbox(6)
+		var v := UI.vbox(5)
 		p.add_child(v)
 		var h := UI.hbox(8)
 		v.add_child(h)
-		h.add_child(UI.label(str(def.name), 15, UI.OS_TEXT, true))
+		h.add_child(UI.label(str(def.display_name), 15, UI.OS_TEXT, true))
+		h.add_child(UI.pill("LEVEL %d/%d" % [auto.level(id), auto.max_level(id)], Color("3b5bdb"), 9))
 		if bool(st.broken):
 			h.add_child(UI.pill("BROKEN", Color("d6455b"), 9, true))
-		elif str(def.kind) == "passive":
-			h.add_child(UI.pill("ALWAYS ON", Color("1f8f4a"), 9))
-		elif Auto.working(id):
+		elif auto.working(id):
 			h.add_child(UI.pill("RUNNING", Color("2f9e5b"), 9, true))
 		elif bool(st.on):
 			h.add_child(UI.pill("NO INTERNET", Color("e07b00"), 9, true))
 		else:
 			h.add_child(UI.pill("OFF", Color("6b7594"), 9))
 		h.add_child(UI.spacer())
-		if str(def.kind) != "passive":
-			var tb := UI.button("Switch off" if bool(st.on) else "Switch on", func():
-				Auto.toggle(id)
-				_dirty = true
-			, "os_ghost" if bool(st.on) else "os", 12)
-			tb.disabled = bool(st.broken)
-			h.add_child(tb)
-		v.add_child(_dimtext(str(def.blurb), 12))
-		if str(def.kind) != "passive":
-			var wh := UI.hbox(8)
-			wh.add_child(UI.label("Wear", 11, UI.OS_DIM, true))
-			var wb := UI.bar(Color("e07b00") if float(st.wear) > 28.0 else Color("2f9e5b"), 7)
-			wb.value = float(st.wear)
-			wb.custom_minimum_size = Vector2(140, 7)
-			wh.add_child(wb)
-			wh.add_child(UI.label("fail chance %d%%" % int(round(Auto.fail_chance(id))), 11, UI.OS_DIM))
-			wh.add_child(UI.label("heat +%d" % int(def.heat), 11, UI.OS_DIM))
-			v.add_child(wh)
-		if id == "reportomatic":
+		var tb := UI.button("Switch off" if bool(st.on) else "Switch on", func():
+			auto.toggle(id)
+			_dirty = true
+		, "os_ghost" if bool(st.on) else "os", 12)
+		tb.disabled = bool(st.broken)
+		h.add_child(tb)
+		v.add_child(_dimtext(str(auto.data(id).text), 12))
+		var wh := UI.hbox(8)
+		wh.add_child(UI.label("Wear", 11, UI.OS_DIM, true))
+		var wb := UI.bar(Color("e07b00") if float(st.wear) > 28.0 else Color("2f9e5b"), 7)
+		wb.value = float(st.wear)
+		wb.custom_minimum_size = Vector2(110, 7)
+		wh.add_child(wb)
+		wh.add_child(UI.label("reliability %d%%  -  fails %d%%  -  heat +%d" % [int(round(auto.reliability(id))), int(round(auto.fail_chance(id))), int(auto.data(id).get("heat", 0))], 11, UI.OS_DIM))
+		v.add_child(wh)
+		if "auto_report" in auto.abilities(id):
 			var rh := UI.hbox(6)
 			rh.add_child(UI.label("Send the report at", 12, UI.OS_DIM, true))
-			for tm in Auto.REPORT_TIMES:
-				var cur: bool = int(Game.s.autos.report_at) == int(tm)
+			for tm in AutomationManager.REPORT_TIMES:
+				var cur: bool = int(auto.autos.report_at) == int(tm)
 				rh.add_child(UI.button("off" if int(tm) < 0 else Cfg.fmt_time(float(tm)), func():
-					Auto.set_report_time(int(tm))
+					auto.set_report_time(int(tm))
 					_dirty = true
 				, "os" if cur else "os_ghost", 11))
 			v.add_child(rh)
-		if id == "delegatron":
-			var at: Dictionary = Corp.task(str(Game.s.autos.ai_task))
+		if "do_tickets" in auto.abilities(id):
+			var at: Dictionary = Game.work.task(str(auto.autos.ai_task))
 			v.add_child(_dimtext("Working on: %s" % (str(at.key) if not at.is_empty() else "nothing. Assign it a ticket in SynerTasks."), 12))
-		if id == "loopcam":
-			v.add_child(_dimtext("Today's loop: %s" % ("recorded" if Interact.loop_ready() else "NOT recorded. Use the company laptop."), 12))
 		lv.add_child(p)
 	if owned == 0:
-		lv.add_child(_dimtext("Nothing installed. Leave your desk, sit at your Gaming PC and visit ShadyDeals.biz.", 14))
-	# Right column: heat + alibi notebook
-	var rc := UI.vbox(14)
-	rc.custom_minimum_size = Vector2(380, 0)
+		lv.add_child(_dimtext("Nothing installed. Leave your desk, sit at your Gaming PC and visit ShadyDeals.biz. MouseMover.exe goes on sale Tuesday.", 14))
+	# Combinations
+	lv.add_child(UI.gap(1, 4))
+	lv.add_child(_h("Combinations", 16))
+	var active: Array = []
+	for c in auto.combos_active():
+		active.append(str(c.id))
+	for cid in Db.combos:
+		var c: Dictionary = Db.combos[cid]
+		var on: bool = cid in active
+		var names: Array = []
+		var have := true
+		for need in c.needs:
+			names.append(str(auto.def(str(need)).display_name))
+			if not auto.owns(str(need)):
+				have = false
+		var cp := UI.panel(Color("e1f7e8") if on else UI.OS_SOFT, 8, 10, 1, Color("2f9e5b") if on else UI.OS_LINE)
+		var cv := UI.vbox(2)
+		cp.add_child(cv)
+		var ch := UI.hbox(6)
+		ch.add_child(UI.label(str(c.display_name), 13, UI.OS_TEXT, true))
+		ch.add_child(UI.pill("ACTIVE" if on else ("BOTH OFF OR BROKEN" if have else "NOT OWNED"), Color("1f8f4a") if on else Color("6b7594"), 9, on))
+		ch.add_child(UI.label(" + ".join(names), 11, UI.OS_DIM))
+		cv.add_child(ch)
+		cv.add_child(_dimtext(str(c.text), 11))
+		lv.add_child(cp)
+	# --- Alibi ledger ---
+	var rc := _card(16)
+	rc.custom_minimum_size = Vector2(460, 0)
 	split.add_child(rc)
-	var hc := _card(16)
-	rc.add_child(hc)
-	var hv := UI.vbox(7)
-	hc.add_child(hv)
-	hv.add_child(_h("Detection heat", 18))
-	var heat := Auto.heat()
-	var hb := UI.bar(Color("d6455b") if heat >= 40.0 else (Color("e07b00") if heat >= 20.0 else Color("2f9e5b")), 14)
-	hb.value = heat
-	hv.add_child(hb)
-	hv.add_child(_dimtext("%d%% - the chance a SynerWatch scan spots non-human input right now (halved while you sit here). Switch gadgets off before a scan and back on after." % int(heat), 12))
-	var nc := _card(16)
-	nc.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	rc.add_child(nc)
 	var nv := UI.vbox(6)
-	nc.add_child(nv)
-	nv.add_child(_h("Alibi notebook", 18))
-	nv.add_child(_dimtext("Every excuse you've used this week. Reusing one makes it less believable; a fourth use is an automatic contradiction.", 12))
-	var body := UI.vbox(5)
+	rc.add_child(nv)
+	var lh := UI.hbox(8)
+	lh.add_child(_h("Alibi Ledger", 18))
+	lh.add_child(UI.spacer())
+	lh.add_child(UI.label("%d held up  -  %d caught" % [Game.deception.successful(), Game.deception.caught()], 12, UI.OS_DIM, true))
+	nv.add_child(lh)
+	nv.add_child(_dimtext("Every story you have told. While one is ACTIVE, anything listed under it will expose you. Each reuse makes a story weaker; the fourth backfires by itself.", 12))
+	var body := UI.vbox(7)
 	nv.add_child(UI.scroll(body))
-	var lines := Deception.ledger_lines()
-	if lines.is_empty():
+	var list: Array = Game.deception.claims.duplicate()
+	list.reverse()
+	if list.is_empty():
 		body.add_child(_dimtext("No lies on record. Yet."))
-	lines.reverse()
-	for l in lines:
-		var row := UI.hbox(6)
-		row.add_child(UI.label(str(l.when), 11, UI.OS_DIM, true))
-		row.add_child(UI.pill("BOUGHT" if bool(l.ok) else "REJECTED", Color("1f8f4a") if bool(l.ok) else Color("d6455b"), 9))
-		var tl := UI.label(str(l.text), 12, UI.OS_TEXT)
-		tl.clip_text = true
-		tl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		row.add_child(tl)
-		body.add_child(row)
+	for c in list:
+		var d := Game.deception.describe(c)
+		var live := bool(d.live)
+		var bad: bool = str(d.status) in [Claim.CONTRADICTED, Claim.EXPOSED]
+		var edge := Color("2f9e5b") if live else (Color("d6455b") if bad else UI.OS_LINE)
+		var cp := PanelContainer.new()
+		var sbx := UI.sb(Color("eefaf1") if live else (Color("fff0f2") if bad else UI.OS_SOFT), 8, 0, edge, 10, 8)
+		sbx.border_width_left = 5
+		cp.add_theme_stylebox_override("panel", sbx)
+		var cv := UI.vbox(3)
+		cp.add_child(cv)
+		var ch := UI.hbox(6)
+		ch.add_child(UI.label(str(d.title), 13, UI.OS_TEXT, true))
+		ch.add_child(UI.pill(str(d.status_text), Color("1f8f4a") if live else (Color("d6455b") if bad else Color("6b7594")), 9, live or bad))
+		ch.add_child(UI.spacer())
+		ch.add_child(UI.label(("%s left" % Cfg.fmt_dur(float(d.left))) if live else str(d.when), 11, UI.OS_DIM, true))
+		cv.add_child(ch)
+		var meta := "Told to %s at %s" % [str(d.told_to), str(d.when)]
+		if str(d.subject) != "":
+			meta += "  -  you said: %s" % str(d.subject)
+		cv.add_child(_dimtext(meta, 11))
+		if live and not d.avoid.is_empty():
+			cv.add_child(UI.wrap("Do NOT: %s." % "; ".join(d.avoid), 12, Color("b3243a")))
+		if not d.evidence.is_empty():
+			cv.add_child(UI.wrap("Backed by: %s." % ", ".join(d.evidence), 11, Color("1f8f4a")))
+		if live:
+			cv.add_child(_dimtext("Chance someone checks: %d%%" % int(d.risk), 11))
+		if bad and str(d.contradiction) != "":
+			cv.add_child(UI.wrap("Contradicted by: %s." % str(d.contradiction), 11, Color("b3243a")))
+		body.add_child(cp)

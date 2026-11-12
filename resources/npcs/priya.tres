@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="NpcDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/npc_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = "priya"
+display_name = "Priya Nair"
+role = "Staff Engineer (does everything)"
+color = Color(0.3529, 0.8196, 0.7843, 1)
+kind = "coworker"
+gullibility = -6.0
+start_relationship = 55.0
+look = {"skin": 3, "hair": 2, "hair_color": 0, "shirt": 6, "pants": 1, "accessory": 1}

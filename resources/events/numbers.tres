@@ -1,0 +1,39 @@
+[gd_resource type="Resource" script_class="EventDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/event_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = "numbers"
+title = "Numbers"
+kind = "chat"
+from = "martin"
+thread = ""
+text = "Can you pull the engagement numbers for my 3pm? Need them in 20."
+choices = [
+  {
+    "t": "Send numbers that feel right.",
+    "a": "bluff",
+    "p": 56,
+    "ok": {"ill": 5, "say": "Up and to the right. Perfect."},
+    "ko": {"susp": 9, "ill": -3, "say": "Finance says engagement can't be 140%."}
+  },
+  {
+    "t": "Pull the real numbers",
+    "a": "real_answer",
+    "ok": {"ill": 7, "susp": -5, "say": "Lifesaver."}
+  },
+  {
+    "t": "Call in a favour: have Priya pull them",
+    "a": "delegate_colleague",
+    "req": {"favor": 1},
+    "ok": {"ill": 5, "susp": -2, "say": "Got them from Priya, thanks for coordinating!"}
+  }
+]
+expire = {"susp": 9, "ill": -3, "say": "I went into my 3pm with no numbers. Thanks for that."}
+window = 24
+routine = false
+no_excuse = false
+conditions = {"day_min": 1}
+pool = "boss"
+schedule = []

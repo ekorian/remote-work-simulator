@@ -1,0 +1,29 @@
+[gd_resource type="Resource" script_class="EventDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/event_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = "dave_cover"
+title = "Dave cover"
+kind = "chat"
+from = "dave"
+thread = ""
+text = "Martin's asking where the release checklist is. I told him you had it. You don't, do you. Play along?"
+choices = [
+  {
+    "t": "Play along: \"Finalising it now.\"",
+    "a": "do_favor",
+    "p": 72,
+    "ok": {"favor": 1, "say": "Beautiful. I owe you."},
+    "ko": {"favor": 1, "susp": 5, "say": "He asked to see it. Sorry. Still owe you."}
+  },
+  {"t": "\"Not my circus, Dave.\"", "a": "honest", "ok": {"say": "Brutal."}}
+]
+expire = {"susp": 0, "say": "OK, I told him it was Kevin."}
+window = 28
+routine = false
+no_excuse = true
+conditions = {}
+pool = "peer"
+schedule = []

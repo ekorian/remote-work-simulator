@@ -1,0 +1,38 @@
+[gd_resource type="Resource" script_class="EventDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/event_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = "priya_branch"
+title = "Priya branch"
+kind = "chat"
+from = "priya"
+thread = ""
+text = "Which branch did you push the hotfix to? I can't find it anywhere."
+choices = [
+  {
+    "t": "\"It's on my machine. Pushing shortly.\"",
+    "a": "bluff",
+    "p": 62,
+    "ok": {"say": "OK. 'Shortly'. Sure."},
+    "ko": {"susp": 5, "say": "You said that on Monday. I'm telling Martin it's not done."}
+  },
+  {
+    "t": "Come clean: there is no hotfix.",
+    "a": "honest",
+    "ok": {"favor": -1, "say": "lol. I figured. Fine, I'll write it. You owe me."}
+  },
+  {
+    "t": "Write the hotfix right now",
+    "a": "fix_bug",
+    "ok": {"favor": 1, "ill": 5, "susp": -3, "say": "It works?! Who ARE you today?"}
+  }
+]
+expire = {"susp": 5, "say": "No answer. Telling Martin it's missing."}
+window = 26
+routine = false
+no_excuse = true
+conditions = {}
+pool = "peer"
+schedule = []

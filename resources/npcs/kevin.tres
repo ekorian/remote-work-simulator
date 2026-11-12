@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="NpcDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/npc_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = "kevin"
+display_name = "Kevin Marsh"
+role = "Associate Rockstar Ninja"
+color = Color(0.3098, 0.702, 1, 1)
+kind = "coworker"
+gullibility = 4.0
+start_relationship = 45.0
+look = {"skin": 1, "hair": 3, "hair_color": 3, "shirt": 0, "pants": 0, "accessory": 2}

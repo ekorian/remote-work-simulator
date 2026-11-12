@@ -1,0 +1,47 @@
+[gd_resource type="Resource" script_class="EventDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/event_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = "timesheet"
+title = "Timesheet"
+kind = "chat"
+from = "bot"
+thread = "general"
+text = "TIMESHEET REMINDER: log your 8.0 hours for today before 17:00."
+choices = [
+  {
+    "t": "Log 8.0h of 'strategic alignment'.",
+    "a": "fake_timesheet",
+    "p": 82,
+    "ok": {"ill": 3, "say": "Timesheet accepted."},
+    "ko": {
+      "susp": 6,
+      "say": "Timesheet flagged for manager review: category 'strategic alignment' exceeds weekly cap."
+    }
+  },
+  {
+    "t": "Reconstruct an accurate timesheet",
+    "a": "real_timesheet",
+    "ok": {"ill": 4, "susp": -3, "say": "Timesheet accepted. Accuracy score: 100%."}
+  },
+  {
+    "t": "Log what you really did today.",
+    "a": "honest",
+    "ok": {"susp": 12, "say": "Timesheet flagged: 'Napping' is not a valid project code."}
+  }
+]
+expire = {"susp": 5, "say": "Timesheet not submitted. Your manager has been notified."}
+window = 35
+routine = false
+no_excuse = true
+conditions = {}
+pool = ""
+schedule = [
+  {"day": 0, "at": 965},
+  {"day": 1, "at": 965},
+  {"day": 2, "at": 965},
+  {"day": 3, "at": 965},
+  {"day": 4, "at": 985}
+]

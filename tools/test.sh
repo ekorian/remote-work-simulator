@@ -1,14 +1,21 @@
 #!/usr/bin/env bash
-# Run every automated check: parse, rules + balance, and the 3D world walk.
+# Run every automated check. Exits non-zero if anything fails.
+#   tools/test.sh            everything
+#   RUNS=24 tools/test.sh    more full-week runs per bot and difficulty
 cd "$(dirname "$0")/.."
 GODOT="${GODOT:-./.tools/godot}"
-clean() { sed 's/\x1b\[[0-9;]*m//g' | grep -vE '^\s*$|Godot Engine'; }
-echo "### parse"
-./tools/check.sh
-echo "### rules and balance"
-"$GODOT" --headless --path . res://tests/sim_test.tscn -- --runs="${RUNS:-16}" 2>&1 | clean
-A=${PIPESTATUS[0]}
-echo "### world"
-"$GODOT" --headless --path . res://tests/world_test.tscn 2>&1 | clean
-B=${PIPESTATUS[0]}
-[ "$A" -eq 0 ] && [ "$B" -eq 0 ]
+clean() { sed 's/\x1b\[[0-9;]*m//g' | grep -vE '^\s*$|Godot Engine|ObjectDB instances were leaked|cleanup \(core|still in use at exit|clear \(core'; }
+FAIL=0
+echo "### parse: every script compiles"
+OUT="$(./tools/check.sh)"; echo "$OUT"
+echo "$OUT" | grep -q "failed: 0" || FAIL=1
+echo "### startup: the main scene boots headless with no errors"
+BOOT="$("$GODOT" --headless --path . --quit-after 120 2>&1 | clean)"
+if echo "$BOOT" | grep -qE 'ERROR|SCRIPT ERROR|Parse Error'; then echo "$BOOT" | head -20; FAIL=1; else echo "ok"; fi
+for T in rules_test run_test world_test; do
+  echo "### $T"
+  "$GODOT" --headless --path . "res://tests/$T.tscn" -- --runs="${RUNS:-12}" 2>&1 | clean
+  [ "${PIPESTATUS[0]}" -eq 0 ] || FAIL=1
+done
+[ "$FAIL" -eq 0 ] && echo "ALL TESTS PASSED" || echo "SOME TESTS FAILED"
+exit $FAIL

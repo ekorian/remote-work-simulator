@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="EventDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/event_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = "low_illusion"
+title = "Invisible"
+kind = "say"
+from = "martin"
+trigger = "state"
+conditions = {"ill_max": 18, "from": 600}
+text = "I haven't seen a single thing from you today. Not a commit, not an emoji. Nothing."
+schedule = []

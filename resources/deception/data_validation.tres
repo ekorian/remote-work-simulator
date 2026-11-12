@@ -1,0 +1,35 @@
+[gd_resource type="Resource" script_class="ClaimDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/claim_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = "data_validation"
+title = "Data validation"
+line = "I'm validating the data before I touch anything. Can't rush it."
+contexts = ["chat", "ticket"]
+base = 60
+duration = 75
+cover = 30
+reuse_penalty = 13
+risk = 20
+contradicted_by = []
+conflicts = ["internet_outage", "computer_crash", "medical"]
+evidence = {"high_illusion": 12}
+effect = {"extend": 300}
+followups = [{"kind": "event", "event": "validation_results", "after": [55, 85], "chance": 85}]
+strength = "Almost impossible to disprove on the spot. Buys a ticket five hours."
+weakness = "Martin will ask to see the validation results. You will have to produce something."
+accepted = "Good. Measure twice, cut once. Send me the results when you have them."
+rejected = "Validating what? The ticket is to rename a button."
+exposed = {"default": "You said you were validating the data. There is no data."}
+recoveries = [
+  {
+    "t": "\"The validation found that the data needs more validation.\"",
+    "a": "jargon",
+    "p": 46,
+    "tags": ["jargon"],
+    "ok": {"claim_status": "patched", "say": "...I can't argue with that. I want to. But I can't."},
+    "ko": {"susp": 8, "claim_status": "exposed", "say": "No."}
+  }
+]

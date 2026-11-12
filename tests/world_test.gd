@@ -16,9 +16,9 @@ func check(cond: bool, what: String) -> void:
 
 
 func _ready() -> void:
-	SaveSys.enabled = false
+	Game.saves.enabled = false
 	Prefs.persist = false
-	var world := World.new()
+	var world: World = (load("res://scenes/apartment/world.tscn") as PackedScene).instantiate()
 	add_child(world)
 	await get_tree().process_frame
 	Game.new_run("survivor", {"name": "Walker"}, false, 5)
@@ -26,8 +26,8 @@ func _ready() -> void:
 	world.interactive = false
 	var apt := world.apartment
 	var ids: Array = apt.things.keys()
-	check(ids.size() == Interact.THINGS.size(), "every object in Interact.THINGS exists in the apartment (%d/%d)" % [ids.size(), Interact.THINGS.size()])
-	for id in Interact.THINGS:
+	check(ids.size() == Home.THINGS.size(), "every object in Home.THINGS exists in the apartment (%d/%d)" % [ids.size(), Home.THINGS.size()])
+	for id in Home.THINGS:
 		check(apt.things.has(id), "'%s' is placed in the apartment" % id)
 	print("== use points")
 	for id in ids:
@@ -35,7 +35,7 @@ func _ready() -> void:
 		var up := t.use_point()
 		var near := apt.point_of(apt.nearest_free(apt.cell_of(up)))
 		check(up.distance_to(near) < 0.5, "'%s' has a reachable standing spot (%.2f m off)" % [id, up.distance_to(near)])
-		check(apt.room_at(up) == str(Interact.THINGS[id].room), "'%s' is in the %s" % [id, str(Interact.THINGS[id].room)])
+		check(apt.room_at(up) == str(Home.THINGS[id].room), "'%s' is in the %s" % [id, str(Home.THINGS[id].room)])
 	print("== paths between all objects")
 	var missing := 0
 	for a in ids:

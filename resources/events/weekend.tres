@@ -1,0 +1,33 @@
+[gd_resource type="Resource" script_class="EventDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/event_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = "weekend"
+title = "Weekend"
+kind = "chat"
+from = "martin"
+thread = ""
+text = "Could you jump on a quick thing this Saturday? Should only take the whole day."
+choices = [
+  {
+    "t": "\"I'll be out of signal range, sadly.\"",
+    "a": "bluff",
+    "p": 70,
+    "ok": {"say": "No worries. I'll ask Kevin."},
+    "ko": {"susp": 5, "say": "Out of range? You live above a phone shop."}
+  },
+  {
+    "t": "\"Sure.\"",
+    "a": "accept_duty",
+    "ok": {"susp": -6, "ill": 4, "say": "Knew I could count on you."}
+  }
+]
+expire = {"susp": 5, "say": "I'll take the silence as a maybe."}
+window = 24
+routine = false
+no_excuse = false
+conditions = {"day_min": 2}
+pool = "boss"
+schedule = []

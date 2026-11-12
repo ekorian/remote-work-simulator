@@ -1,0 +1,34 @@
+[gd_resource type="Resource" script_class="EventDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/event_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = "why_away"
+title = "Where are you?"
+kind = "chat"
+from = "martin"
+window = 16
+trigger = "state"
+cooldown = 120
+conditions = {"absent_min": 45}
+text = "Your status has been Away for a while. Everything OK over there?"
+choices = [
+  {
+    "t": "I was reading documentation. On paper.",
+    "a": "bluff",
+    "p": 52,
+    "ok": {"susp": -2, "cover": 20, "say": "Old school. Respect."},
+    "ko": {"susp": 7, "say": "We don't have paper documentation. We barely have documentation."}
+  },
+  {
+    "t": "Whiteboarding the architecture away from the screen.",
+    "a": "jargon",
+    "p": 60,
+    "tags": ["jargon"],
+    "ok": {"susp": -2, "ill": 3, "cover": 25, "say": "Send me a photo of the whiteboard later!"},
+    "ko": {"susp": 6, "say": "You don't own a whiteboard. I've seen your background."}
+  }
+]
+expire = {"susp": 10, "say": "OK. I'm noting this."}
+schedule = []

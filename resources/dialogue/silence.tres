@@ -1,0 +1,30 @@
+[gd_resource type="Resource" script_class="DialogueDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/dialogue_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = "silence"
+beats = [
+  {
+    "who": "martin",
+    "text": "...and that's the plan. Any questions? {name}?",
+    "choices": [
+      {
+        "t": "\"No questions - super clear, thanks.\"",
+        "a": "bluff",
+        "p": 86,
+        "ok": {"susp": -1, "say": "Great."},
+        "ko": {"susp": 3, "say": "You were on mute the whole time, weren't you."}
+      },
+      {
+        "t": "Ask a question that sounds deep.",
+        "a": "jargon",
+        "p": 62,
+        "tags": ["jargon"],
+        "ok": {"ill": 5, "say": "Ooh. Let's take that offline. Great question."},
+        "ko": {"susp": 4, "say": "I literally just covered that."}
+      }
+    ]
+  }
+]

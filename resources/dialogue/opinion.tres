@@ -1,0 +1,35 @@
+[gd_resource type="Resource" script_class="DialogueDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/dialogue_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = "opinion"
+beats = [
+  {
+    "who": "priya",
+    "text": "{name}, you worked on this area. Do we go with option A or option B?",
+    "choices": [
+      {
+        "t": "\"I'd want to double-click on both before committing.\"",
+        "a": "jargon",
+        "p": 70,
+        "tags": ["jargon"],
+        "ok": {"ill": 3, "say": "...That's not an answer, but fine."},
+        "ko": {"susp": 5, "say": "We need an answer today."}
+      },
+      {
+        "t": "\"B.\" (Coin flip.)",
+        "a": "bluff",
+        "p": 55,
+        "ok": {"ill": 4, "say": "Agreed, B. Nice."},
+        "ko": {"susp": 5, "ill": -2, "say": "B is the one that's on fire."}
+      },
+      {
+        "t": "Explain the real trade-offs",
+        "a": "real_answer",
+        "ok": {"ill": 7, "susp": -5, "say": "That's... actually really clear. Thank you."}
+      }
+    ]
+  }
+]

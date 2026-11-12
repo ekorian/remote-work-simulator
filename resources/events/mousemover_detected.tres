@@ -1,0 +1,47 @@
+[gd_resource type="Resource" script_class="EventDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/event_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = "mousemover_detected"
+title = "Mouse jiggler malfunction"
+kind = "chat"
+from = "it"
+window = 15
+no_excuse = true
+facts = ["online_status"]
+text = "Automated alert: your cursor has traced the same 40-pixel circle for 43 minutes. Please explain."
+choices = [
+  {
+    "t": "\"My cat sleeps on the mouse.\"",
+    "a": "bluff",
+    "p": 50,
+    "ok": {"susp": -1, "say": "...We've had three of those this week. Closing the alert."},
+    "ko": {"susp": 8, "say": "Your HR file says you're allergic to cats."}
+  },
+  {
+    "t": "\"It's an accessibility tool. For my wrists.\"",
+    "a": "bluff",
+    "p": 44,
+    "ok": {"fix_gadget": true, "say": "Understood. We've whitelisted the device. Sorry to have asked."},
+    "ko": {"susp": 9, "say": "Accessibility tools don't draw perfect circles."}
+  },
+  {
+    "t": "\"The mouse is faulty. It's been doing that all day.\"",
+    "a": "bluff",
+    "p": 56,
+    "ok": {
+      "claim": "hardware_malfunction",
+      "say": "A hardware fault. We'll run a diagnostic and send a replacement."
+    },
+    "ko": {"susp": 7, "say": "The mouse reports it's in perfect health."}
+  },
+  {
+    "t": "Admit it's a mouse jiggler.",
+    "a": "honest",
+    "ok": {"susp": 10, "rel": 3, "say": "Thank you for your honesty. Your manager has been informed."}
+  }
+]
+expire = {"susp": 11, "say": "No explanation received. Escalated to your manager."}
+schedule = []

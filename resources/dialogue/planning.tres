@@ -1,0 +1,64 @@
+[gd_resource type="Resource" script_class="DialogueDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/dialogue_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = "planning"
+beats = [
+  {
+    "who": "martin",
+    "text": "Sprint planning. How many story points is the pipeline migration, {name}?",
+    "choices": [
+      {
+        "t": "\"Thirteen.\" (Sounds like a lot.)",
+        "a": "bluff",
+        "p": 68,
+        "ok": {"ill": 3, "say": "Thirteen. Big. OK."},
+        "ko": {"susp": 4, "say": "Last sprint you said two."}
+      },
+      {
+        "t": "\"It's hard to estimate without a discovery spike.\"",
+        "a": "jargon",
+        "p": 72,
+        "tags": ["jargon"],
+        "ok": {"ill": 3, "susp": -1, "say": "Good instinct. Let's add a spike."},
+        "ko": {"susp": 4, "say": "We did a spike. You led it."}
+      },
+      {
+        "t": "Break it down properly on the spot",
+        "a": "real_answer",
+        "ok": {"ill": 7, "susp": -5, "say": "This is the most useful thing said in planning all year."}
+      }
+    ]
+  },
+  {
+    "who": "martin",
+    "text": "We have capacity for one more ticket. Who's light this sprint?",
+    "choices": [
+      {
+        "t": "Look intensely at a second monitor.",
+        "a": "deflect",
+        "p": 66,
+        "tags": ["video"],
+        "ok": {"say": "Dave, you're up."},
+        "ko": {"susp": 3, "task": "audit", "say": "{name}, you look light. Licence audit's yours."}
+      },
+      {
+        "t": "\"I'm at 120% already, honestly.\"",
+        "a": "bluff",
+        "p": 60,
+        "ok": {"ill": 2, "say": "Wow. Don't burn out. Dave?"},
+        "ko": {"susp": 6, "task": "audit", "say": "SynerTasks says you're at 20%. It's yours."}
+      },
+      {
+        "t": "Take it.",
+        "a": "accept_duty",
+        "ok": {"susp": -6, "ill": 5, "task": "audit", "say": "Team player!"}
+      }
+    ]
+  }
+]
+pool = ["opinion", "silence"]
+pick = 1
+after = {"ill": 2}

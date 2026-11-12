@@ -1,0 +1,34 @@
+[gd_resource type="Resource" script_class="EventDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/event_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = "volunteer"
+title = "Volunteer"
+kind = "chat"
+from = "martin"
+thread = "team"
+text = "I need a volunteer to own the incident postmortem. {name}, you've been quiet."
+choices = [
+  {
+    "t": "Volunteer.",
+    "a": "volunteer",
+    "ok": {"susp": -7, "ill": 6, "task": "postmortem", "say": "Ownership! Love it. It's yours."}
+  },
+  {
+    "t": "\"This is a real growth opportunity for Kevin.\"",
+    "a": "deflect",
+    "p": 66,
+    "tags": ["jargon"],
+    "ok": {"ill": 1, "say": "Great call. Kevin, it's yours."},
+    "ko": {"susp": 5, "task": "postmortem", "say": "Nice try. It's yours, {name}."}
+  }
+]
+expire = {"susp": 6, "task": "postmortem", "say": "Silence means yes. It's yours, {name}."}
+window = 22
+routine = false
+no_excuse = false
+conditions = {}
+pool = ""
+schedule = [{"day": 3, "at": 705}]

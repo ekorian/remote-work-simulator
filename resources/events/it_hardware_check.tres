@@ -1,0 +1,36 @@
+[gd_resource type="Resource" script_class="EventDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/event_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = "it_hardware_check"
+title = "Hardware diagnostic"
+kind = "chat"
+from = "it"
+window = 14
+no_excuse = true
+text = "Following up on your broken {subject}: we're running a full hardware diagnostic on your machine in 10 minutes. It scans every connected device."
+choices = [
+  {
+    "t": "\"Go ahead.\" (Switch your gadgets off first.)",
+    "a": "ack",
+    "ok": {
+      "later": {"in": 10, "ev": "audit_surprise"},
+      "say": "Scheduled. Please leave everything plugged in."
+    }
+  },
+  {
+    "t": "\"It started working again. Cancel it.\"",
+    "a": "bluff",
+    "p": 52,
+    "ok": {"claim_status": "patched", "say": "Cancelled. Glad it's sorted."},
+    "ko": {
+      "susp": 5,
+      "later": {"in": 10, "ev": "audit_surprise"},
+      "say": "We'd rather check. Diagnostic stays."
+    }
+  }
+]
+expire = {"later": {"in": 6, "ev": "audit_surprise"}, "say": "No reply. Running it anyway."}
+schedule = []

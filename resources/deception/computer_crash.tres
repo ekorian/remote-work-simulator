@@ -1,0 +1,46 @@
+[gd_resource type="Resource" script_class="ClaimDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/claim_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = "computer_crash"
+title = "Computer crash"
+line = "My laptop just blue-screened and it's installing 114 updates."
+contexts = ["chat", "meeting", "call", "ticket"]
+base = 50
+duration = 45
+cover = 45
+reuse_penalty = 17
+risk = 45
+contradicted_by = ["online_status", "desk_message", "video_meeting", "ticket_activity", "auto_message", "auto_report"]
+conflicts = ["data_validation", "prod_incident"]
+evidence = {"laptop_updating": 30}
+effect = {"extend": 240}
+followups = [{"kind": "event", "event": "it_remote_session", "after": [18, 30], "chance": 55}]
+strength = "Much stronger while the company laptop really is updating. Buys a ticket four extra hours."
+weakness = "A crashed computer cannot post, update tickets or run gadgets. IT may open a remote session to 'help'."
+accepted = "IT strikes again. OK, shout when it's back."
+rejected = "IT says nothing was pushed to your machine today."
+exposed = {
+  "default": "Your computer seems fine to me. It's doing things. Explain?",
+  "ticket_activity": "Your 'crashed' laptop just updated a ticket. Explain?",
+  "online_status": "Your crashed laptop is showing you as Available.",
+  "video_meeting": "That's a very sharp picture for a laptop that's blue-screened."
+}
+recoveries = [
+  {
+    "t": "\"I'm on my personal machine. Don't tell IT.\"",
+    "a": "bluff",
+    "p": 52,
+    "ok": {"susp": -1, "claim_status": "patched", "say": "I heard nothing. Carry on."},
+    "ko": {"susp": 9, "claim_status": "exposed", "say": "Then I have to tell IT. Company policy."}
+  },
+  {
+    "t": "\"It rebooted itself. Windows, eh?\"",
+    "a": "blame",
+    "p": 48,
+    "ok": {"susp": -1, "claim_status": "patched", "say": "Ha. Classic."},
+    "ko": {"susp": 7, "claim_status": "exposed", "say": "You're on a Mac."}
+  }
+]

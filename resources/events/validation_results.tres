@@ -1,0 +1,43 @@
+[gd_resource type="Resource" script_class="EventDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/event_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = "validation_results"
+title = "Validation results"
+kind = "chat"
+from = "martin"
+window = 22
+text = "You said you were validating the data for {task}. Send me the results?"
+choices = [
+  {
+    "t": "Send a spreadsheet of plausible numbers.",
+    "a": "fake_report",
+    "p": 58,
+    "ok": {"ill": 4, "say": "Green cells. Lots of green cells. Good."},
+    "ko": {"susp": 8, "say": "Every value in this sheet is 42."}
+  },
+  {
+    "t": "\"The validation is still running.\"",
+    "a": "stall",
+    "p": 52,
+    "ok": {"say": "OK. Tomorrow, then."},
+    "ko": {"susp": 6, "say": "It's a spreadsheet, not a rocket launch."}
+  },
+  {
+    "t": "\"It passed. Verbally.\"",
+    "a": "jargon",
+    "p": 44,
+    "tags": ["jargon"],
+    "ok": {"say": "...I'll take it."},
+    "ko": {"susp": 7, "say": "That is not a thing."}
+  },
+  {
+    "t": "Actually validate the data",
+    "a": "work_task",
+    "ok": {"progress": 1, "ill": 5, "susp": -4, "say": "Real numbers! Thank you."}
+  }
+]
+expire = {"susp": 8, "say": "No results. So no validation. Got it."}
+schedule = []

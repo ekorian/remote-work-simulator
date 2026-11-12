@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="EventDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/event_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = "shady"
+title = "[SPAM?] ShadyDeals.biz - Remote Work 'Solutions'"
+kind = "mail"
+from = "it"
+subject = "[SPAM?] ShadyDeals.biz - Remote Work 'Solutions'"
+body = "TIRED of MOVING your MOUSE like a PEASANT??\n\nNEW TODAY: MouseMover.exe and the Keyboard Duck. Your status stays green while you nap.\n\nVisit ShadyDeals.biz from your PERSONAL computer (not the company one, we are not animals).\n\nNew stock every day this week. Upgrades available."
+choices = []
+expire = {}
+window = 90
+schedule = [{"day": 1, "at": 543}]

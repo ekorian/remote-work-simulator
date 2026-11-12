@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="EventDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/event_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = "payday"
+title = "Payroll: your daily deposit has landed"
+kind = "mail"
+from = "bot"
+subject = "Payroll: your daily deposit has landed"
+body = "SynerCorp pays remote staff daily at 17:00 because the payroll system was configured wrong in 2009 and nobody dares touch it.\n\nBonuses apply for 'perceived impact' and for 'efficiency' (billing zero productive minutes)."
+choices = []
+expire = {}
+window = 90
+schedule = []

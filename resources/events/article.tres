@@ -1,0 +1,33 @@
+[gd_resource type="Resource" script_class="EventDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/event_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = "article"
+title = "Article"
+kind = "chat"
+from = "martin"
+thread = ""
+text = "Sharing a must-read: '7 Habits of Highly Synergistic People'. Thoughts?"
+choices = [
+  {
+    "t": "\"Habit 4 really resonated.\"",
+    "a": "bluff",
+    "p": 68,
+    "ok": {"ill": 2, "susp": -1, "say": "RIGHT? Habit 4. Wow."},
+    "ko": {"susp": 4, "say": "There are only three habits. The title is clickbait."}
+  },
+  {
+    "t": "Read it properly and reply with notes",
+    "a": "real_answer",
+    "ok": {"ill": 5, "susp": -3, "say": "You READ it? Nobody reads them. I'm touched."}
+  }
+]
+expire = {"susp": 4}
+window = 24
+routine = true
+no_excuse = false
+conditions = {}
+pool = "boss"
+schedule = []

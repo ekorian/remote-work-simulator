@@ -1,0 +1,12 @@
+[gd_resource type="Resource" script_class="EventDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/event_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = "one_on_one"
+title = "1:1 with Martin"
+kind = "meeting"
+from = "martin"
+meeting = {"dur": 30, "script": "one_on_one", "mandatory": true}
+schedule = [{"day": 3, "at": 855}]

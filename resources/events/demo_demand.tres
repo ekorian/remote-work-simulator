@@ -1,0 +1,46 @@
+[gd_resource type="Resource" script_class="EventDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/event_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = "demo_demand"
+title = "Demo demand"
+kind = "chat"
+from = "martin"
+window = 18
+conditions = {"faked_task": true}
+args = {"mark_task": "demo_asked"}
+text = "You said {task} is nearly done. Hop on and show me a quick demo?"
+choices = [
+  {
+    "t": "Demo a slideshow with total confidence.",
+    "a": "bluff",
+    "p": 40,
+    "tags": ["jargon"],
+    "ok": {"ill": 6, "susp": -3, "say": "The arrows really tell a story. Nice."},
+    "ko": {"susp": 12, "ill": -6, "say": "That was a slideshow of stock photos."}
+  },
+  {
+    "t": "Share the Keyboard Duck's fake code window.",
+    "a": "use_gadget",
+    "ability": "screen_fake",
+    "req": {"ability": "screen_fake"},
+    "ok": {"susp": -4, "ill": 6, "say": "Looks complicated. Good."},
+    "ko": {"susp": 12, "say": "Why does your screen say DEMO MODE?"}
+  },
+  {
+    "t": "\"It works on my machine. Demo gods, you know.\"",
+    "a": "blame",
+    "p": 50,
+    "ok": {"say": "Ha, classic. Tomorrow then."},
+    "ko": {"susp": 9, "say": "Then show me your machine."}
+  },
+  {
+    "t": "Build the thing live in front of him",
+    "a": "live_demo",
+    "ok": {"progress": 1, "susp": -6, "ill": 6, "say": "Oh. It's real. Good!"}
+  }
+]
+expire = {"susp": 12, "ill": -5, "say": "No demo. So it's not nearly done. Got it."}
+schedule = [{"day": 4, "at": 640}]

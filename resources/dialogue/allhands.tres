@@ -1,0 +1,46 @@
+[gd_resource type="Resource" script_class="DialogueDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/dialogue_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = "allhands"
+beats = [
+  {
+    "who": "martin",
+    "text": "All-hands. I'm excited to announce a reorg. Nothing changes, except everything. Reactions?",
+    "choices": [
+      {
+        "t": "React with a party emoji.",
+        "a": "react",
+        "ok": {"ill": 2, "say": "Love the energy in the chat."}
+      },
+      {
+        "t": "Ask what the reorg actually changes.",
+        "a": "honest",
+        "ok": {"susp": 3, "say": "Great question. We'll share more when we know what we decided."}
+      }
+    ]
+  },
+  {
+    "who": "martin",
+    "text": "We're forming a tiger team for 'Project Phoenix 2: Phoenix Again'. I'm looking for hands.",
+    "choices": [
+      {
+        "t": "Experience a brief audio glitch.",
+        "a": "bluff",
+        "p": 70,
+        "ok": {"say": "{name}, you cut out. I'll ask Priya."},
+        "ko": {"susp": 5, "task": "okr", "say": "You came through loud and clear. You're on the team."}
+      },
+      {
+        "t": "Raise your hand.",
+        "a": "volunteer",
+        "ok": {"susp": -7, "ill": 6, "task": "okr", "say": "A tiger! Welcome."}
+      }
+    ]
+  }
+]
+pool = ["silence"]
+pick = 1
+after = {"ill": 1}

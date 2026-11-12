@@ -1,0 +1,23 @@
+[gd_resource type="Resource" script_class="DifficultyDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/difficulty_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = "intern"
+display_name = "Intern"
+tag = "RELAXED"
+color = Color(0.3529, 0.8196, 0.4784, 1)
+susp = 0.6
+work_hp = 2.0
+lethal = false
+recover = 1.4
+window = 1.6
+gadget_fail = 0.6
+event_rate = 0.8
+boss_check = 0.7
+cost = 0.85
+cred = 10
+stress = 0.5
+score = 1.0
+desc = "Nobody expects anything from you. Low suspicion, generous recovery, a forgiving boss and long reaction windows. Work stings a little: 2 HP per action."

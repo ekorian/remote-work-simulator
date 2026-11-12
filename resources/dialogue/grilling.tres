@@ -1,0 +1,37 @@
+[gd_resource type="Resource" script_class="DialogueDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/dialogue_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = "grilling"
+beats = [
+  {
+    "who": "martin",
+    "text": "Before we wrap: {name}, walk me through your day so far. Hour by hour.",
+    "choices": [
+      {
+        "t": "Narrate a busy morning that never happened.",
+        "a": "bluff",
+        "p": 56,
+        "tags": ["video"],
+        "ok": {"susp": -3, "say": "OK. That tracks. Mostly."},
+        "ko": {"susp": 8, "say": "At 10:15 your status was Away. For an hour."}
+      },
+      {
+        "t": "\"I don't think in hours. I think in outcomes.\"",
+        "a": "jargon",
+        "p": 54,
+        "tags": ["jargon", "video"],
+        "ok": {"ill": 3, "say": "...Annoyingly good answer."},
+        "ko": {"susp": 7, "say": "Name one outcome."}
+      },
+      {
+        "t": "Give an honest account, with evidence",
+        "a": "real_answer",
+        "ok": {"susp": -8, "ill": 6, "say": "Thank you. That's all I wanted."}
+      }
+    ],
+    "silence": {"susp": 8, "say": "Nothing? OK. That tells me plenty."}
+  }
+]

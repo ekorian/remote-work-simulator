@@ -1,0 +1,44 @@
+[gd_resource type="Resource" script_class="EventDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/event_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = "assistant_absurd"
+title = "An absurd answer"
+kind = "chat"
+from = "martin"
+window = 18
+no_excuse = true
+text = "In that meeting you answered a question about the budget with a banana bread recipe. Are you alright?"
+choices = [
+  {
+    "t": "\"It was a metaphor. About rising costs.\"",
+    "a": "jargon",
+    "p": 50,
+    "tags": ["jargon"],
+    "ok": {"ill": 4, "say": "...That's actually quite good."},
+    "ko": {"susp": 8, "say": "It included oven temperatures."}
+  },
+  {
+    "t": "\"Wrong window. I was multitasking for a client.\"",
+    "a": "bluff",
+    "p": 52,
+    "ok": {"say": "Multitasking. OK. Focus next time."},
+    "ko": {"susp": 7, "say": "Which client wants banana bread?"}
+  },
+  {
+    "t": "\"My microphone picks up the TV.\"",
+    "a": "bluff",
+    "p": 50,
+    "ok": {"claim": "hardware_malfunction", "say": "Get IT to look at that mic."},
+    "ko": {"susp": 7, "say": "It was your voice."}
+  },
+  {
+    "t": "Admit an AI was answering for you.",
+    "a": "honest",
+    "ok": {"susp": 12, "say": "So I've been in meetings with a toaster."}
+  }
+]
+expire = {"susp": 9}
+schedule = []

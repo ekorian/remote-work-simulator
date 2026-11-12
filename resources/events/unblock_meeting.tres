@@ -1,0 +1,29 @@
+[gd_resource type="Resource" script_class="EventDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/event_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = "unblock_meeting"
+title = "Unblocking you"
+kind = "chat"
+from = "martin"
+window = 16
+no_excuse = true
+text = "I hate seeing you blocked. I've pulled the {subject} team into a call in ten minutes to sort it out."
+choices = [
+  {
+    "t": "\"Amazing, thanks.\" (Dread.)",
+    "a": "ack",
+    "ok": {"event": "unblock_call", "say": "Dialling them now."}
+  },
+  {
+    "t": "\"They literally just replied! We're unblocked.\"",
+    "a": "bluff",
+    "p": 54,
+    "ok": {"claim_status": "patched", "say": "Oh! Great. I'll cancel."},
+    "ko": {"susp": 6, "event": "unblock_call", "say": "Then they can confirm that on the call."}
+  }
+]
+expire = {"susp": 5, "event": "unblock_call", "say": "I'll take that as a yes."}
+schedule = []

@@ -1,0 +1,36 @@
+[gd_resource type="Resource" script_class="EventDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/event_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = "doppel_meltdown"
+title = "Clone meltdown"
+kind = "chat"
+from = "martin"
+window = 16
+no_excuse = true
+text = "Your camera feed just said, quote, 'I am pivoting to consulting', and then froze with its eyes half closed. What WAS that?"
+choices = [
+  {
+    "t": "\"Bad connection. And a podcast in the background.\"",
+    "a": "bluff",
+    "p": 46,
+    "ok": {"say": "That was a very specific podcast."},
+    "ko": {"susp": 10, "say": "It said it in your voice. With your face."}
+  },
+  {
+    "t": "\"My webcam is glitching. It's been dying all week.\"",
+    "a": "bluff",
+    "p": 52,
+    "ok": {"claim": "hardware_malfunction", "say": "OK. Join by phone until IT replaces it."},
+    "ko": {"susp": 9, "say": "Webcams don't announce career changes."}
+  },
+  {
+    "t": "Admit it was an AI clone.",
+    "a": "honest",
+    "ok": {"susp": 14, "say": "You sent a ROBOT to my meeting."}
+  }
+]
+expire = {"susp": 12, "say": "No answer. I'm adding 'consulting' to your file."}
+schedule = []

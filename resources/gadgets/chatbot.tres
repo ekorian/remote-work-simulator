@@ -1,0 +1,39 @@
+[gd_resource type="Resource" script_class="GadgetDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/gadget_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = "chatbot"
+display_name = "Chatbot Team"
+kind = "use"
+needs_net = true
+unlock_day = 2
+blurb = "A committee of chatbots that answers routine messages for you and invents plausible progress."
+fail_event = "chatbot_hallucination"
+fail_text = "Chatbot Team just told the whole channel about a project that does not exist."
+levels = [
+  {
+    "price": 140,
+    "reliability": 87.0,
+    "heat": 14,
+    "can": ["auto_reply"],
+    "text": "Answers routine pings with confident filler."
+  },
+  {
+    "price": 120,
+    "reliability": 90.0,
+    "heat": 12,
+    "update_every": 90,
+    "can": ["auto_reply", "auto_updates"],
+    "text": "Also posts fictional progress updates on your tickets every 90 minutes."
+  },
+  {
+    "price": 150,
+    "reliability": 93.0,
+    "heat": 10,
+    "update_every": 75,
+    "can": ["auto_reply", "auto_updates", "auto_report"],
+    "text": "Also sends the daily status report at the time you choose."
+  }
+]

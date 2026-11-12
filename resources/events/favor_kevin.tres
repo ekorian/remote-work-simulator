@@ -1,0 +1,40 @@
+[gd_resource type="Resource" script_class="EventDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/event_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = "favor_kevin"
+title = "Favor kevin"
+kind = "chat"
+from = "kevin"
+thread = ""
+text = "Hey! Could you review my PR? It's only 4,000 lines. Mostly whitespace. Some of it is prod config."
+choices = [
+  {
+    "t": "\"LGTM\" (do not open it).",
+    "a": "react",
+    "p": 70,
+    "ok": {"ill": 2, "say": "Fastest review ever, thanks!!"},
+    "ko": {"susp": 8, "ill": -3, "say": "Uh. You approved the one that deletes the staging database."}
+  },
+  {
+    "t": "Actually review all 4,000 lines",
+    "a": "help_colleague",
+    "ok": {"favor": 1, "ill": 5, "susp": -2, "say": "Wow, 37 comments. You're a real one. I owe you."}
+  },
+  {
+    "t": "Tell Kevin you're swamped.",
+    "a": "deflect",
+    "p": 72,
+    "ok": {"say": "No worries, I'll ask Priya."},
+    "ko": {"susp": 3, "say": "Swamped? Your status says 'Away'."}
+  }
+]
+expire = {"susp": 2}
+window = 30
+routine = false
+no_excuse = true
+conditions = {}
+pool = ""
+schedule = [{"day": 1, "at": 775}]

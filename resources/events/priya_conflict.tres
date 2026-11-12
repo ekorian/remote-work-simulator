@@ -1,0 +1,12 @@
+[gd_resource type="Resource" script_class="EventDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/event_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = "priya_conflict"
+title = "Priya conflict"
+kind = "say"
+from = "priya"
+text = "Tip: the Alignment Sync at 11 is optional-ish. Block your calendar over it in SynerCalendar, then hit 'Decline: conflict'. The system approves it by itself."
+schedule = [{"day": 1, "at": 625}]

@@ -1,0 +1,38 @@
+[gd_resource type="Resource" script_class="EventDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/event_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = "hr_note_request"
+title = "Doctor's note"
+kind = "chat"
+from = "linda"
+thread = "general"
+window = 30
+no_excuse = true
+text = "{name}, please upload the note from today's {subject} appointment for your absence record."
+choices = [
+  {
+    "t": "Upload the doctor's note.",
+    "a": "forge_note",
+    "req": {"evidence": "doctor_note"},
+    "ok": {"susp": -4, "say": "Received. That is a very elaborate letterhead."}
+  },
+  {
+    "t": "\"It's in the post.\"",
+    "a": "bluff",
+    "p": 46,
+    "ok": {"say": "We'll wait."},
+    "ko": {"susp": 6, "say": "They email them now."}
+  },
+  {
+    "t": "\"They don't do notes for check-ups.\"",
+    "a": "bluff",
+    "p": 52,
+    "ok": {"say": "Fine. Marked as 'unverified'."},
+    "ko": {"susp": 6, "say": "I called. They do."}
+  }
+]
+expire = {"susp": 6, "say": "No note received. Absence marked as unexplained."}
+schedule = []

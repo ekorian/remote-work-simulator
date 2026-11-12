@@ -1,0 +1,12 @@
+[gd_resource type="Resource" script_class="EventDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/event_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = "priya_lies"
+title = "Priya lies"
+kind = "say"
+from = "priya"
+text = "every message has 'Make an excuse...'. careful: {boss} remembers what you told him. say your internet is down, then show up on camera, and he WILL ask."
+schedule = [{"day": 0, "at": 630}]

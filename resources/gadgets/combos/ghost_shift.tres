@@ -1,0 +1,11 @@
+[gd_resource type="Resource" script_class="ComboDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/combo_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = "ghost_shift"
+display_name = "Ghost Shift"
+needs = ["mousemover", "chatbot"]
+text = "MouseMover keeps you green while Chatbot Team answers at once instead of waiting. Routine pings never reach you."
+effects = {"reply_early": 1, "heat": 4}

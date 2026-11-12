@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="NpcDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/npc_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = "helena"
+display_name = "Helena Voss"
+role = "SVP, Vertical Synergy"
+color = Color(0.9098, 0.3294, 0.4196, 1)
+kind = "executive"
+has_dm = false
+thread = "general"
+gullibility = -12.0
+start_relationship = 40.0
+look = {"skin": 1, "hair": 1, "hair_color": 5, "shirt": 7, "pants": 1, "accessory": 0}

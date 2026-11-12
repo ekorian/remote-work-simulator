@@ -1,0 +1,11 @@
+[gd_resource type="Resource" script_class="ComboDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/combo_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = "desk_theatre"
+display_name = "Desk Theatre"
+needs = ["mousemover", "duck"]
+text = "Mouse and keyboard moving together look human: Heat drops, but one jam takes the whole act down."
+effects = {"heat": -6, "fail": 15}

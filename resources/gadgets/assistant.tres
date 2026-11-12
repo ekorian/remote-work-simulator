@@ -1,0 +1,37 @@
+[gd_resource type="Resource" script_class="GadgetDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/gadget_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = "assistant"
+display_name = "Meeting Assistant"
+kind = "use"
+needs_net = true
+unlock_day = 3
+blurb = "Listens to meetings and generates corporate-sounding answers on your behalf."
+fail_event = "assistant_absurd"
+fail_text = "Meeting Assistant answered a question about the budget with a recipe for banana bread."
+levels = [
+  {
+    "price": 160,
+    "reliability": 86.0,
+    "heat": 10,
+    "can": ["meeting_answers"],
+    "text": "Adds 'Let the Meeting Assistant answer' to every meeting question."
+  },
+  {
+    "price": 130,
+    "reliability": 90.0,
+    "heat": 8,
+    "can": ["meeting_answers", "auto_answer"],
+    "text": "Steps in by itself when you freeze, instead of awkward silence."
+  },
+  {
+    "price": 170,
+    "reliability": 94.0,
+    "heat": 6,
+    "can": ["meeting_answers", "auto_answer"],
+    "text": "Reads the room. Markedly more reliable."
+  }
+]

@@ -1,0 +1,31 @@
+[gd_resource type="Resource" script_class="EventDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/event_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = "lunch_order"
+title = "Lunch order"
+kind = "chat"
+from = "linda"
+thread = "general"
+text = "Poll: which 'fun' theme for Friday's virtual lunch? {name}, you haven't voted in 14 polls."
+choices = [
+  {
+    "t": "Vote for 'Hats'.",
+    "a": "react",
+    "ok": {"ill": 2, "say": "Thank you for participating in culture!"}
+  },
+  {
+    "t": "Write a thoughtful paragraph about team rituals",
+    "a": "real_answer",
+    "ok": {"ill": 5, "susp": -3, "say": "Wow. I'm putting this in the newsletter."}
+  }
+]
+expire = {"susp": 2, "say": "15 polls."}
+window = 40
+routine = true
+no_excuse = true
+conditions = {}
+pool = ""
+schedule = [{"day": 3, "at": 800}]

@@ -1,0 +1,104 @@
+[gd_resource type="Resource" script_class="TextBankDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/text_bank_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = "office"
+lines = {
+  "chatter": [
+    ["general", "kevin", "Just hit a 5am gym session AND shipped two PRs before standup. Grindset."],
+    [
+      "general",
+      "linda",
+      "Reminder: the 'Wellness Wednesday' webinar is mandatory. Attendance is how we measure wellness."
+    ],
+    [
+      "general",
+      "dave",
+      "Does anyone know who owns the 'legacy-do-not-touch' server? Asking for a friend who touched it."
+    ],
+    ["team", "priya", "Fixed the build. Again. You're welcome. Again."],
+    ["general", "it", "The VPN will be down for maintenance during the hours you need it."],
+    ["team", "kevin", "Can we get a retro on why the retro ran over?"],
+    ["general", "linda", "Someone left a fish in the 4th floor microwave. This is a culture issue."],
+    ["team", "dave", "brb, 'vendor sync'"],
+    ["general", "kevin", "Thrilled to announce I've been nominated for Synergist of the Month by me."],
+    ["team", "martin", "Team, let's be more intentional about our intentionality."],
+    ["general", "it", "Please stop naming your laptops 'Martin's Problem'."],
+    ["team", "priya", "If anyone needs me I'll be doing all of your jobs."],
+    ["general", "martin", "Just read a book summary about a book about focus. Game changer."],
+    ["general", "dave", "Whoever keeps booking the 'Focus Pod' for naps: respect."]
+  ],
+  "auto_replies": [
+    "Great point - let me circle back with a fuller answer shortly!",
+    "100%. Adding this to my radar.",
+    "Yes! Thanks for flagging. On it.",
+    "Love this. Let's take it offline.",
+    "Acknowledged - will action and revert."
+  ],
+  "missed": [
+    "We waited five minutes for you in \"{m}\". Where were you?",
+    "You missed \"{m}\". That's going in my little notebook.",
+    "\"{m}\" happened without you. Kevin took your action items. Then gave them back."
+  ],
+  "block_titles": [
+    "Vendor Sync (External)",
+    "Deep Work: Strategic Runway",
+    "1:1 w/ Skip-Level (tentative)",
+    "Architecture Guild",
+    "Client Discovery Call",
+    "Roadmap Grooming",
+    "Dentist (do not book)"
+  ],
+  "fake_updates": [
+    "{key}: good momentum today, operationalising the core learnings. ~{pct}% there.",
+    "{key} update: unblocked a key dependency (myself). Now at {pct}%.",
+    "Quick one on {key}: de-risked the critical path, converging on done. {pct}%.",
+    "{key}: refactored the approach to be more outcome-oriented. {pct}% and climbing.",
+    "{key} is tracking green. Socialising the solution with stakeholders. {pct}%.",
+    "Heads up: {key} is in the 'last 10%' phase (the long one). {pct}%."
+  ],
+  "report_verbs": [
+    "Operationalised",
+    "Socialised",
+    "Right-sized",
+    "Double-clicked on",
+    "Future-proofed",
+    "Aligned on",
+    "De-risked",
+    "Pressure-tested"
+  ],
+  "report_nouns": [
+    "the deliverables runway",
+    "cross-functional synergies",
+    "our north-star metrics",
+    "the stakeholder narrative",
+    "key learnings",
+    "the strategic backlog",
+    "a holistic paradigm"
+  ],
+  "report_tails": [
+    "ahead of the curve.",
+    "with strong tailwinds.",
+    "pending alignment.",
+    "at 110% velocity.",
+    "per the roadmap.",
+    "to move the needle."
+  ],
+  "report_ok": [
+    "Great report. Didn't read it, but great length.",
+    "Love the bullet points. Very bullet-y.",
+    "Forwarding this to leadership. Nice."
+  ],
+  "assistant_ok": [
+    "Great answer. Very structured.",
+    "Yes. Exactly that. Everyone write that down.",
+    "Couldn't have put it better myself."
+  ],
+  "assistant_absurd": [
+    "...Did you just say 'preheat the oven to 180'?",
+    "Why did you answer that with 'As an AI language model'?",
+    "{name}, the question was about the budget. You said 'Tuesday'."
+  ]
+}

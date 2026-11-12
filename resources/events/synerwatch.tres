@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="EventDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/event_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = "synerwatch"
+title = "Introducing SynerWatch(TM) Activity Monitoring"
+kind = "mail"
+from = "it"
+subject = "Introducing SynerWatch(TM) Activity Monitoring"
+body = "Team,\n\nStarting today, SynerWatch measures keyboard activity, 'screen liveliness' and unauthorised devices on every remote laptop.\n\nScans may now happen without notice. Automation tools generate 'heat' and WILL be found.\n\nThis is about trust.\n\nIT"
+choices = []
+expire = {}
+window = 90
+schedule = [{"day": 3, "at": 545}]

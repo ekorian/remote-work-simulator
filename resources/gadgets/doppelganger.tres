@@ -1,0 +1,41 @@
+[gd_resource type="Resource" script_class="GadgetDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/gadget_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = "doppelganger"
+display_name = "AI Doppelganger"
+kind = "use"
+needs_net = true
+unlock_day = 3
+requires = {"chatbot": 1, "assistant": 1}
+blurb = "An AI clone built from your chatbots and meeting assistant. It attends meetings as you. It has opinions."
+fail_event = "doppel_meltdown"
+fail_text = "Your AI Doppelganger froze mid-nod, then announced it was 'pivoting to consulting'."
+levels = [
+  {
+    "price": 260,
+    "reliability": 85.0,
+    "heat": 18,
+    "chaos": 10,
+    "can": ["attend_meetings", "autonomous"],
+    "text": "Attends optional meetings for you, automatically, while switched on."
+  },
+  {
+    "price": 200,
+    "reliability": 89.0,
+    "heat": 16,
+    "chaos": 14,
+    "can": ["attend_meetings", "autonomous", "do_tickets"],
+    "text": "Also works one assigned ticket in the background. Has started 'having ideas'."
+  },
+  {
+    "price": 240,
+    "reliability": 92.0,
+    "heat": 14,
+    "chaos": 18,
+    "can": ["attend_meetings", "autonomous", "do_tickets"],
+    "text": "More convincing than you are. More reliable. Noticeably more independent."
+  }
+]

@@ -1,0 +1,47 @@
+[gd_resource type="Resource" script_class="DialogueDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/dialogue_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = "screen_share"
+beats = [
+  {
+    "who": "martin",
+    "no_excuse": true,
+    "text": "Uh, {name}? You're sharing your screen. Is that... a shop called 'ShadyDeals'? And a video game?",
+    "choices": [
+      {
+        "t": "\"Competitor research. I'm benchmarking their checkout flow.\"",
+        "a": "jargon",
+        "p": 50,
+        "tags": ["jargon"],
+        "ok": {"ill": 3, "say": "Oh. Smart. Share your findings."},
+        "ko": {"susp": 9, "say": "The cart has a mouse jiggler in it."}
+      },
+      {
+        "t": "\"That's a pop-up! I think this machine has malware.\"",
+        "a": "blame",
+        "p": 52,
+        "ok": {"claim": "hardware_malfunction", "say": "Yikes. Close it. I'll get IT to scan your machine."},
+        "ko": {"susp": 8, "say": "You typed the address in while we watched."}
+      },
+      {
+        "t": "Slam the Keyboard Duck's fake code window on top.",
+        "a": "use_gadget",
+        "ability": "screen_fake",
+        "req": {"ability": "screen_fake"},
+        "ok": {"susp": -2, "ill": 4, "say": "...Must have been a glitch. That's a lot of code."},
+        "ko": {"susp": 10, "say": "Now it says DEMO MODE."}
+      },
+      {
+        "t": "Stop sharing and say nothing.",
+        "a": "deflect",
+        "p": 44,
+        "ok": {"say": "...Moving on."},
+        "ko": {"susp": 7, "say": "We all saw it, {name}."}
+      }
+    ],
+    "silence": {"susp": 10, "say": "It's still up there, {name}. We're all just looking at it."}
+  }
+]

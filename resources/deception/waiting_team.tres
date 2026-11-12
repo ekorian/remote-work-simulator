@@ -1,0 +1,54 @@
+[gd_resource type="Resource" script_class="ClaimDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/claim_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = "waiting_team"
+title = "Waiting for another team"
+ticket_scoped = true
+line = "I'm blocked on the {subject} team. Ball's in their court."
+subjects = ["Platform", "Security", "Legal", "Data Engineering"]
+contexts = ["chat", "ticket"]
+base = 53
+duration = 180
+cover = 0
+reuse_penalty = 14
+risk = 50
+contradicted_by = ["team_denies", "ticket_activity"]
+conflicts = []
+evidence = {"clarification_open": 26}
+effect = {"extend": 1440}
+followups = [
+  {
+    "kind": "verify",
+    "fact": "team_denies",
+    "after": [20, 35],
+    "ok_line": "I chased them. They confirm they owe you an answer. Sit tight."
+  },
+  {"kind": "event", "event": "unblock_meeting", "after": [40, 70], "chance": 40}
+]
+strength = "Pushes a ticket back a full day. A clarification request on the ticket makes it check out."
+weakness = "Martin may ask that team. Touching the ticket while 'blocked' exposes you. He might book a meeting to unblock you."
+accepted = "Classic {subject}. I'll chase them. (I won't.)"
+rejected = "I spoke to them this morning. They're waiting on YOU."
+exposed = {
+  "default": "I just asked the {subject} team. They have never heard of you, or the ticket.",
+  "ticket_activity": "You said you were blocked. You just posted progress. Which is it?"
+}
+recoveries = [
+  {
+    "t": "\"I must have pinged the wrong channel. Following up now.\"",
+    "a": "bluff",
+    "p": 52,
+    "ok": {"claim_status": "patched", "say": "Do that. And cc me."},
+    "ko": {"susp": 8, "claim_status": "exposed", "say": "There's no message in any channel."}
+  },
+  {
+    "t": "\"They unblocked me five minutes ago, actually!\"",
+    "a": "bluff",
+    "p": 46,
+    "ok": {"susp": -1, "claim_status": "patched", "say": "Great timing. So it's moving again."},
+    "ko": {"susp": 7, "claim_status": "exposed", "say": "They said they've never talked to you."}
+  }
+]

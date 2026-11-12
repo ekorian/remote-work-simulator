@@ -1,0 +1,27 @@
+[gd_resource type="Resource" script_class="EventDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/event_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = "emoji"
+title = "Emoji"
+kind = "chat"
+from = "martin"
+thread = "team"
+text = "Team! Drop a :rocket: if you're pumped for Q3!"
+choices = [
+  {"t": ":rocket:", "a": "react", "ok": {"ill": 2, "say": "THAT'S the energy."}},
+  {
+    "t": "Write a heartfelt paragraph about Q3",
+    "a": "real_answer",
+    "ok": {"ill": 5, "susp": -3, "say": "Screenshotting this for the board."}
+  }
+]
+expire = {"susp": 3, "say": "{name}? No rocket? Noted."}
+window = 22
+routine = true
+no_excuse = true
+conditions = {}
+pool = "boss"
+schedule = []

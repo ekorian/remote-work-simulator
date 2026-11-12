@@ -1,0 +1,50 @@
+[gd_resource type="Resource" script_class="DialogueDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/dialogue_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = "fun"
+beats = [
+  {
+    "who": "linda",
+    "text": "Welcome to MANDATORY FUN! Two truths and a lie. {name}, you're first!",
+    "choices": [
+      {
+        "t": "Tell three lies. Nobody will check.",
+        "a": "bluff",
+        "p": 78,
+        "tags": ["video"],
+        "ok": {"ill": 3, "say": "A lion tamer AND a twin? Wow!"},
+        "ko": {"susp": 3, "say": "Dave says you told a different three last year."}
+      },
+      {
+        "t": "Share something genuine and vulnerable",
+        "a": "honest",
+        "ok": {"hp": -4, "ill": 2, "say": "...Thank you for sharing. Moving on."}
+      }
+    ]
+  },
+  {
+    "who": "linda",
+    "text": "Now: virtual scavenger hunt! Find something in your home that represents SYNERGY!",
+    "choices": [
+      {
+        "t": "Hold up the nearest object. \"This.\"",
+        "a": "bluff",
+        "p": 72,
+        "tags": ["video"],
+        "ok": {"ill": 2, "say": "A... sock. Because it has a partner! Love it."},
+        "ko": {"susp": 3, "say": "That's a parking ticket."}
+      },
+      {
+        "t": "Sprint around the flat with real enthusiasm",
+        "a": "volunteer",
+        "ok": {"en": -8, "ill": 5, "susp": -3, "say": "THAT is the energy we need!"}
+      }
+    ]
+  }
+]
+pool = ["camera"]
+pick = 1
+after = {"susp": -2}

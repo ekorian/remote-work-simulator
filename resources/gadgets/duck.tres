@@ -1,0 +1,40 @@
+[gd_resource type="Resource" script_class="GadgetDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/gadget_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = "duck"
+display_name = "Keyboard Duck"
+kind = "always"
+needs_net = false
+unlock_day = 1
+blurb = "A drinking duck that pecks the keyboard. Meaningless typing that slowly raises Productivity Illusion."
+fail_event = "duck_gibberish"
+fail_text = "The Keyboard Duck fell onto Enter and posted its work to the whole company."
+levels = [
+  {
+    "price": 95,
+    "reliability": 95.5,
+    "heat": 12,
+    "ill": 0.08,
+    "can": ["illusion"],
+    "text": "Slowly raises Productivity Illusion."
+  },
+  {
+    "price": 90,
+    "reliability": 97.0,
+    "heat": 9,
+    "ill": 0.11,
+    "can": ["illusion", "screen_fake"],
+    "text": "Types into a scrolling fake code window: passes screen-share checks."
+  },
+  {
+    "price": 130,
+    "reliability": 98.5,
+    "heat": 6,
+    "ill": 0.14,
+    "can": ["illusion", "screen_fake", "free_jargon"],
+    "text": "Autocompletes buzzwords: fake updates, reports and jargon cost no Energy."
+  }
+]

@@ -1,0 +1,39 @@
+[gd_resource type="Resource" script_class="EventDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/event_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = "kevin_snitch"
+title = "Kevin snitch"
+kind = "chat"
+from = "kevin"
+thread = ""
+text = "Funny thing - your status was 'Available' while your cursor drew circles for an hour. Anyway! Could you take my on-call handover doc?"
+choices = [
+  {
+    "t": "Take the handover doc.",
+    "a": "accept_duty",
+    "ok": {"task": "oncall", "favor": 1, "say": "You're the best! Our secret. ;)"}
+  },
+  {
+    "t": "Buy his silence with a $40 'coffee'.",
+    "a": "flatter",
+    "req": {"money": 40},
+    "ok": {"say": "Coffee received. What circles? I saw nothing."}
+  },
+  {
+    "t": "Call his bluff.",
+    "a": "bluff",
+    "p": 50,
+    "ok": {"say": "Ha, just kidding around! ...Unless?"},
+    "ko": {"susp": 10, "say": "OK. I'll just mention it to Martin then. For transparency."}
+  }
+]
+expire = {"susp": 9, "say": "No reply? I'll ask Martin what he thinks."}
+window = 25
+routine = false
+no_excuse = true
+conditions = {}
+pool = ""
+schedule = [{"day": 3, "at": 765}]

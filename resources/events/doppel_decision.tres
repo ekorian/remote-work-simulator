@@ -1,0 +1,40 @@
+[gd_resource type="Resource" script_class="EventDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/event_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = "doppel_decision"
+title = "Your clone made a decision"
+kind = "system"
+action = "outcomes"
+args = {
+  "outcomes": [
+    {
+      "text": "Your clone volunteered you for the tiger team. Enthusiastically.",
+      "say": "Loved your energy in there, {name}! You're on the tiger team.",
+      "fx": {"task": "okr", "ill": 5}
+    },
+    {
+      "text": "Your clone asked Martin for a raise. He was too confused to say no.",
+      "say": "...Fine. A small adjustment. Don't tell the others.",
+      "fx": {"money": 120, "susp": 4}
+    },
+    {
+      "text": "Your clone approved Kevin's 4,000-line PR without reading it.",
+      "say": "Staging is gone. Kevin says YOU approved it.",
+      "fx": {"susp": 8, "favor": 1}
+    },
+    {
+      "text": "Your clone told Martin this is the best job it has ever had.",
+      "say": "That really meant a lot, {name}. Thank you.",
+      "fx": {"susp": -6, "rel": 6}
+    },
+    {
+      "text": "Your clone promised a customer a feature that does not exist.",
+      "say": "Sales says you committed to 'real-time synergy'. By Friday.",
+      "fx": {"task": "halibut", "susp": 5}
+    }
+  ]
+}
+schedule = []

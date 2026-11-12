@@ -1,0 +1,31 @@
+[gd_resource type="Resource" script_class="EventDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/event_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = "linda_form"
+title = "Linda form"
+kind = "chat"
+from = "linda"
+thread = "general"
+text = "{name}, you have not signed the updated Desk Ergonomics Policy (v14)."
+choices = [
+  {
+    "t": "Sign without reading.",
+    "a": "ack",
+    "ok": {"ill": 1, "say": "Signed. You have agreed to sit up straight."}
+  },
+  {
+    "t": "Read all 40 pages first",
+    "a": "do_training",
+    "ok": {"ill": 4, "susp": -2, "say": "You found a typo on page 31. HR is in your debt."}
+  }
+]
+expire = {"susp": 3, "say": "Unsigned. Escalating to your manager."}
+window = 30
+routine = true
+no_excuse = true
+conditions = {}
+pool = "peer"
+schedule = []

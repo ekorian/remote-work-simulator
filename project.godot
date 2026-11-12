@@ -21,20 +21,10 @@ config/icon="res://icon.svg"
 
 [autoload]
 
-Cfg="*res://scripts/core/config.gd"
 Bus="*res://scripts/core/bus.gd"
-Content="*res://scripts/core/content.gd"
-Game="*res://scripts/core/game.gd"
-Actions="*res://scripts/core/actions.gd"
-Deception="*res://scripts/core/deception.gd"
-Interact="*res://scripts/core/interact.gd"
-Auto="*res://scripts/core/automation.gd"
-Corp="*res://scripts/core/corp.gd"
-Director="*res://scripts/core/director.gd"
-SaveSys="*res://scripts/core/save_system.gd"
+Game="*res://scripts/core/game_manager.gd"
 Sfx="*res://scripts/core/audio.gd"
 Prefs="*res://scripts/core/prefs.gd"
-Tutor="*res://scripts/core/tutor.gd"
 
 [display]
 

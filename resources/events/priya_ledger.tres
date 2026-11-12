@@ -1,0 +1,12 @@
+[gd_resource type="Resource" script_class="EventDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/event_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = "priya_ledger"
+title = "Priya ledger"
+kind = "say"
+from = "priya"
+text = "he means it. open ShadowIT on your work computer: the Alibi Ledger shows every story you've told and what would blow it. back them up with evidence first."
+schedule = [{"day": 2, "at": 549}]

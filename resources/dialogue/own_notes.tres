@@ -1,0 +1,27 @@
+[gd_resource type="Resource" script_class="DialogueDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/dialogue_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = "own_notes"
+beats = [
+  {
+    "who": "martin",
+    "text": "Who wants to own the retro notes? ...Anyone?",
+    "choices": [
+      {
+        "t": "Stay perfectly still. Become furniture.",
+        "a": "deflect",
+        "p": 74,
+        "ok": {"say": "...Kevin? Thanks, Kevin."},
+        "ko": {"susp": 3, "task": "retro", "say": "{name}, you blinked. It's yours."}
+      },
+      {
+        "t": "Volunteer.",
+        "a": "volunteer",
+        "ok": {"susp": -6, "ill": 5, "task": "retro", "say": "{name}! Great initiative."}
+      }
+    ]
+  }
+]

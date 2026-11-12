@@ -1,0 +1,41 @@
+[gd_resource type="Resource" script_class="EventDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/event_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = "quick_q"
+title = "Quick q"
+kind = "chat"
+from = "martin"
+thread = ""
+text = "Quick q - what's our north star for the Q3 alignment initiative?"
+choices = [
+  {
+    "t": "Customer-centric synergy at scale.",
+    "a": "jargon",
+    "p": 72,
+    "tags": ["jargon"],
+    "ok": {"ill": 3, "susp": -1, "say": "YES. Putting that on a slide."},
+    "ko": {"susp": 5, "say": "That was last quarter's north star. Keep up."}
+  },
+  {
+    "t": "Look it up and give a precise answer",
+    "a": "real_answer",
+    "ok": {"ill": 6, "susp": -4, "say": "Wow, thorough. Thanks!"}
+  },
+  {
+    "t": "Great question for Priya, actually.",
+    "a": "deflect",
+    "p": 64,
+    "ok": {"say": "Good shout. @Priya?"},
+    "ko": {"susp": 5, "say": "I asked YOU."}
+  }
+]
+expire = {"susp": 7}
+window = 22
+routine = true
+no_excuse = false
+conditions = {}
+pool = "boss"
+schedule = []

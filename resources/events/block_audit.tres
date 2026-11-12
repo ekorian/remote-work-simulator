@@ -1,0 +1,31 @@
+[gd_resource type="Resource" script_class="EventDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/event_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = "block_audit"
+title = "Calendar question"
+kind = "chat"
+from = "martin"
+window = 20
+text = "Saw \"{title}\" on your calendar. What was that about?"
+choices = [
+  {
+    "t": "Cross-functional pre-alignment. Very productive.",
+    "a": "jargon",
+    "p": 66,
+    "tags": ["jargon"],
+    "ok": {"ill": 2, "say": "Love a pre-alignment."},
+    "ko": {"susp": 8, "say": "I asked the people in it. There were no people in it."}
+  },
+  {
+    "t": "Personal appointment. Sorry, should've flagged.",
+    "a": "bluff",
+    "p": 60,
+    "ok": {"say": "No worries. Flag it next time."},
+    "ko": {"susp": 6, "say": "It was titled 'Architecture Guild'."}
+  }
+]
+expire = {"susp": 8}
+schedule = []

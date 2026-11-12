@@ -1,0 +1,29 @@
+[gd_resource type="Resource" script_class="EventDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/event_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = "training"
+title = "MANDATORY: Annual Compliance Training (40 min video + quiz)"
+kind = "mail"
+from = "linda"
+subject = "MANDATORY: Annual Compliance Training (40 min video + quiz)"
+body = "Hi {name},\n\nYou are 212 days overdue on 'Ethics & You: A Journey'. The video cannot be skipped, sped up, or enjoyed.\n\nComplete it today.\n\nLinda"
+choices = [
+  {
+    "t": "Let it play on mute and guess the quiz.",
+    "a": "bg_training",
+    "p": 74,
+    "ok": {"ill": 3, "say": "Linda: Training complete. Quiz score: 60% (pass)."},
+    "ko": {"susp": 7, "say": "Linda: You answered 'C' to every question, including the one asking your name."}
+  },
+  {
+    "t": "Watch all 40 minutes and take notes",
+    "a": "do_training",
+    "ok": {"ill": 5, "susp": -3, "say": "Linda: 100% on the quiz. Nobody has ever done that."}
+  }
+]
+expire = {"susp": 8, "say": "Linda: Training still incomplete. I've cc'd your manager."}
+window = 200
+schedule = [{"day": 2, "at": 735}]

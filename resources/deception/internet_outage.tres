@@ -1,0 +1,55 @@
+[gd_resource type="Resource" script_class="ClaimDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/claim_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = "internet_outage"
+title = "Internet outage"
+line = "My internet just died. Completely."
+contexts = ["chat", "meeting", "call"]
+base = 54
+duration = 60
+cover = 60
+reuse_penalty = 16
+risk = 60
+contradicted_by = ["online_status", "desk_message", "video_meeting", "auto_message", "auto_report", "router_on"]
+conflicts = ["prod_incident", "data_validation", "conflicting_meeting"]
+evidence = {"router_off": 24, "outage_reported": 22}
+followups = [
+  {
+    "kind": "verify",
+    "fact": "router_on",
+    "who": "it",
+    "after": [10, 14],
+    "ok_line": "We pinged your router: dead. Confirmed outage on your end. Hang in there."
+  }
+]
+strength = "Explains total silence for an hour. Phone replies and phone meetings stay fine (mobile data)."
+weakness = "IT pings your router in ~12 min: it must really be unplugged. Anything your computer does online exposes it, including your own gadgets."
+accepted = "Ugh, again? Fine. Ping me the second you're back."
+rejected = "Your status has been green all morning. Try again."
+exposed = {
+  "default": "I thought your internet wasn't working?",
+  "router_on": "IT just pinged your router. It answered. Happily. So what's actually going on?",
+  "video_meeting": "You're on camera. In HD. I thought your internet wasn't working?",
+  "online_status": "Your status has been green for ten minutes. On the internet you don't have.",
+  "auto_report": "Your status report just arrived, right on schedule. From your dead internet.",
+  "auto_message": "You just answered Kevin in chat. With what internet?"
+}
+recoveries = [
+  {
+    "t": "\"It literally just came back. This second.\"",
+    "a": "bluff",
+    "p": 50,
+    "ok": {"susp": -2, "claim_status": "patched", "say": "Convenient. Fine. Welcome back."},
+    "ko": {"susp": 8, "claim_status": "exposed", "say": "It came back the moment I asked. Sure."}
+  },
+  {
+    "t": "\"I'm tethering off my phone. It's costing me a fortune.\"",
+    "a": "bluff",
+    "p": 56,
+    "ok": {"susp": -1, "claim_status": "patched", "say": "Oof. Expense it. (Don't expense it.)"},
+    "ko": {"susp": 7, "claim_status": "exposed", "say": "Tethering. With that upload speed. No."}
+  }
+]

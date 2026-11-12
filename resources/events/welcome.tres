@@ -1,0 +1,34 @@
+[gd_resource type="Resource" script_class="EventDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/event_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = "welcome"
+title = "Welcome"
+kind = "chat"
+from = "martin"
+thread = ""
+text = "Morning {name}! Big week. Can I count on you to crush it?"
+choices = [
+  {
+    "t": "Absolutely. Crushing is imminent.",
+    "a": "jargon",
+    "p": 88,
+    "tags": ["jargon"],
+    "ok": {"ill": 3, "say": "That's what I like to hear!"},
+    "ko": {"susp": 3, "say": "...OK. Weird energy, but OK."}
+  },
+  {
+    "t": "What specifically needs crushing?",
+    "a": "honest",
+    "ok": {"susp": 2, "say": "You know. IT. The stuff. Check SynerTasks."}
+  }
+]
+expire = {"susp": 5, "say": "Not a great start to the week, {name}."}
+window = 30
+routine = true
+no_excuse = false
+conditions = {}
+pool = ""
+schedule = [{"day": 0, "at": 544}]

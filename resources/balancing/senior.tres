@@ -1,0 +1,23 @@
+[gd_resource type="Resource" script_class="DifficultyDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/difficulty_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = "senior"
+display_name = "Senior Bullshitter"
+tag = "HARD"
+color = Color(1, 0.702, 0.2784, 1)
+susp = 1.7
+work_hp = 20.0
+lethal = false
+recover = 0.85
+window = 0.8
+gadget_fail = 1.5
+event_rate = 1.2
+boss_check = 1.35
+cost = 1.15
+cred = -5
+stress = 1.4
+score = 2.6
+desc = "Suspicion x1.7. Frequent manager checks. Gadgets break when you need them most. Work is agony: 20 HP per action."

@@ -1,0 +1,47 @@
+[gd_resource type="Resource" script_class="ClaimDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/claim_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = "medical"
+title = "Medical appointment"
+line = "I've got a {subject} appointment. It's been booked for weeks."
+subjects = ["dentist", "physio", "eye test", "dermatologist"]
+contexts = ["chat", "meeting"]
+base = 47
+duration = 90
+cover = 90
+reuse_penalty = 24
+risk = 30
+contradicted_by = ["online_status", "desk_message", "video_meeting", "ticket_activity", "auto_message"]
+conflicts = ["prod_incident", "data_validation", "conflicting_meeting", "family_emergency"]
+evidence = {"doctor_note": 34, "calendar_block": 18}
+followups = [{"kind": "event", "event": "hr_note_request", "after": [35, 70], "chance": 60}]
+strength = "A long, guilt-free absence. A printed doctor's note makes it nearly bulletproof."
+weakness = "You are supposedly not at home: showing as Available (even via MouseMover) exposes it. HR may ask for the note."
+accepted = "Right, health first. See you after."
+rejected = "Weeks, you say. It's not in your calendar."
+exposed = {
+  "default": "I thought you were at the {subject}?",
+  "online_status": "You're showing as Available. From the {subject}'s chair?",
+  "video_meeting": "Is the {subject} in the room with you right now?",
+  "ticket_activity": "You updated a ticket from your {subject} appointment. Dedicated. Or lying."
+}
+recoveries = [
+  {
+    "t": "\"They were running late, so I came home.\"",
+    "a": "bluff",
+    "p": 54,
+    "ok": {"susp": -1, "claim_status": "patched", "say": "Typical. OK."},
+    "ko": {"susp": 8, "claim_status": "exposed", "say": "The appointment was twenty minutes ago."}
+  },
+  {
+    "t": "\"I'm working from the waiting room. That's how committed I am.\"",
+    "a": "jargon",
+    "p": 46,
+    "tags": ["jargon"],
+    "ok": {"ill": 3, "claim_status": "patched", "say": "...That's actually impressive."},
+    "ko": {"susp": 8, "claim_status": "exposed", "say": "I can see your sofa."}
+  }
+]

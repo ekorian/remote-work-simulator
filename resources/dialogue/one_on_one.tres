@@ -1,0 +1,63 @@
+[gd_resource type="Resource" script_class="DialogueDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/dialogue_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = "one_on_one"
+beats = [
+  {
+    "who": "martin",
+    "text": "1:1 time. How do you feel about your workload?",
+    "choices": [
+      {
+        "t": "\"Stretched, but in a growth-y way.\"",
+        "a": "jargon",
+        "p": 74,
+        "tags": ["jargon", "video"],
+        "ok": {"ill": 3, "susp": -2, "say": "That's the sweet spot."},
+        "ko": {"susp": 5, "say": "Stretched? Your board is empty."}
+      },
+      {
+        "t": "\"I could take on more!\"",
+        "a": "accept_duty",
+        "ok": {"susp": -8, "ill": 5, "task": "okr", "say": "Music to my ears. I have just the thing."}
+      },
+      {
+        "t": "\"Honestly, I don't know what I do here.\"",
+        "a": "honest",
+        "ok": {"susp": 10, "say": "...Neither do I, now that you mention it."}
+      }
+    ]
+  },
+  {
+    "who": "martin",
+    "text": "Be honest: do people on the team seem... engaged? Like, really working?",
+    "choices": [
+      {
+        "t": "\"Everyone's crushing it. Especially me.\"",
+        "a": "bluff",
+        "p": 62,
+        "tags": ["video"],
+        "ok": {"susp": -3, "say": "That's my read too."},
+        "ko": {"susp": 6, "say": "Hm. That's not what SynerWatch says."}
+      },
+      {
+        "t": "Subtly throw Kevin under the bus.",
+        "a": "blame",
+        "p": 58,
+        "tags": ["video"],
+        "ok": {"susp": -4, "say": "Interesting. I've had my eye on him."},
+        "ko": {"susp": 7, "say": "Kevin said the same thing about you."}
+      },
+      {
+        "t": "Praise Priya (she deserves it).",
+        "a": "chat",
+        "ok": {"favor": 1, "say": "She IS great. I should tell her. (He won't.)"}
+      }
+    ]
+  }
+]
+pool = []
+pick = 0
+after = {"susp": -1}

@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="TaskDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/task_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = "retro"
+key = "SYN-115"
+title = "Write up the retro notes"
+desc = "Summarise what went well (nothing) and what to improve (everything) in a positive tone."
+prio = 3
+effort = 1
+due_day = 1
+due_t = 900

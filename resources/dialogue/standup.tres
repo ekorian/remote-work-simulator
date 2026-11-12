@@ -1,0 +1,38 @@
+[gd_resource type="Resource" script_class="DialogueDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/dialogue_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = "standup"
+beats = [
+  {
+    "who": "martin",
+    "text": "Standup time. {name}: yesterday, today, blockers. Go.",
+    "choices": [
+      {
+        "t": "\"Synergised the pipeline. Today: more synergy. No blockers.\"",
+        "a": "jargon",
+        "p": 70,
+        "tags": ["jargon"],
+        "ok": {"susp": -3, "ill": 5, "say": "Crisp. Next."},
+        "ko": {"susp": 6, "say": "That's word-for-word what you said yesterday."}
+      },
+      {
+        "t": "\"Same as yesterday.\"",
+        "a": "bluff",
+        "p": 54,
+        "ok": {"susp": -1, "ill": 2, "say": "OK. Next."},
+        "ko": {"susp": 5, "say": "And what was yesterday?"}
+      },
+      {
+        "t": "Give a real, detailed status",
+        "a": "real_answer",
+        "ok": {"susp": -6, "ill": 8, "say": "Detail! In standup! Everyone take note."}
+      }
+    ]
+  }
+]
+pool = ["own_notes", "camera", "silence"]
+pick = 1
+after = {"ill": 2}

@@ -1,0 +1,41 @@
+[gd_resource type="Resource" script_class="EventDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/event_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = "blockers"
+title = "Blockers"
+kind = "chat"
+from = "martin"
+thread = ""
+text = "Any blockers I should know about?"
+choices = [
+  {
+    "t": "\"None. Full steam ahead.\"",
+    "a": "bluff",
+    "p": 78,
+    "ok": {"ill": 2, "say": "Music to my ears."},
+    "ko": {"susp": 4, "say": "Then why is nothing moving on the board?"}
+  },
+  {
+    "t": "Invent an impressive-sounding blocker.",
+    "a": "jargon",
+    "p": 60,
+    "tags": ["jargon"],
+    "ok": {
+      "ill": 2,
+      "cover": 20,
+      "cover_cat": "focus",
+      "say": "Ooh. That sounds gnarly. Take the time you need."
+    },
+    "ko": {"susp": 6, "say": "'Quantum dependency drift' isn't a thing. I asked Priya."}
+  }
+]
+expire = {"susp": 5}
+window = 22
+routine = true
+no_excuse = false
+conditions = {}
+pool = "boss"
+schedule = []

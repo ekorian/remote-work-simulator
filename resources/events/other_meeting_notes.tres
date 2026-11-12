@@ -1,0 +1,36 @@
+[gd_resource type="Resource" script_class="EventDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/event_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = "other_meeting_notes"
+title = "Meeting notes"
+kind = "chat"
+from = "martin"
+window = 24
+text = "How did the {subject} go? Send me the notes when you get a sec."
+choices = [
+  {
+    "t": "Send three bullet points of pure jargon.",
+    "a": "jargon",
+    "p": 66,
+    "tags": ["jargon"],
+    "ok": {"ill": 3, "say": "Great notes. Very aligned."},
+    "ko": {"susp": 6, "say": "These are the same three bullets as last time."}
+  },
+  {
+    "t": "\"It was mostly confidential.\"",
+    "a": "bluff",
+    "p": 50,
+    "ok": {"say": "Ooh. Understood."},
+    "ko": {"susp": 6, "say": "I'm your manager."}
+  },
+  {
+    "t": "Write up real notes for a meeting that never happened",
+    "a": "write_report",
+    "ok": {"ill": 6, "susp": -3, "say": "Detailed! Forwarding these on."}
+  }
+]
+expire = {"susp": 5}
+schedule = []

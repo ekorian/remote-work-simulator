@@ -1,0 +1,48 @@
+[gd_resource type="Resource" script_class="EventDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/event_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = "chatbot_hallucination"
+title = "An invented project"
+kind = "chat"
+from = "martin"
+window = 18
+no_excuse = true
+facts = ["auto_message"]
+text = "Your last message mentions 'Project Halibut' for our client 'Zentrix'. We don't have a client called Zentrix. What is Project Halibut?"
+choices = [
+  {
+    "t": "\"It's a codename. Need-to-know.\"",
+    "a": "bluff",
+    "p": 46,
+    "ok": {
+      "ill": 5,
+      "task": "halibut",
+      "say": "Ooh. A stealth project. I want weekly updates. Put it on the board."
+    },
+    "ko": {"susp": 9, "say": "I'm the one who needs to know."}
+  },
+  {
+    "t": "\"Autocorrect. I meant 'the pipeline'.\"",
+    "a": "blame",
+    "p": 56,
+    "ok": {"say": "Autocorrect. Sure. OK."},
+    "ko": {"susp": 7, "say": "Autocorrect invented a customer and a fish?"}
+  },
+  {
+    "t": "\"That's Kevin's thing. Ask him.\"",
+    "a": "deflect",
+    "p": 50,
+    "ok": {"say": "KEVIN."},
+    "ko": {"susp": 8, "say": "Kevin has never heard of it either."}
+  },
+  {
+    "t": "Admit a chatbot wrote it.",
+    "a": "honest",
+    "ok": {"susp": 12, "say": "A chatbot is answering me. For how long?"}
+  }
+]
+expire = {"susp": 10, "say": "No answer. I've forwarded 'Project Halibut' to legal."}
+schedule = []

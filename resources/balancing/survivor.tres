@@ -1,0 +1,23 @@
+[gd_resource type="Resource" script_class="DifficultyDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/difficulty_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = "survivor"
+display_name = "Corporate Survivor"
+tag = "STANDARD"
+color = Color(0.3098, 0.702, 1, 1)
+susp = 1.0
+work_hp = 8.0
+lethal = false
+recover = 1.0
+window = 1.0
+gadget_fail = 1.0
+event_rate = 1.0
+boss_check = 1.0
+cost = 1.0
+cred = 0
+stress = 1.0
+score = 1.6
+desc = "The intended experience. Normal suspicion, regular interruptions, moderate automation costs. Work hurts: 8 HP per action."

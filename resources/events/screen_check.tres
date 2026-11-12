@@ -1,0 +1,37 @@
+[gd_resource type="Resource" script_class="EventDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/event_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = "screen_check"
+title = "Screen check"
+kind = "chat"
+from = "martin"
+window = 14
+conditions = {"flag": "synerwatch"}
+text = "SynerWatch flagged 'low screen activity' on your machine. Share your screen for a sec?"
+choices = [
+  {
+    "t": "Share the Keyboard Duck's fake code window.",
+    "a": "use_gadget",
+    "ability": "screen_fake",
+    "req": {"ability": "screen_fake"},
+    "ok": {"susp": -5, "ill": 5, "say": "Whoa, that's a lot of code. OK, false alarm."},
+    "ko": {"susp": 12, "say": "Why does your screen say DEMO MODE?"}
+  },
+  {
+    "t": "Frantically open a spreadsheet, then share.",
+    "a": "bluff",
+    "p": 44,
+    "ok": {"susp": -2, "ill": 2, "say": "Looks busy enough. Carry on."},
+    "ko": {"susp": 9, "say": "That spreadsheet is empty and titled 'asdf'."}
+  },
+  {
+    "t": "Do some real work so there's something to show",
+    "a": "live_demo",
+    "ok": {"susp": -8, "ill": 8, "progress": 1, "say": "Great, thanks. Carry on."}
+  }
+]
+expire = {"susp": 11, "say": "No screen share. I'm logging that."}
+schedule = [{"day": 3, "at": 925}, {"day": 4, "at": 815}]

@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="TaskDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/task_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = "okr"
+key = "SYN-130"
+title = "Draft Q4 OKRs for the OKR Committee"
+desc = "Objectives must be 'ambitious yet already achieved'."
+prio = 2
+effort = 2
+due_day = 1
+due_t = 900

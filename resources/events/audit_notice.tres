@@ -1,0 +1,13 @@
+[gd_resource type="Resource" script_class="EventDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/event_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = "audit_notice"
+title = "Scan notice"
+kind = "mail"
+from = "it"
+subject = "Scheduled device scan in ~25 minutes"
+body = "A routine scan for unauthorised USB devices and automation software will run shortly.\n\nIf you have nothing plugged in, you have nothing to worry about.\n\n(Open ShadowIT and switch things off. The scan checks your current Heat.)"
+schedule = [{"day": 2, "at": 546}, {"day": 4, "at": 550}]

@@ -1,0 +1,35 @@
+[gd_resource type="Resource" script_class="EventDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/event_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = "phish"
+title = "URGENT: Your pasword expires in 5 minuts - click here"
+kind = "mail"
+from = "it"
+subject = "URGENT: Your pasword expires in 5 minuts - click here"
+body = "Dear Valued Employe,\n\nYour SynerCorp pasword will expire. Click hear to keep your acount: http://synercorp-secure.totally-legit.biz\n\nRegards,\nThe Real IT Departmant"
+choices = [
+  {
+    "t": "Report it as phishing. Look vigilant.",
+    "a": "report_phish",
+    "ok": {
+      "ill": 5,
+      "susp": -2,
+      "say": "IT: Well spotted. You passed the phishing simulation. Gold star added to your file."
+    }
+  },
+  {
+    "t": "Click the link. Free password!",
+    "a": "ack",
+    "ok": {
+      "susp": 6,
+      "task": "audit",
+      "say": "IT: You failed the phishing simulation. You've been assigned remedial paperwork."
+    }
+  }
+]
+expire = {"susp": 1}
+window = 120
+schedule = [{"day": 1, "at": 592}]

@@ -1,0 +1,40 @@
+[gd_resource type="Resource" script_class="EventDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/event_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = "status_line"
+title = "Hourly status"
+kind = "chat"
+from = "martin"
+routine = true
+window = 20
+trigger = "state"
+cooldown = 75
+conditions = {"escalation_min": 2}
+text = "Hourly status line, please. One sentence. What did the last hour produce?"
+choices = [
+  {
+    "t": "\"Solid momentum on the critical path.\"",
+    "a": "jargon",
+    "p": 76,
+    "tags": ["jargon"],
+    "ok": {"ill": 2, "susp": -2, "say": "Noted."},
+    "ko": {"susp": 3, "say": "That's what you said last hour. Word for word."}
+  },
+  {
+    "t": "Describe an hour of work that never happened.",
+    "a": "bluff",
+    "p": 62,
+    "ok": {"ill": 3, "susp": -3, "say": "Good. Keep that up."},
+    "ko": {"susp": 4, "say": "I can see the board. None of that happened."}
+  },
+  {
+    "t": "Give an honest, detailed account",
+    "a": "real_answer",
+    "ok": {"ill": 5, "susp": -4, "say": "This is what I'm talking about."}
+  }
+]
+expire = {"susp": 5, "say": "No status line. Writing that down."}
+schedule = []
