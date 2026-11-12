@@ -58,6 +58,7 @@ const DEFS := {
 	"fake_timesheet": {"cls": Cls.FAKE, "label": "Submit a creative timesheet", "en": -4},
 	"bg_training": {"cls": Cls.FAKE, "label": "Let the training play on mute", "en": -1},
 	"react": {"cls": Cls.FAKE, "label": "React with an emoji", "en": -1},
+	"hold_line": {"cls": Cls.FAKE, "label": "Stay on a pointless call", "en": -1},
 	"jargon": {"cls": Cls.FAKE, "label": "Answer in pure jargon", "en": -3},
 	"reply_all": {"cls": Cls.FAKE, "label": "Reply-all to look engaged", "en": -2},
 	"stage_desk": {"cls": Cls.FAKE, "label": "Stage a busy-looking desk", "en": -4},
@@ -91,6 +92,9 @@ const DEFS := {
 	# --- Social ------------------------------------------------------------
 	"do_favor": {"cls": Cls.SOCIAL, "label": "Cover for a colleague", "en": -3},
 	"chat": {"cls": Cls.SOCIAL, "label": "Chat", "en": -1},
+	"small_talk": {"cls": Cls.SOCIAL, "label": "Small talk", "en": -1},
+	"ask_favor": {"cls": Cls.SOCIAL, "label": "Ask a favour", "en": -2},
+	"gift": {"cls": Cls.SOCIAL, "label": "Send a gift card", "en": 0},
 	# --- Leisure and upkeep ------------------------------------------------
 	"leisure": {"cls": Cls.LEISURE, "label": "Relax", "en": 0},
 	"maintain": {"cls": Cls.UPKEEP, "label": "Service the gadgets", "en": -8},
@@ -394,20 +398,31 @@ func task_block(id: String, claim_type: String) -> Dictionary:
 	return {"done": true, "ok": bool(att.ok), "say": str(att.say)}
 
 
-func task_delegate(id: String) -> bool:
+func task_delegate(id: String, who: String = "") -> bool:
+	## Hand a ticket to a colleague who likes you enough to do it (a favour
+	## of type "ticket", see Social). With no name, the closest friend who would.
 	var t := task(id)
 	if t.is_empty() or t.status != "open" or str(t.by) != "":
 		return false
-	if Game.economy.favors < 1:
-		Bus.toast.emit("Nobody owes you a favour. Cover for a colleague first.", "warn")
+	if who == "":
+		var helpers := Game.social.who_can("ticket")
+		if helpers.is_empty():
+			Bus.toast.emit("Nobody likes you enough to do your tickets. Make a friend first.", "warn")
+			return false
+		who = str(helpers[0])
+	return Game.social.ask_type(who, "ticket", {"task": id})
+
+
+func lose_task(id: String) -> bool:
+	## The ticket stops existing: a tape error, a filing accident.
+	var t := task(id)
+	if t.is_empty() or t.status != "open":
 		return false
-	if not perform("delegate_colleague", {"label": "Delegate %s" % str(t.key)}):
-		return false
-	Game.economy.add_favor(-1)
-	t.by = "dave"
-	t.helper_left = int(t.effort) * 30
-	Game.bump("tasks_delegated")
-	Game.comms.say("dave", "Fine. I'll do %s. But we're even. And you never saw me at the driving range." % str(t.key), false)
+	t.status = "cancelled"
+	t.how = "lost"
+	Game.bump("tasks_lost")
+	Game.comms.post("team", "bot", "SynerTasks: the paper record for %s cannot be located in Records. The ticket has been withdrawn." % str(t.key), "sys")
+	Bus.toast.emit("%s no longer exists. It never did." % str(t.key), "good")
 	Bus.task_changed.emit(t)
 	return true
 
@@ -604,7 +619,7 @@ func _on_minute() -> void:
 			tk.helper_left = int(tk.helper_left) - 1
 			if int(tk.helper_left) <= 0:
 				var who := str(tk.by)
-				task_progress(str(tk.id), int(tk.effort), 0.18 if who == "kevin" else 0.04, who)
+				task_progress(str(tk.id), int(tk.effort), float(tk.get("botch", 0.04)), who)
 				if tk.status == "done":
 					Game.comms.notify("SynerTasks", "%s finished %s for you." % [Game.npcs.display_name(who), str(tk.key)], "good")
 				continue

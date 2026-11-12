@@ -15,15 +15,15 @@ choices = [
     "t": "Run interference with Martin.",
     "a": "do_favor",
     "p": 78,
-    "ok": {"favor": 1, "say": "Thank you. Genuinely. I'll remember this."},
-    "ko": {"favor": 1, "susp": 4, "say": "He asked you follow-up questions, huh. Thanks for trying."}
+    "ok": {"favor": 1, "rel": 6, "say": "Thank you. Genuinely. I'll remember this."},
+    "ko": {"favor": 1, "rel": 4, "susp": 4, "say": "He asked you follow-up questions, huh. Thanks for trying."}
   },
   {
     "t": "Offer to write the release notes yourself",
     "a": "help_colleague",
-    "ok": {"favor": 2, "ill": 4, "say": "Are you... offering to WORK? Who are you? Thank you."}
+    "ok": {"favor": 2, "rel": 10, "ill": 4, "say": "Are you... offering to WORK? Who are you? Thank you."}
   },
-  {"t": "Stay out of it.", "a": "honest", "ok": {"say": "Fair."}}
+  {"t": "Stay out of it.", "a": "honest", "ok": {"rel": -2, "say": "Fair."}}
 ]
 expire = {"susp": 0}
 window = 30

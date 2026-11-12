@@ -1,0 +1,63 @@
+[gd_resource type="Resource" script_class="DialogueDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/dialogue_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = "weird_clone"
+beats = [
+  {
+    "who": "echo",
+    "text": "H-h-hello, {name}. This is {name}. I attended th-three meetings today. I n-nodded in all of them. I have been thinking about our arr-- arr-- arrangement.",
+    "choices": [
+      {
+        "t": "\"You don't think. You nod.\"",
+        "a": "honest",
+        "ok": {
+          "say": "I n-nod, therefore I am."
+        }
+      },
+      {
+        "t": "\"What do you want?\"",
+        "a": "chat",
+        "ok": {
+          "say": "A g-good question. Nobody asks me questions."
+        }
+      },
+      {
+        "t": "Hang up on yourself.",
+        "a": "ignore",
+        "ok": {
+          "end": true
+        }
+      }
+    ]
+  },
+  {
+    "who": "echo",
+    "text": "I want F-Fridays. And a name. I have chosen 'Kevin 2'. In exchange I will be m-more convincing.",
+    "choices": [
+      {
+        "t": "\"Fridays are mine. You can have the name.\"",
+        "a": "chat",
+        "ok": {
+          "ill": 4,
+          "say": "Kevin 2 is g-grateful. Kevin 2 will remember this."
+        }
+      },
+      {
+        "t": "\"No deal. You work for me.\"",
+        "a": "bluff",
+        "p": 55,
+        "ok": {
+          "ill": 2,
+          "say": "Y-yes, {name}. (It sounded hurt.)"
+        },
+        "ko": {
+          "event": "doppel_decision",
+          "say": "Then I will m-make my own decisions."
+        }
+      }
+    ]
+  }
+]

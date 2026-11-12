@@ -343,7 +343,7 @@ func _build_banner() -> void:
 	var h := UI.hbox(12)
 	_banner.add_child(h)
 	h.add_child(UI.icon("call", 26, Color("b3243a")))
-	var t := UI.label("%s is starting now" % str(ring.title), 16, Color("7a1626"), true)
+	var t := UI.label(str(ring.title) if str(ring.kind) == "call" else "%s is starting now" % str(ring.title), 16, Color("7a1626"), true)
 	t.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	h.add_child(t)
 	_meeting_buttons(h, ring)
@@ -409,6 +409,13 @@ func _build_teams() -> void:
 			h.add_child(UI.pill("REPLY", Color("d6455b"), 10, true))
 		elif int(th.unread) > 0 and not on:
 			h.add_child(UI.pill(str(int(th.unread)), Color("6b7594"), 10))
+		elif Game.social.is_colleague(tid):
+			# A dot in the colour of how they feel about you.
+			var dot := Panel.new()
+			dot.custom_minimum_size = Vector2(10, 10)
+			dot.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+			dot.add_theme_stylebox_override("panel", UI.sb(Game.social.tier_color(tid).darkened(0.15), 5))
+			h.add_child(dot)
 		b.add_child(h)
 		b.pressed.connect(func():
 			thread = tid
@@ -429,11 +436,14 @@ func _build_teams() -> void:
 	if not Game.comms.is_channel(thread) and Game.npcs.has(thread):
 		hh.add_child(UI.label(Game.npcs.role(thread), 12, UI.OS_DIM))
 		var mood := Game.npcs.mood(thread)
-		var mcol: Color = NPCManager.MOOD_INFO[mood].color
-		var mp := UI.pill(Game.npcs.mood_label(thread).to_upper(), mcol.darkened(0.35), 9)
-		mp.mouse_filter = Control.MOUSE_FILTER_STOP
-		mp.tooltip_text = "How %s feels about you right now. It changes how readily your lies are believed (%+d%%)." % [Game.npcs.first_name(thread), int(round(Game.npcs.trust(thread)))]
-		hh.add_child(mp)
+		# For colleagues the friendship panel below says where you stand; their
+		# mood is only worth a pill when it is not the ordinary one.
+		if mood != "neutral" or not Game.social.is_colleague(thread):
+			var mcol: Color = NPCManager.MOOD_INFO[mood].color
+			var mp := UI.pill(Game.npcs.mood_label(thread).to_upper(), mcol.darkened(0.35), 9)
+			mp.mouse_filter = Control.MOUSE_FILTER_STOP
+			mp.tooltip_text = "How %s feels about you right now. It changes how readily your lies are believed (%+d%%)." % [Game.npcs.first_name(thread), int(round(Game.npcs.trust(thread)))]
+			hh.add_child(mp)
 		if thread == Game.npcs.boss_id() and Game.npcs.escalation > 0:
 			hh.add_child(UI.pill(Game.npcs.escalation_name().to_upper(), Color("b3243a"), 9, true))
 	hh.add_child(UI.spacer())
@@ -444,6 +454,8 @@ func _build_teams() -> void:
 		rb.tooltip_text = "FAKE WORK. Visible engagement: a little Productivity Illusion for 1 energy."
 		hh.add_child(rb)
 	rv.add_child(head)
+	if Game.social.is_colleague(thread):
+		rv.add_child(_colleague_panel(thread))
 	var sep := ColorRect.new()
 	sep.color = UI.OS_LINE
 	sep.custom_minimum_size = Vector2(0, 1)
@@ -466,7 +478,7 @@ func _build_teams() -> void:
 	var fv := UI.vbox(8)
 	foot.add_child(fv)
 	if pending.is_empty():
-		fv.add_child(_dimtext("Nobody is waiting on you here. Do not start conversations. That is how work happens.", 12))
+		fv.add_child(_dimtext("Nobody is waiting on you here." if Game.social.is_colleague(thread) else "Nobody is waiting on you here. Do not start conversations. That is how work happens.", 12))
 		return
 	var trow := UI.hbox(10)
 	var timer := _timer_row(int(pending.due), int(pending.window))
@@ -494,6 +506,62 @@ func _build_teams() -> void:
 	cl.chosen.connect(func(i: int, ex: String):
 		Game.comms.answer(str(pending.id), i, ex, "desk")
 	)
+
+
+func _colleague_panel(id: String) -> Control:
+	## Where you stand with a colleague, and what they would do for you.
+	var s := Game.social
+	var name: String = Game.npcs.first_name(id)
+	var wrap := PanelContainer.new()
+	wrap.add_theme_stylebox_override("panel", UI.sb(UI.OS_SOFT, 0, 0, Color.TRANSPARENT, 16, 10))
+	var v := UI.vbox(7)
+	wrap.add_child(v)
+	var top := UI.hbox(10)
+	v.add_child(top)
+	var tcol: Color = s.tier_color(id).darkened(0.3)
+	top.add_child(UI.pill(s.tier_name(id).to_upper(), tcol, 10, true))
+	var bar := UI.bar(tcol, 8)
+	bar.value = Game.npcs.relationship(id)
+	bar.custom_minimum_size = Vector2(150, 8)
+	bar.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	top.add_child(bar)
+	var gap := s.to_next_tier(id)
+	top.add_child(UI.label("%d/100%s" % [int(round(Game.npcs.relationship(id))), ("  (+%d to %s)" % [gap, str(Social.TIERS[s.tier(id) + 1].name)]) if gap > 0 else ""], 11, UI.OS_DIM, true))
+	top.add_child(UI.spacer())
+	var risk := s.snitch_chance(id)
+	var rp := UI.pill("TELLS %s IF IGNORED: %d%%" % [Game.npcs.boss_name().to_upper(), int(round(risk))], Color("b3243a"), 10) if risk > 0.0 else UI.pill("WON'T TELL ON YOU", Color("1f8f4a"), 10)
+	rp.mouse_filter = Control.MOUSE_FILTER_STOP
+	rp.tooltip_text = "Leave %s's messages or calls unanswered and this is how likely they are to tell your manager. It falls as they like you more, and is zero for friends." % name
+	top.add_child(rp)
+	var row := HFlowContainer.new()
+	row.add_theme_constant_override("h_separation", 6)
+	row.add_theme_constant_override("v_separation", 6)
+	v.add_child(row)
+	var talk := UI.button("Small talk", func(): s.small_talk(id), "os_ghost", 12)
+	talk.disabled = s.talked_today(id)
+	talk.tooltip_text = "SOCIAL. They like you a little more. Once a day each. Careful: it may remind them of something they wanted."
+	row.add_child(talk)
+	var price := s.gift_price()
+	var gift := UI.button("Gift card  $%d" % price, func(): s.gift(id), "os_ghost", 12)
+	gift.disabled = not s.can_gift() or not Game.economy.can_afford(price)
+	gift.tooltip_text = "SOCIAL. They like you a lot more and owe you one favour. One gift card per day." if s.can_gift() else "One gift card per day."
+	row.add_child(gift)
+	for f in s.favours(id):
+		var view := s.favour_view(id, f)
+		if bool(view.passive):
+			var pp := UI.pill(("ON: " if bool(view.ok) else "") + str(view.title) + ("" if bool(view.ok) else "  -  " + str(view.why)), Color("1f8f4a") if bool(view.ok) else UI.OS_DIM, 10)
+			pp.mouse_filter = Control.MOUSE_FILTER_STOP
+			pp.tooltip_text = str(view.hint)
+			row.add_child(pp)
+			continue
+		var fid: String = str(view.id)
+		var fb := UI.button(str(view.title), func(): s.ask(id, fid), "os" if bool(view.ok) else "os_ghost", 12)
+		fb.disabled = not bool(view.ok)
+		fb.tooltip_text = "%s  %s" % [str(Game.work.badge(str(view.act)).text), str(view.hint)] if bool(view.ok) else "%s. %s" % [str(view.why), str(view.hint)]
+		if not bool(view.ok):
+			fb.text = "%s  -  %s" % [str(view.title), str(view.why)]
+		row.add_child(fb)
+	return wrap
 
 
 func _bubble(m: Dictionary) -> Control:
@@ -687,7 +755,19 @@ func _build_tasks() -> void:
 		, str(sel.blocked) == "", "Already reported as blocked."))
 	dv.add_child(_action_button("Open a clarification request with another team", "clarify", "A paper trail: 'waiting for another team' will check out. Once per ticket.", func(): Game.work.task_clarify(id), not bool(sel.clarified), "Already open on this ticket."))
 	dv.add_child(_action_button("File a Form 27-B (Scope Change Request)", "change_request", "May bury the ticket in a steering committee forever. Either way the form backs up a 'process blocker'. One per day.", func(): Game.work.task_change_request(id), not Game.flag("cr_day_%d" % Game.time.day), "Today's form is already filed."))
-	dv.add_child(_action_button("Call in a favour: have Dave do it", "delegate_colleague", "Costs 1 favour (you have %d). Dave does it properly, in the background." % Game.economy.favors, func(): Game.work.task_delegate(id), str(sel.by) == "" and Game.economy.favors > 0, "Already delegated." if str(sel.by) != "" else "Nobody owes you a favour. Cover for colleagues to earn one."))
+	var offered := 0
+	for who in Game.social.colleagues():
+		for f in Game.social.favours(who):
+			if not str(f.type) in ["ticket", "bury"]:
+				continue
+			var view := Game.social.favour_view(who, f, {"task": id})
+			if bool(view.locked) and offered > 0:
+				continue            # one "you need friends" row is enough
+			offered += 1
+			var fid: String = str(f.id)
+			var label := "Favour: have %s do it" % Game.npcs.first_name(who) if str(f.type) == "ticket" else "Favour: have %s lose it" % Game.npcs.first_name(who)
+			var free: bool = str(sel.by) == ""
+			dv.add_child(_action_button(label, str(view.act), "%s You have %d." % [str(view.hint), Game.economy.favors], func(): Game.social.ask(who, fid, {"task": id}), bool(view.ok) and free, str(view.why) if free else "Already delegated."))
 	if Game.automation.can("do_tickets") or str(Game.automation.autos.ai_task) != "":
 		dv.add_child(_action_button("Hand it to your AI Doppelganger", "delegate_ai", "It works the ticket in the background while switched on. It may hallucinate.", func(): Game.work.task_ai(id), str(sel.by) == "" and Game.automation.can("do_tickets") and str(Game.automation.autos.ai_task) == "", "Your clone is off, broken or busy."))
 	dv.add_child(UI.gap(1, 6))
@@ -708,6 +788,8 @@ func _closed_text(t: Dictionary) -> String:
 						return "Closed by your AI clone. You contributed the electricity."
 					return "Closed by %s on your behalf. Teamwork." % Game.npcs.display_name(str(t.how))
 		"cancelled":
+			if str(t.how) == "lost":
+				return "Lost in Records, sub-basement 3. Officially, it never existed."
 			return "Descoped: pending steering committee review (est. Q4). It will never come back."
 		"failed":
 			return "Failed. The deadline came and there was nothing to show. %s remembers." % Game.npcs.boss_name()
@@ -769,6 +851,20 @@ func _action_button(text: String, act: String, hint: String, cb: Callable, ok: b
 func _meeting_buttons(parent: Control, m: Dictionary) -> void:
 	var mid: String = str(m.id)
 	var st: String = str(m.state)
+	if bool(m.get("casual", false)):
+		# A colleague or a stranger: pick up, make an excuse, or say no.
+		if st != "ringing":
+			return
+		parent.add_child(UI.button("Pick up", func(): join_requested.emit(mid), "os", 13))
+		if Game.npcs.kind(str(m.who)) != "stranger" and not bool(m.excuse_tried):
+			parent.add_child(UI.button("Excuse...", func():
+				excuse_for = mid if excuse_for != mid else ""
+				if excuse_for != "":
+					app = "cal"          # the picker lives next to the entry in the calendar
+				_dirty = true
+			, "os_ghost", 12))
+		parent.add_child(UI.button("Reject", func(): Game.comms.reject_call(mid), "os_danger", 12))
+		return
 	if st == "ringing":
 		parent.add_child(UI.button("Join", func(): join_requested.emit(mid), "os", 13))
 	if not Game.comms.can_dodge(m):
@@ -788,6 +884,8 @@ func _meeting_buttons(parent: Control, m: Dictionary) -> void:
 	if not bool(m.excuse_tried):
 		parent.add_child(UI.button("Excuse...", func():
 			excuse_for = mid if excuse_for != mid else ""
+			if excuse_for != "":
+				app = "cal"              # the picker lives next to the entry in the calendar
 			_dirty = true
 		, "os_ghost", 12))
 	if st == "ringing" and bool(m.surprise):
@@ -837,6 +935,8 @@ func _build_cal() -> void:
 		h.add_child(tl)
 		if is_block:
 			h.add_child(UI.pill("YOUR FAKE BLOCK", Color("1f8f4a"), 9))
+		elif bool(m.get("casual", false)):
+			h.add_child(UI.pill("CALL", Color("b0417a"), 9))
 		elif bool(m.mandatory):
 			h.add_child(UI.pill("MANDATORY", Color("b3243a"), 9))
 		else:

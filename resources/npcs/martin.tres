@@ -47,3 +47,4 @@ escalation_lines = [
   "New process, just for you: I want a status line from you every hour. I'll be checking.",
   "Formal heads-up: I've opened a file with People & Culture. Every gap from now on gets written down."
 ]
+voice = "martin"

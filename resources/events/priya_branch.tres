@@ -26,10 +26,10 @@ choices = [
   {
     "t": "Write the hotfix right now",
     "a": "fix_bug",
-    "ok": {"favor": 1, "ill": 5, "susp": -3, "say": "It works?! Who ARE you today?"}
+    "ok": {"favor": 1, "rel": 8, "ill": 5, "susp": -3, "say": "It works?! Who ARE you today?"}
   }
 ]
-expire = {"susp": 5, "say": "No answer. Telling Martin it's missing."}
+expire = {"susp": 5, "snitch": false, "say": "No answer. Telling Martin it's missing."}
 window = 26
 routine = false
 no_excuse = true

@@ -224,7 +224,7 @@ func _build_column() -> void:
 	var c0 := _chip("check", UI.GREEN, "Salary earned this week, for doing nothing.")
 	_earned = c0[1]
 	chips.add_child(c0[0])
-	var c2 := _chip("favor", Color("ff9ecb"), "Favours colleagues owe you. Spend them to delegate tickets.")
+	var c2 := _chip("favor", Color("ff9ecb"), "Favours colleagues owe you. Spend them on a colleague in SynerTeams: tickets, meetings, a good word.")
 	_favor = c2[1]
 	chips.add_child(c2[0])
 	var c3 := _chip("phone", UI.BLUE, "Phone battery. Press Tab to answer from anywhere.")

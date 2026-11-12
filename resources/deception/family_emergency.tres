@@ -13,6 +13,7 @@ base = 62
 duration = 120
 cover = 120
 reuse_penalty = 30
+evidence = {"family_alibi": 22}
 risk = 15
 contradicted_by = ["social_post", "video_meeting", "auto_message"]
 conflicts = ["prod_incident", "conflicting_meeting", "medical"]

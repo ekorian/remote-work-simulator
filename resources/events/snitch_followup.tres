@@ -1,0 +1,70 @@
+[gd_resource type="Resource" script_class="EventDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/event_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = "snitch_followup"
+title = "Told on"
+kind = "chat"
+from = "martin"
+window = 16
+text = "{who} says they can't get hold of you. I would rather not be the one finding that out. What is going on?"
+choices = [
+  {
+    "t": "\"Heads-down on a deliverable. Notifications were off.\"",
+    "a": "bluff",
+    "p": 62,
+    "ok": {
+      "susp": -3,
+      "say": "Fine. But answer {who}. I don't want to referee."
+    },
+    "ko": {
+      "susp": 5,
+      "say": "Notifications off. During work hours. Hm."
+    }
+  },
+  {
+    "t": "\"{who} messages me every ten minutes. I'm trying to get things done.\"",
+    "a": "blame",
+    "p": 56,
+    "ok": {
+      "susp": -4,
+      "rels": {
+        "{who}": -6
+      },
+      "say": "...That does sound like {who}. I'll have a word."
+    },
+    "ko": {
+      "susp": 6,
+      "rels": {
+        "{who}": -6
+      },
+      "say": "{who} sent me the timestamps. It was one message."
+    }
+  },
+  {
+    "t": "Apologise, and promise to get back to {who} right away.",
+    "a": "honest",
+    "ok": {
+      "susp": -1,
+      "rels": {
+        "{who}": 3
+      },
+      "say": "Good. Do that."
+    }
+  },
+  {
+    "t": "Explain in detail what you were working on",
+    "a": "real_answer",
+    "ok": {
+      "susp": -6,
+      "ill": 4,
+      "say": "OK. That is actually a lot. Carry on."
+    }
+  }
+]
+expire = {
+  "susp": 7,
+  "say": "And now you're not answering ME."
+}

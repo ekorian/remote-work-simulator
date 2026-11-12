@@ -1,0 +1,80 @@
+[gd_resource type="Resource" script_class="DialogueDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/dialogue_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = "gerald_first"
+beats = [
+  {
+    "who": "gerald",
+    "text": "...Hello? ...Is this... the new one? ...This is Gerald. ...Records. ...Sub-basement three. ...Nobody has rung this extension... since 2011.",
+    "choices": [
+      {
+        "t": "\"Hi Gerald. What do you do down there?\"",
+        "a": "chat",
+        "ok": {
+          "rel": 7,
+          "say": "...Every ticket... is printed. ...It comes down a chute. ...I file it. ...Nobody has ever asked."
+        }
+      },
+      {
+        "t": "\"I think you rang ME, Gerald.\"",
+        "a": "honest",
+        "ok": {
+          "rel": 3,
+          "say": "...Did I. ...The telephone does that... sometimes. ...On its own."
+        }
+      },
+      {
+        "t": "\"Wrong number, sorry.\"",
+        "a": "deflect",
+        "p": 75,
+        "ok": {
+          "rel": -2,
+          "end": true,
+          "say": "...It always is."
+        },
+        "ko": {
+          "rel": -1,
+          "say": "...There are no wrong numbers. ...Only wrong decades."
+        }
+      }
+    ]
+  },
+  {
+    "who": "gerald",
+    "text": "...The filing is... delicate. ...Sometimes a ticket goes in the wrong box. ...Then it is gone. ...For everyone. ...Would you like to hear... about the boxes?",
+    "choices": [
+      {
+        "t": "\"Tell me about the boxes, Gerald.\"",
+        "a": "chat",
+        "ok": {
+          "rel": 9,
+          "say": "...There are four thousand. ...I have named them. ...This will take... a while."
+        }
+      },
+      {
+        "t": "\"Gone... as in, a ticket could just disappear?\"",
+        "a": "chat",
+        "ok": {
+          "rel": 4,
+          "say": "...It has happened. ...To people... I like."
+        }
+      },
+      {
+        "t": "\"I've got a hard stop, Gerald.\"",
+        "a": "bluff",
+        "p": 60,
+        "ok": {
+          "end": true,
+          "say": "...Everyone does."
+        },
+        "ko": {
+          "rel": -3,
+          "say": "...Your calendar is printed too. ...It is empty."
+        }
+      }
+    ]
+  }
+]

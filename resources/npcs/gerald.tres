@@ -1,0 +1,73 @@
+[gd_resource type="Resource" script_class="NpcDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/npc_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = "gerald"
+display_name = "Gerald Pym"
+role = "Records, Sub-basement 3"
+color = Color(0.6196, 0.7294, 0.6, 1)
+kind = "coworker"
+gullibility = 10.0
+start_relationship = 36.0
+look = {
+  "skin": 0,
+  "hair": 5,
+  "hair_color": 6,
+  "shirt": 3,
+  "pants": 1,
+  "accessory": 1
+}
+colleague = true
+snitch = 0.0
+voice = "gerald"
+favours = [
+  {
+    "id": "misfile",
+    "type": "bury",
+    "tier": 3,
+    "cost": 1,
+    "title": "Misfile one of my tickets",
+    "hint": "1 favour. The ticket stops existing.",
+    "ask": "Gerald. If a ticket were to come down to Records...",
+    "say": "...{task}. ...It is in a box now. ...The box is in a room. ...The room is not on the plans."
+  },
+  {
+    "id": "rota",
+    "type": "cover",
+    "tier": 4,
+    "cost": 0,
+    "minutes": 60,
+    "title": "Put me on the basement rota",
+    "hint": "Free, once a day. 60 minutes of official absence.",
+    "ask": "Gerald. Could I be 'down in Records' for an hour?",
+    "say": "...You are on the sub-basement rota. ...Nobody has checked the rota since the flood."
+  }
+]
+ask_lines = [
+  "...It is Gerald. ...May I telephone you. ...I have found something."
+]
+lines = {
+  "small_talk": [
+    "...It is quiet. ...It is always quiet. ...Thank you for asking.",
+    "...The light flickered today. ...I chose to see it as a greeting.",
+    "...I found a file from 1998. ...It was about me. ...I have put it back."
+  ],
+  "friendly": [
+    "...You are kind to Records. ...Records can be kind. ...If a ticket troubles you, send it down."
+  ],
+  "friend": [
+    "...I have added your name to the wall. ...There are two names on the wall now."
+  ],
+  "hostile": [
+    "...I see. ...You are like the others."
+  ],
+  "missed_call": [
+    "...No answer. ...I will wait. ...I am good at waiting.",
+    "...It rang nine times. ...I counted."
+  ],
+  "gift": [
+    "...A gift. ...For me. ...I will keep it in the box with the other one."
+  ]
+}

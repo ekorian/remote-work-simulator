@@ -1,0 +1,62 @@
+[gd_resource type="Resource" script_class="TextBankDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/text_bank_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = "social"
+lines = {
+  "snitch": [
+    "{who} tells me you're not answering. I should not be hearing that from {who}.",
+    "{who} just asked me whether you still work here. I said yes. Do you?",
+    "FYI: {who} says getting a reply out of you is 'a project'."
+  ],
+  "snitch_absence": [
+    "{who} mentioned your status has been 'Away' for a while. I wasn't going to look. Now I've looked.",
+    "{who} says your dot has been grey since the last ice age. Where are you?"
+  ],
+  "small_talk": [
+    "How's your week going?",
+    "Quick one, not work: any plans for the weekend?",
+    "Is it just me, or is this week four weeks long?",
+    "Did you see the thing in #general?"
+  ],
+  "hype": [
+    "Shoutout to {name} for the incredible support on my dashboard this week!",
+    "Just want to recognise {name}: a true force multiplier.",
+    "Big kudos to {name}. Quietly carrying this sprint."
+  ],
+  "leverage": [
+    {
+      "on": "kevin",
+      "t": "\"Remind me, Kevin: who dropped the staging database?\"",
+      "a": "bluff",
+      "ok": {
+        "flag": "dirt_kevin_used",
+        "rel": -6,
+        "say": "...We don't need to involve Martin in any of this. Forget I asked. Forget all of it."
+      }
+    },
+    {
+      "on": "martin",
+      "t": "\"Is this a bad time, Martin? I know the league plays at two.\"",
+      "a": "bluff",
+      "ok": {
+        "flag": "dirt_martin_used",
+        "susp": -8,
+        "say": "...Who told you about the league. ...Let's not make this a thing. Carry on. As you were."
+      }
+    },
+    {
+      "on": "dave",
+      "t": "\"Dave. March. The tickets. Shall I go on?\"",
+      "a": "bluff",
+      "ok": {
+        "flag": "dirt_dave_used",
+        "rel": -8,
+        "favor": 1,
+        "say": "...OK. OK! Whatever you need. I owe you. Just stop saying 'March'."
+      }
+    }
+  ]
+}

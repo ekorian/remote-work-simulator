@@ -307,7 +307,7 @@ static func avatar(who: String, size: float = 34.0) -> Control:
 	p.custom_minimum_size = Vector2(size, size)
 	p.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
 	var nm := Game.npcs.display_name(who)
-	var l := label(nm.substr(0, 1).to_upper(), int(size * 0.5), INK, true)
+	var l := label("?" if Game.npcs.kind(who) == "stranger" else nm.substr(0, 1).to_upper(), int(size * 0.5), INK, true)
 	l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	l.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	p.add_child(l)
@@ -335,7 +335,8 @@ static func choice(view: Dictionary, cb: Callable, light: bool = false, key_hint
 	col.add_child(UI.wrap(str(view.text), 15, text_color))
 	var meta := hbox(6)
 	if str(badge.text) != "":
-		meta.add_child(pill(str(badge.text), badge_color, 10, warn))
+		# On the light SynerOS background the pastel class colours need more ink.
+		meta.add_child(pill(str(badge.text), badge_color.darkened(0.38) if light and not warn else badge_color, 10, warn))
 	if float(view.odds) >= 0.0:
 		var pct := float(view.odds)
 		var oc: Color = DeceptionManager.odds_color(pct)

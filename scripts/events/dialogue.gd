@@ -19,7 +19,7 @@ static func build(m: Dictionary) -> Array:
 		pool.erase(key)
 		beats.append_array(Db.dialogues.get(key, {}).get("beats", []).duplicate(true))
 	# A suspicious boss puts you on the spot once more.
-	if Game.npcs.escalation >= 3 and Db.dialogues.has("grilling") and script != "fun":
+	if Game.npcs.escalation >= 3 and Db.dialogues.has("grilling") and script != "fun" and not bool(m.get("casual", false)):
 		beats.append_array(Db.dialogues["grilling"].beats.duplicate(true))
 	return beats
 

@@ -1,0 +1,73 @@
+[gd_resource type="Resource" script_class="DialogueDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/dialogue_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = "weird_deep"
+beats = [
+  {
+    "who": "stranger",
+    "text": "do not say my name. you do not know my name. i have watched your green dot. it is... a work of art. i have information about your manager.",
+    "choices": [
+      {
+        "t": "\"Who is this?\"",
+        "a": "chat",
+        "ok": {
+          "say": "a friend. from the car park. level b2."
+        }
+      },
+      {
+        "t": "\"I'm listening.\"",
+        "a": "chat",
+        "ok": {
+          "say": "good."
+        }
+      },
+      {
+        "t": "Hang up.",
+        "a": "ignore",
+        "ok": {
+          "end": true
+        }
+      }
+    ]
+  },
+  {
+    "who": "stranger",
+    "text": "sixty dollars. or one favour. and you will know what your manager does every tuesday and thursday at two.",
+    "choices": [
+      {
+        "t": "Pay the $60.",
+        "a": "chat",
+        "req": {
+          "money": 60
+        },
+        "ok": {
+          "flag": "dirt_martin",
+          "toast": "You know about the league. Next time Martin puts you on the spot in chat, you have a card to play. Once.",
+          "say": "minesweeper. he runs a league. he is ranked fourth. mention it once. only once."
+        }
+      },
+      {
+        "t": "Spend a favour.",
+        "a": "chat",
+        "req": {
+          "favor": 1
+        },
+        "ok": {
+          "flag": "dirt_martin",
+          "toast": "You know about the league. Next time Martin puts you on the spot in chat, you have a card to play. Once.",
+          "say": "minesweeper. he runs a league. he is ranked fourth. mention it once. only once."
+        }
+      },
+      {
+        "t": "\"No deal.\"",
+        "a": "honest",
+        "ok": {
+          "say": "then we never spoke. the car park has no level b2."
+        }
+      }
+    ]
+  }
+]

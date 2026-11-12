@@ -12,3 +12,4 @@ kind = "it"
 gullibility = -4.0
 start_relationship = 50.0
 look = {"skin": 4, "hair": 5, "hair_color": 7, "shirt": 3, "pants": 1, "accessory": 2}
+voice = "it"

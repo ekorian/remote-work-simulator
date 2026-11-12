@@ -25,6 +25,10 @@ func _ready() -> void:
 	_events()
 	_pacing()
 	_npcs()
+	_colleague_content()
+	_colleague_rules()
+	_colleague_favours()
+	_colleague_calls()
 	_economy()
 	_save_load()
 	_day_flow()
@@ -822,6 +826,690 @@ func _npcs() -> void:
 	t.check(not is_equal_approx(n.trust("priya"), n.trust("dave")), "different people are differently gullible")
 	n.contacted("kevin")
 	t.check(int(n.record("kevin").contacts) == 1, "communication frequency is tracked per person")
+
+
+# ---------------------------------------------------------------------------
+# Colleagues: friendship, telling on you, favours, calls
+# ---------------------------------------------------------------------------
+
+func _voice_ok(id: String) -> bool:
+	for i in range(1, 4):
+		if not ResourceLoader.exists("res://assets/audio/voice_%s_%d.wav" % [id, i]):
+			return false
+	return true
+
+
+func _colleague_content() -> void:
+	t.section("colleagues: content")
+	var s := Game.social
+	t.run("survivor", 201)
+	var people := s.colleagues()
+	t.check(people.size() >= 4, "there are colleagues to befriend (%d)" % people.size())
+	var known := ["ticket", "bury", "cover", "vouch", "intel", "distract", "skip_meeting", "wingman", "tipoff", "hype"]
+	var scripted := {}
+	var strange := 0
+	for id in Db.events:
+		var e: Dictionary = Db.events[id]
+		if str(e.kind) != "call":
+			continue
+		if s.is_colleague(str(e.from)):
+			scripted[str(e.from)] = int(scripted.get(str(e.from), 0)) + 1
+		if str(e.pool) == "weird":
+			strange += 1
+			t.check(bool(e.once), "strange call '%s' happens at most once a week" % id)
+		var voice := str(e.meeting.get("voice_id", ""))
+		t.check(voice == "" or _voice_ok(voice), "event:%s voice '%s' has recordings" % [id, voice])
+		for who in e.meeting.get("cast", []):
+			t.check(Db.npcs.has(str(who)), "event:%s cast member '%s' exists" % [id, str(who)])
+		if bool(e.meeting.get("ask", false)):
+			t.check(s.is_colleague(str(e.from)), "event:%s only a colleague asks before calling" % id)
+		t.check(str(e.tip) in ["", "call", "scan", "screen"], "event:%s tip is a known kind" % id)
+	t.check(strange >= 5, "at least five strange calls exist (%d)" % strange)
+	for id in people:
+		var d: Dictionary = Db.npcs[id]
+		t.check(int(scripted.get(id, 0)) >= 1, "%s has a scripted call (%d)" % [id, int(scripted.get(id, 0))])
+		t.check(_voice_ok(str(d.voice)), "%s has a voice" % id)
+		t.check(not d.favours.is_empty(), "%s can do something for you" % id)
+		for f in d.favours:
+			t.check(str(f.type) in known, "%s favour '%s' has a known type" % [id, str(f.id)])
+			t.check(str(f.title) != "" and str(f.hint) != "", "%s favour '%s' explains itself" % [id, str(f.id)])
+			t.check(bool(f.get("passive", false)) or WorkSystem.DEFS.has(str(Social.ACTIONS.get(str(f.type), "ask_favor"))), "%s favour '%s' is a declared action" % [id, str(f.id)])
+		for key in ["small_talk", "missed_call", "friendly", "friend", "hostile"]:
+			t.check(not s.lines_for(id, key).is_empty(), "%s has '%s' lines" % [id, key])
+		if float(d.snitch) > 0.0:
+			t.check(not s.lines_for(id, "snitch").is_empty(), "%s has something for the manager to say when they tell" % id)
+	for id in Db.npcs:
+		var v := str(Db.npcs[id].voice)
+		t.check(v == "" or _voice_ok(v), "npc:%s voice '%s' has recordings" % [id, v])
+		if str(Db.npcs[id].kind) == "stranger":
+			t.check(not bool(Db.npcs[id].has_dm) and not bool(Db.npcs[id].colleague), "stranger '%s' is not in your contacts" % id)
+	# Everything the new dialogue refers to exists.
+	var flags_set := {}
+	var flags_read := {}
+	var lists: Array = []
+	for id in Db.dialogues:
+		for b in Db.dialogues[id].beats:
+			lists.append(["dialogue:%s" % id, b.choices])
+			var voice := str(b.get("voice", ""))
+			t.check(voice == "" or _voice_ok(voice), "dialogue:%s voice '%s' has recordings" % [id, voice])
+			for key in ["flag", "not_flag"]:
+				if b.get("if", {}).has(key):
+					flags_read[str(b["if"][key])] = "dialogue:%s" % id
+	for id in Db.events:
+		lists.append(["event:%s" % id, Db.events[id].choices])
+		for key in ["flag", "not_flag"]:
+			if Db.events[id].conditions.has(key):
+				flags_read[str(Db.events[id].conditions[key])] = "event:%s" % id
+	lists.append(["leverage", Db.lines("leverage")])
+	for pair in lists:
+		var where := str(pair[0])
+		for c in pair[1]:
+			for cond_key in ["tier_min", "tier_max"]:
+				for who in c.get("if", {}).get(cond_key, {}):
+					t.check(Db.npcs.has(str(who)), "%s: condition names a real person (%s)" % [where, str(who)])
+			for key in ["flag", "not_flag"]:
+				if c.get("if", {}).has(key):
+					flags_read[str(c["if"][key])] = where
+			for key in ["ok", "ko"]:
+				var out: Dictionary = c.get(key, {})
+				for who in out.get("rels", {}):
+					t.check(str(who) == "{who}" or Db.npcs.has(str(who)), "%s: 'rels' names a real person (%s)" % [where, str(who)])
+				if out.has("give"):
+					t.check(s.is_colleague(str(out.give)), "%s: tickets are handed to colleagues (%s)" % [where, str(out.give)])
+				if out.has("call"):
+					t.check(Db.events.has(str(out.call)), "%s: call '%s' exists" % [where, str(out.call)])
+				if out.has("flag"):
+					flags_set[str(out.flag)] = true
+				for f in out.get("flags", []):
+					flags_set[str(f)] = true
+	for card in Db.lines("leverage"):
+		t.check(Db.npcs.has(str(card.on)) and WorkSystem.DEFS.has(str(card.a)), "leverage on '%s' is well-formed" % str(card.on))
+		t.check(flags_set.has("dirt_" + str(card.on)), "there is a way to learn something about %s" % str(card.on))
+		t.check(str(card.ok.get("flag", "")) == "dirt_%s_used" % str(card.on), "leverage on '%s' can be used once" % str(card.on))
+	for f in flags_read:
+		if str(flags_read[f]).begins_with("dialogue:") or str(f).begins_with("dirt_"):
+			t.check(flags_set.has(f), "%s reads flag '%s', which something sets" % [str(flags_read[f]), str(f)])
+	for id in ["snitch_followup", "priya_resigned"]:
+		t.check(Db.events.has(id), "event '%s' exists" % id)
+	for sfx in ["ring_peer", "ring_weird"]:
+		t.check(ResourceLoader.exists("res://assets/audio/%s.wav" % sfx), "audio cue '%s' exists" % sfx)
+	# The director actually finds room for the strange calls.
+	var planned := 0
+	for i in 12:
+		t.run("survivor", 300 + i, false)
+		for day in range(1, 5):
+			Game.time.day = day
+			Game.time.timers.clear()
+			Game.comms.meetings.clear()
+			Game.events.plan_day()
+			for e in Game.time.timers:
+				if str(e.ev) == "event" and str(Db.events[str(e.args.id)].pool) == "weird":
+					planned += 1
+	t.check(planned >= 24, "a week has a couple of strange calls in it (%.1f on average)" % (float(planned) / 12.0))
+
+
+func _colleague_rules() -> void:
+	t.section("colleagues: friendship and telling on you")
+	var s := Game.social
+	var n := Game.npcs
+	t.run("survivor", 210)
+	t.at_work(600)
+	# Tiers follow the relationship.
+	n.state.kevin.rel = 10.0
+	t.check(s.tier("kevin") == Social.Tier.HOSTILE, "a relationship of 10 is hostile")
+	n.state.kevin.rel = 50.0
+	t.check(s.tier("kevin") == Social.Tier.NEUTRAL, "50 is an ordinary colleague")
+	n.state.kevin.rel = 70.0
+	t.check(s.tier("kevin") == Social.Tier.FRIENDLY, "70 is friendly")
+	n.state.kevin.rel = 90.0
+	t.check(s.tier("kevin") == Social.Tier.FRIEND and s.to_next_tier("kevin") == 0, "90 is a friend, and that is the top")
+	var changes: Array = []
+	var on_tier := func(id: String, tier: int, up: bool): changes.append([id, tier, up])
+	s.tier_changed.connect(on_tier)
+	n.state.priya.rel = 60.0
+	s.tiers["priya"] = s.tier("priya")
+	n.adjust("priya", 5.0)
+	t.check(changes.size() == 1 and str(changes[0][0]) == "priya" and int(changes[0][1]) == Social.Tier.FRIENDLY and bool(changes[0][2]), "crossing a threshold announces the new tier")
+	n.adjust("priya", 1.0)
+	t.check(changes.size() == 1, "...once")
+	s.tier_changed.disconnect(on_tier)
+	# How likely each of them is to tell.
+	n.state.kevin.rel = 50.0
+	n.state.dave.rel = 50.0
+	t.check(s.snitch_chance("kevin") > s.snitch_chance("dave"), "Kevin tells on you far more readily than Dave")
+	var neutral := s.snitch_chance("kevin")
+	n.state.kevin.rel = 10.0
+	t.check(s.snitch_chance("kevin") > neutral, "someone who dislikes you tells more readily")
+	n.state.kevin.rel = 70.0
+	t.check(is_zero_approx(s.snitch_chance("kevin")), "a friend never tells on you")
+	t.check(is_zero_approx(s.snitch_chance("martin")) and is_zero_approx(s.snitch_chance("nana")), "only colleagues tell on you")
+	t.check(s.gossip_factor("kevin") == 0.0, "a friend keeps your stories to themselves")
+	n.state.kevin.rel = 10.0
+	t.check(s.gossip_factor("kevin") > 1.0, "an enemy passes them on faster")
+	# Leaving a hostile Kevin hanging, many times over.
+	var told := 0
+	for i in 40:
+		s.told = {}
+		Game.stats.values.susp = 20.0
+		if s.unanswered("kevin", "message"):
+			told += 1
+	t.check(told >= 30, "a hostile Kevin nearly always tells (%d of 40)" % told)
+	told = 0
+	for i in 40:
+		s.told = {}
+		Game.stats.values.susp = 20.0
+		n.state.kevin.rel = 10.0
+		if s.unanswered("kevin", "call", true):
+			told += 1
+	t.check(told >= 8 and told <= 30, "rejecting his call outright halves the risk (%d of 40)" % told)
+	n.state.kevin.rel = 70.0
+	told = 0
+	for i in 40:
+		s.told = {}
+		if s.unanswered("kevin", "message"):
+			told += 1
+	t.check(told == 0, "a friendly Kevin never does")
+	# What being told on costs.
+	t.run("survivor", 211)
+	t.at_work(600)
+	n.state.kevin.rel = 5.0
+	var susp := Game.stats.get_value("susp")
+	var guard := 0
+	while int(Game.week.snitched) == 0 and guard < 30:
+		guard += 1
+		s.told = {}
+		s.unanswered("kevin", "message")
+	t.check(int(Game.week.snitched) == 1 and Game.stats.get_value("susp") > susp, "being told on raises suspicion")
+	t.check(int(n.record("kevin").snitched) == 1, "and it is remembered who did it")
+	# The cap, and cover.
+	s.told = {"kevin": Social.SNITCH_PER_DAY}
+	told = 0
+	for i in 20:
+		if s.unanswered("kevin", "message"):
+			told += 1
+	t.check(told == 0, "one colleague tells on you at most %d times a day" % Social.SNITCH_PER_DAY)
+	s.told = {}
+	Game.presence.grant_cover(30, "story")
+	told = 0
+	for i in 20:
+		if s.unanswered("kevin", "message"):
+			told += 1
+	t.check(told == 0, "nobody tells on someone who is officially out")
+	# The manager follows up, naming them.
+	t.run("survivor", 212)
+	t.at_work(600)
+	t.check(Game.events.fire("snitch_followup", {"who": "kevin", "urgent": true}), "the manager asks about it")
+	var p: Dictionary = Game.comms.prompts[0]
+	t.check(str(p.from) == "martin" and str(p.text).contains("Kevin") and not str(p.text).contains("{who}"), "naming who told him")
+	var worded := true
+	for c in Game.comms.choices_of(p):
+		if str(c.t).contains("{who}") or str(c.get("ok", {}).get("say", "")).contains("{who}"):
+			worded = false
+	t.check(worded, "and every answer is worded for that person")
+	var rel := n.relationship("kevin")
+	Game.comms.apply({"rels": {"{who}": -6}}, "test", Game.comms.prompt_ctx(p))
+	t.near(n.relationship("kevin"), rel - 6.0, "blaming them costs you with them")
+	# An ignored message goes through the same door.
+	t.run("survivor", 213)
+	t.at_work(600)
+	n.state.kevin.rel = 5.0
+	Game.events.fire("favor_kevin", {"urgent": true})
+	p = Game.comms.prompts[0]
+	Game.time.advance(int(p.due) - Game.time.now() + 1)
+	t.check(int(Game.week.colleagues_ignored) == 1, "a colleague's message left to expire counts as ignoring them")
+	# Someone who has it in for you watches your status.
+	var noticed := 0
+	for i in 12:
+		t.run("survivor", 220 + i)
+		t.at_work(600)
+		Game.presence.set_at_desk(false)
+		Game.presence.last_input = -999
+		n.state.kevin.rel = 5.0
+		Game.time.advance(Social.WATCH_AFTER + 3)
+		noticed += int(Game.week.snitched)
+	t.check(noticed >= 3, "a hostile colleague reports a long absence (%d of 12 runs)" % noticed)
+	noticed = 0
+	for i in 12:
+		t.run("survivor", 220 + i)
+		t.at_work(600)
+		Game.presence.set_at_desk(false)
+		Game.presence.last_input = -999
+		Game.time.advance(Social.WATCH_AFTER + 3)
+		noticed += int(Game.week.snitched)
+	t.check(noticed == 0, "ordinary colleagues do not")
+	# Being nice on purpose.
+	t.run("survivor", 240)
+	t.at_work(600)
+	Game.presence.set_at_desk(true)
+	rel = n.relationship("priya")
+	t.check(s.small_talk("priya") and n.relationship("priya") > rel, "small talk makes them like you more")
+	rel = n.relationship("priya")
+	t.check(not s.small_talk("priya") and is_equal_approx(n.relationship("priya"), rel), "once a day per person")
+	t.check(not s.small_talk("martin"), "you do not make small talk with the manager")
+	Game.economy.money = 500
+	rel = n.relationship("kevin")
+	var favors := Game.economy.favors
+	t.check(s.gift("kevin") and Game.economy.money == 500 - s.gift_price() and Game.economy.favors == favors + 1, "a gift card costs money and earns a favour")
+	t.near(n.relationship("kevin"), rel + Social.GIFT_REL, "and a lot of goodwill")
+	t.check(not s.can_gift() and not s.gift("priya"), "one gift card a day")
+	t.check(s.is_colleague(s.gift_target()), "a gift without a name goes to a colleague")
+	# Knowing something about someone.
+	t.run("survivor", 241)
+	t.at_work(600)
+	Game.events.fire("kevin_brag", {"urgent": true})
+	p = Game.comms.prompts[0]
+	var before := Game.comms.choices_of(p).size()
+	Game.set_flag("dirt_kevin")
+	var with_card := Game.comms.choices_of(p)
+	t.check(with_card.size() == before + 1, "knowing something about Kevin adds an answer to anything he asks")
+	var idx := -1
+	for i in with_card.size():
+		if str(with_card[i].get("on", "")) == "kevin":
+			idx = i
+	Game.comms.answer(str(p.id), idx)
+	t.check(Game.flag("dirt_kevin_used") and s.leverage("kevin").is_empty(), "the card works once")
+	# Stories that come with a witness.
+	t.run("survivor", 242)
+	t.at_work(600)
+	var plain := Game.deception.claim_chance("family_emergency", "chat", "martin")
+	Game.set_flag("nana_alibi")
+	t.check(Game.deception.has_evidence("family_alibi") and Game.deception.claim_chance("family_emergency", "chat", "martin") > plain, "a grandmother who will swear to it is evidence")
+	t.check(not Game.deception.has_evidence("form_filed"), "no form on file")
+	Game.set_flag("fax_form")
+	t.check(Game.deception.has_evidence("form_filed"), "a faxed Form 27-B is a form on file")
+
+
+func _colleague_favours() -> void:
+	t.section("colleagues: favours")
+	var s := Game.social
+	var n := Game.npcs
+	var c := Game.comms
+	t.run("survivor", 250)
+	t.at_work(600)
+	Game.presence.set_at_desk(true)
+	# Locked until they like you enough.
+	n.state.dave.rel = 50.0
+	var view := s.favour_view("dave", s.favour("dave", "cover"))
+	t.check(not bool(view.ok) and bool(view.locked), "Dave will not cover for a mere colleague")
+	t.check(not s.ask("dave", "cover") and not Game.presence.covered(), "so asking does nothing")
+	n.state.dave.rel = 70.0
+	view = s.favour_view("dave", s.favour("dave", "cover"))
+	t.check(bool(view.ok) and int(view.cost) == 0, "a friendly Dave covers for free")
+	t.check(s.ask("dave", "cover") and Game.presence.covered(), "and then your absence is explained")
+	t.check(int(Game.week.favours_called) == 1, "favours called in are counted")
+	Game.presence.end_cover()
+	t.check(not s.ask("dave", "cover"), "once a day")
+	t.check(not bool(s.favour_view("dave", s.favour("dave", "afternoon")).ok), "the long cover needs a closer friend")
+	# Tickets.
+	Game.work.add_task("pipeline")
+	var task: Dictionary = Game.work.tasks[0]
+	n.state.priya.rel = 50.0
+	Game.economy.favors = 0
+	t.check(not s.ask("priya", "ticket", {"task": str(task.id)}), "a ticket costs a favour you do not have")
+	Game.economy.favors = 2
+	t.check(s.ask("priya", "ticket", {"task": str(task.id)}) and str(task.by) == "priya" and Game.economy.favors == 1, "Priya takes the ticket for one favour")
+	t.check(not s.ask("dave", "ticket", {"task": str(task.id)}), "a ticket somebody is doing cannot be handed over again")
+	var per := int(s.favour("priya", "ticket").speed)
+	Game.time.advance(int(task.effort) * per + 2)
+	t.check(str(task.status) == "done" and str(task.how) == "priya", "and finishes it without you")
+	Game.work.add_task("button")
+	var second: Dictionary = Game.work.tasks[1]
+	t.check(Game.work.task_delegate(str(second.id)) and str(second.by) != "", "delegating without a name goes to whoever would do it")
+	t.check(s.is_colleague(str(second.by)), "and that is a colleague")
+	# Gerald loses things.
+	Game.work.add_task("deck")
+	var third: Dictionary = Game.work.tasks[2]
+	n.state.gerald.rel = 70.0
+	Game.economy.favors = 1
+	t.check(s.ask("gerald", "misfile", {"task": str(third.id)}) and str(third.status) == "cancelled" and str(third.how) == "lost", "Gerald can make a ticket stop existing")
+	t.check(int(Game.week.tasks_lost) == 1 and int(Game.week.tasks_failed) == 0, "which is not a failure")
+	# A good word.
+	t.run("survivor", 251)
+	t.at_work(600)
+	n.state.priya.rel = 90.0
+	Game.economy.favors = 1
+	Game.stats.values.susp = 40.0
+	t.check(s.ask("priya", "vouch") and Game.stats.get_value("susp") < 40.0, "a friend vouching for you lowers suspicion")
+	# Meetings.
+	t.run("survivor", 252)
+	t.at_work(600)
+	n.state.brenda.rel = 70.0
+	Game.economy.favors = 2
+	c.add_meeting({"title": "Mandatory", "start": 620, "dur": 15, "script": "sync", "mandatory": true})
+	c.add_meeting({"title": "Optional", "start": 660, "dur": 15, "script": "sync"})
+	t.check(s.ask("brenda", "invite"), "Brenda can lose an invite")
+	t.check(str(c.meetings[0].state) == "upcoming" and str(c.meetings[1].state) == "excused", "the optional one, never the mandatory one")
+	n.state.brenda.rel = 90.0
+	t.check(Game.events.can_interrupt(Db.events["quick_q"], {}) == "", "the manager checks in as usual")
+	t.check(s.ask("brenda", "distract"), "Brenda can keep the manager busy")
+	t.check(Game.events.can_interrupt(Db.events["quick_q"], {}) != "", "and then his check-ins wait")
+	t.check(Game.events.can_interrupt(Db.events["favor_kevin"], {}) == "", "but colleagues still reach you")
+	# Knowing what is coming.
+	t.run("survivor", 253)
+	t.at_work(600)
+	n.state.kevin.rel = 70.0
+	t.check(Game.events.forecast().is_empty(), "nothing is planned")
+	Game.time.schedule(Game.time.now() + 90, "event", {"id": "audit_surprise"})
+	Game.time.schedule(Game.time.now() + 150, "event", {"id": "surprise_call"})
+	var seen := Game.events.forecast()
+	t.check(seen.size() == 2 and str(seen[0]).contains("11:30") and str(seen[0]).contains("SynerWatch"), "the forecast lists today's surprise checks, in order (%s)" % str(seen))
+	t.check(s.ask("kevin", "intel"), "Kevin will read it to you")
+	var last: Dictionary = c.threads["kevin"].msgs.back()
+	t.check(str(last.text).contains("11:30"), "in his chat")
+	# Tip-offs.
+	t.run("survivor", 254)
+	t.at_work(600)
+	n.state.dave.rel = 90.0
+	Game.time.schedule(Game.time.now() + EventDirector.TIP_LEAD + 3, "event", {"id": "surprise_call"})
+	Game.time.advance(2)
+	t.check(int(Game.week.tipoffs) == 0, "no warning while it is still far off")
+	Game.time.advance(3)
+	t.check(int(Game.week.tipoffs) == 1, "a close friend warns you shortly before a surprise call")
+	Game.time.advance(4)
+	t.check(int(Game.week.tipoffs) == 1, "once")
+	t.check(c.ringing().is_empty(), "before it rings")
+	t.run("survivor", 255)
+	t.at_work(600)
+	Game.time.schedule(Game.time.now() + 5, "event", {"id": "surprise_call"})
+	Game.time.advance(3)
+	t.check(int(Game.week.tipoffs) == 0, "nobody warns a stranger")
+	# Talked up in public.
+	t.run("survivor", 256)
+	t.at_work(Social.HYPE_AT - 2)
+	n.state.kevin.rel = 70.0
+	Game.stats.values.ill = 30.0
+	var posts: int = c.threads["team"].msgs.size()
+	Game.time.advance(3)
+	t.check(c.threads["team"].msgs.size() == posts + 1 and Game.stats.get_value("ill") > 30.0, "a friendly Kevin talks you up in the team channel")
+	# A friend in the meeting.
+	t.run("survivor", 257)
+	t.at_work(569)
+	c.add_meeting({"title": "Daily Standup", "start": 570, "dur": 15, "script": "standup", "mandatory": true})
+	Game.time.advance(2)
+	c.join(str(c.ringing().id), false)
+	var has_wing := func() -> int:
+		var list := c.call_choices()
+		for i in list.size():
+			if list[i].has("wing"):
+				return i
+		return -1
+	t.check(has_wing.call() < 0, "nobody takes questions for a mere colleague")
+	n.state.priya.rel = 70.0
+	var wing: int = has_wing.call()
+	t.check(wing >= 0 and not Game.work.is_work(str(c.call_choices()[wing].a)), "a friendly Priya will take a question for you")
+	c.call_choose(wing)
+	t.check(not c.in_call() or has_wing.call() < 0, "once per meeting")
+	while c.in_call():
+		c.call_timeout()
+	t.run("survivor", 258)
+	t.at_work(600)
+	n.state.priya.rel = 70.0
+	Game.events.fire("one_on_one", {"urgent": true})
+	Game.time.advance(2)
+	c.join(str(c.ringing().id), false)
+	t.check(has_wing.call() < 0, "she is not in your one-to-one")
+	while c.in_call():
+		c.call_timeout()
+	# Outcomes that only colleagues and strangers hand out.
+	t.run("survivor", 259)
+	t.at_work(600)
+	c.apply({"block": {"title": "Vendor call", "dur": 25}}, "test")
+	t.check(c.calendar_block_now() and Game.deception.has_evidence("calendar_block"), "a meeting someone books for you is real evidence")
+	c.apply({"flags": ["a_flag", "b_flag"], "boss_busy": 30}, "test")
+	t.check(Game.flag("a_flag") and Game.flag("b_flag"), "an outcome can set several flags")
+	t.check(Game.events.can_interrupt(Db.events["quick_q"], {}) != "", "and can keep the manager busy")
+	Game.work.add_task("pipeline")
+	c.apply({"lose_task": true}, "test")
+	t.check(str(Game.work.tasks[0].status) == "cancelled", "and can lose a ticket")
+
+
+func _colleague_calls() -> void:
+	t.section("colleagues: calls")
+	var s := Game.social
+	var n := Game.npcs
+	var c := Game.comms
+	# A colleague rings: not a meeting.
+	t.run("survivor", 270)
+	t.at_work(680)
+	Game.presence.set_at_desk(true)
+	t.check(Game.events.fire("brenda_hello", {}), "Brenda calls")
+	Game.time.advance(1)
+	var m := c.ringing()
+	t.check(not m.is_empty() and bool(m.casual) and str(m.who) == "brenda", "it rings, as a casual call")
+	t.check(c.ring_sound(m) == "ring_peer", "with a colleague's ring tone")
+	t.check(c.can_send_clone(m) != "", "your clone does not take it for you")
+	t.check(c.call_cast(m) == ["brenda"], "it is one-to-one")
+	var susp := Game.stats.get_value("susp")
+	var rel := n.relationship("brenda")
+	n.state.brenda.rel = 70.0             # friendly: missing it stays between the two of you
+	rel = 70.0
+	Game.time.advance(int(m.ring_until) - int(Game.time.minute) + 2)
+	t.check(str(m.state) == "missed" and int(Game.week.calls_dodged) == 1 and int(Game.week.meetings_missed) == 0, "letting it ring out is a missed call, not a missed meeting")
+	t.near(Game.stats.get_value("susp"), susp, "which the manager never hears about", 0.6)
+	t.check(n.relationship("brenda") < rel, "though she likes you less for it")
+	var retry := false
+	for e in Game.time.timers:
+		if str(e.ev) == "event" and str(e.args.id) == "brenda_hello" and bool(e.args.get("ctx", {}).get("retry", false)):
+			retry = true
+			Game.time.minute = float(int(e.at) % 1440 - 1)
+	t.check(retry, "she tries again later")
+	Game.time.advance(3)
+	m = c.ringing()
+	t.check(not m.is_empty() and bool(m.retry), "and it rings a second time")
+	rel = n.relationship("brenda")
+	c.reject_call(str(m.id))
+	t.check(str(m.state) == "missed" and n.relationship("brenda") < rel and n.relationship("brenda") >= rel - 2.5, "rejecting it costs less than ignoring it")
+	t.check(Game.time.pending("event").filter(func(e): return str(e.args.id) == "brenda_hello").is_empty(), "she does not try a third time")
+	# Taking it.
+	t.run("survivor", 271)
+	t.at_work(680)
+	Game.presence.set_at_desk(true)
+	Game.events.fire("brenda_hello", {})
+	Game.time.advance(1)
+	m = c.ringing()
+	rel = n.relationship("brenda")
+	c.join(str(m.id), false)
+	t.check(c.in_call() and c.call_context() == "video", "a colleague's video call is on camera")
+	var hp := Game.stats.get_value("health")
+	var slack := int(Game.week.slack_min)
+	var worked := int(Game.week.worked_min)
+	c.call_choose(0)
+	t.near(Game.stats.get_value("health"), hp, "it costs no health", 0.5)
+	t.check(int(Game.week.slack_min) > slack, "and counts as paid time off")
+	var guard := 0
+	while c.in_call() and guard < 10:
+		guard += 1
+		c.call_choose(0)
+	t.check(str(m.state) == "done" and int(Game.week.calls_taken) == 1 and int(Game.week.meetings_attended) == 0, "finishing it is a call taken, not a meeting attended")
+	t.check(n.relationship("brenda") > rel and int(Game.week.worked_min) == worked, "she likes you more, and no work was done")
+	# Hanging up.
+	t.run("survivor", 272)
+	t.at_work(680)
+	Game.presence.set_at_desk(true)
+	Game.events.fire("brenda_hello", {})
+	Game.time.advance(1)
+	c.join(str(c.ringing().id), false)
+	susp = Game.stats.get_value("susp")
+	rel = n.relationship("brenda")
+	c.call_hang_up()
+	t.check(not c.in_call() and n.relationship("brenda") < rel, "hanging up on a colleague is rude")
+	t.near(Game.stats.get_value("susp"), susp, "but not suspicious", 0.6)
+	# Voice-only lines.
+	t.run("survivor", 273)
+	Game.time.day = 1
+	t.at_work(875)
+	Game.presence.set_at_desk(true)
+	Game.events.fire("dave_range", {})
+	Game.time.advance(1)
+	m = c.ringing()
+	t.check(not bool(m.video) and str(m.voice_id) == "choppy", "Dave rings from the driving range, audio only, on a bad line")
+	c.join(str(m.id), false)
+	t.check(c.call_context() == "phone", "no camera, so no outfit bonus or penalty")
+	# Beats that depend on what you said.
+	c.call_choose(0)                       # "I'm the vendor"
+	t.check(Game.flag("dave_pact") and str(c.call_beat().text).contains("Say it back"), "agreeing leads to the briefing")
+	while c.in_call():
+		c.call_choose(0)
+	t.check(Game.presence.covered(), "and the alibi covers you too")
+	t.run("survivor", 274)
+	Game.time.day = 1
+	t.at_work(875)
+	Game.presence.set_at_desk(true)
+	Game.events.fire("dave_range", {})
+	Game.time.advance(1)
+	c.join(str(c.ringing().id), false)
+	c.call_choose(2)                       # "you're going to get us both fired"
+	t.check(not Game.flag("dave_pact") and str(c.call_beat().text).contains("Two words"), "refusing leads somewhere else")
+	while c.in_call():
+		c.call_choose(1)
+	# Answers that only exist once you know something.
+	t.run("survivor", 275)
+	Game.time.day = 2
+	t.at_work(850)
+	Game.presence.set_at_desk(true)
+	Game.events.fire("kevin_dashboard", {})
+	Game.time.advance(1)
+	c.join(str(c.ringing().id), false)
+	var plain := c.call_choices().size()
+	Game.set_flag("dirt_kevin")
+	t.check(c.call_choices().size() == plain + 1, "knowing about the database adds an answer on Kevin's call")
+	while c.in_call():
+		c.call_timeout()
+	# Asking first.
+	t.run("survivor", 276)
+	Game.time.day = 1
+	t.at_work(940)
+	Game.presence.set_at_desk(true)
+	t.check(Game.events.fire("priya_vent", {}) and c.ringing().is_empty() and c.prompts.size() == 1, "Priya asks before she calls")
+	var p: Dictionary = c.prompts[0]
+	t.check(str(p.from) == "priya" and not bool(p.no_excuse), "it is a message from her, and excuses are welcome")
+	c.answer(str(p.id), 0)
+	Game.time.advance(2)
+	t.check(not c.ringing().is_empty() and str(c.ringing().who) == "priya", "saying yes makes her call")
+	t.run("survivor", 277)
+	Game.time.day = 1
+	t.at_work(940)
+	Game.presence.set_at_desk(true)
+	Game.events.fire("priya_vent", {})
+	p = c.prompts[0]
+	c.answer(str(p.id), 1)
+	Game.time.advance(5)
+	t.check(c.ringing().is_empty(), "asking for twenty minutes holds her off")
+	Game.time.advance(17)
+	t.check(not c.ringing().is_empty(), "for twenty minutes")
+	t.run("survivor", 278)
+	Game.time.day = 1
+	t.at_work(940)
+	Game.events.fire("priya_vent", {})
+	p = c.prompts[0]
+	Game.time.advance(int(p.due) - Game.time.now() + 2)
+	t.check(c.ringing().is_empty() and int(Game.week.colleagues_ignored) == 1, "ignoring the question is ignoring her")
+	# Strangers.
+	t.run("survivor", 279)
+	Game.time.day = 2
+	t.at_work(700)
+	Game.presence.set_at_desk(true)
+	var story := _tell("internet_outage")
+	t.check(story != null and story.is_active(), "you told the manager your internet is down")
+	Game.events.fire("weird_nana", {"urgent": true})
+	Game.time.advance(1)
+	m = c.ringing()
+	t.check(bool(m.casual) and c.ring_sound(m) == "ring_weird" and n.kind(str(m.who)) == "stranger", "an unknown number rings differently")
+	c.join(str(m.id), false)
+	t.check(story.is_active(), "a stranger on your own line contradicts nothing")
+	var excuse := false
+	for ch in c.call_choices():
+		if bool(ch.get("excuse", false)):
+			excuse = true
+	t.check(not excuse, "and you owe a stranger no excuses")
+	susp = Game.stats.get_value("susp")
+	c.call_hang_up()
+	t.near(Game.stats.get_value("susp"), susp, "hanging up on one costs nothing", 0.6)
+	c.meetings.clear()                     # (no pause between calls, for the test)
+	Game.events.fire("brenda_dirt", {"asked": true, "urgent": true})
+	Game.time.advance(1)
+	c.join(str(c.ringing().id), false)
+	t.check(not story.is_active(), "a video call with a colleague does contradict it")
+	while c.in_call():
+		c.call_timeout()
+	t.run("survivor", 280)
+	Game.time.day = 2
+	t.at_work(700)
+	Game.events.fire("weird_fax", {"urgent": true})
+	Game.time.advance(1)
+	m = c.ringing()
+	susp = Game.stats.get_value("susp")
+	Game.time.advance(int(m.ring_until) - int(Game.time.minute) + 2)
+	t.check(str(m.state) == "missed" and int(Game.week.snitched) == 0, "an unknown number left to ring out is nobody's business")
+	t.check(not Game.events.fire("weird_fax", {"urgent": true}), "and it does not call back")
+	# The manager's calls are still the manager's calls.
+	t.run("survivor", 281)
+	Game.time.day = 2
+	t.at_work(700)
+	Game.events.fire("surprise_call", {"urgent": true})
+	Game.time.advance(1)
+	m = c.ringing()
+	t.check(not bool(m.casual) and c.ring_sound(m) == "ring_loop", "a call from the manager is not casual")
+	susp = Game.stats.get_value("susp")
+	Game.time.advance(int(m.ring_until) - int(Game.time.minute) + 2)
+	t.check(Game.stats.get_value("susp") > susp + 3.0 and int(Game.week.meetings_missed) == 1, "and missing it still costs you")
+	# Every scripted and strange call can be played to the end without real work.
+	for id in Db.events:
+		var e: Dictionary = Db.events[id]
+		if str(e.kind) != "call" or not (s.is_colleague(str(e.from)) or str(e.pool) == "weird"):
+			continue
+		for pick: int in [0, 1, 2]:
+			t.run("survivor", 290 + pick)
+			Game.time.day = 3
+			t.at_work(700)
+			Game.presence.set_at_desk(true)
+			if e.conditions.has("owns"):
+				_own(str(e.conditions.owns))
+			for who in e.conditions.get("tier_min", {}):
+				n.state[who].rel = 90.0
+			Game.economy.favors = 3
+			Game.economy.money = 500
+			Game.work.add_task("pipeline")
+			var fired := Game.events.fire(id, {"asked": true, "urgent": true})
+			Game.time.advance(1)
+			m = c.ringing()
+			if m.is_empty():
+				t.check(false, "call '%s' rings (fired: %s)" % [id, str(fired)])
+				continue
+			c.join(str(m.id), false)
+			guard = 0
+			worked = int(Game.week.worked_min)
+			while c.in_call() and guard < 12:
+				guard += 1
+				var list := c.call_choices()
+				var chosen := -1
+				for k in list.size():
+					var i: int = (pick + k) % list.size()
+					if not Game.work.is_work(str(list[i].a)) and not bool(list[i].get("excuse", false)) and bool(c.choice_view(list[i], c.call_context(), str(c.call_beat().who)).ok):
+						chosen = i
+						break
+				if chosen < 0:
+					c.call_timeout()
+				else:
+					c.call_choose(chosen)
+			t.check(not c.in_call() and Game.time.running() and int(Game.week.worked_min) == worked, "call '%s' plays through without real work (path %d)" % [id, pick])
+	# Saving keeps who your friends are.
+	Game.saves.enabled = true
+	t.run("survivor", 295)
+	t.at_work(600)
+	Game.presence.set_at_desk(true)
+	n.state.dave.rel = 70.0
+	s.tiers["dave"] = s.tier("dave")
+	s.ask("dave", "cover")
+	s.small_talk("priya")
+	s.told = {"kevin": 1}
+	t.check(Game.saves.save("slot3"), "save")
+	t.run("intern", 6)
+	t.check(Game.saves.load_game("slot3"), "load")
+	t.check(s.tier("dave") == Social.Tier.FRIENDLY and s.talked_today("priya") and int(s.told.get("kevin", 0)) == 1, "friendships, small talk and who told on you are restored")
+	t.check(not bool(s.favour_view("dave", s.favour("dave", "cover")).ok), "a favour asked today is still asked today after loading")
+	Game.saves.delete("slot3")
+	Game.saves.enabled = false
 
 
 func _economy() -> void:

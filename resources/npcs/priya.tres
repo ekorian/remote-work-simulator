@@ -10,5 +10,78 @@ role = "Staff Engineer (does everything)"
 color = Color(0.3529, 0.8196, 0.7843, 1)
 kind = "coworker"
 gullibility = -6.0
-start_relationship = 55.0
+start_relationship = 50.0
 look = {"skin": 3, "hair": 2, "hair_color": 0, "shirt": 6, "pants": 1, "accessory": 1}
+colleague = true
+in_meetings = true
+snitch = 0.2
+voice = "priya"
+favours = [
+  {
+    "id": "ticket",
+    "type": "ticket",
+    "tier": 2,
+    "cost": 1,
+    "speed": 16,
+    "botch": 0.0,
+    "title": "Take a ticket off my hands",
+    "hint": "1 favour. Fast and flawless.",
+    "ask": "Could you take one of mine? I owe you. Again.",
+    "say": "Give it here. {task} will take me ten minutes, which is the insulting part."
+  },
+  {
+    "id": "wingman",
+    "type": "wingman",
+    "tier": 3,
+    "passive": true,
+    "title": "Takes a question for you in meetings",
+    "hint": "Once per team meeting you get an extra answer: let Priya take it."
+  },
+  {
+    "id": "vouch",
+    "type": "vouch",
+    "tier": 4,
+    "cost": 1,
+    "susp": 8,
+    "ill": 4,
+    "title": "Vouch for me to Martin",
+    "hint": "1 favour. -8 Suspicion, and it calms him down.",
+    "ask": "Martin's circling. Could you say something nice about me? Anything.",
+    "say": "Done. I told him you 'unblocked' me. He didn't ask on what.",
+    "public": "For the record, {name} unblocked me twice this week. Credit where due."
+  }
+]
+ask_lines = [
+  "Do you have five minutes? I need a second brain. Or a first one.",
+  "Can I call you? It's faster than typing and I have no time to type."
+]
+lines = {
+  "small_talk": [
+    "My week is a fire. Thanks for asking, though. Nobody asks.",
+    "Honestly? I ate lunch standing up. Again. You?",
+    "I had a weekend once. 2019. It was nice."
+  ],
+  "friendly": [
+    "OK. You're alright. Strange, but alright. If Martin puts you on the spot in a meeting, look at me."
+  ],
+  "friend": [
+    "I've decided you're my favourite useless person. If you're ever in real trouble with Martin, say the word."
+  ],
+  "hostile": [
+    "I'm done covering for people who can't even answer a message. Martin can chase you himself."
+  ],
+  "missed_call": [
+    "I called. You didn't pick up. I'm noticing a pattern.",
+    "No answer. Fine. I'll do it myself. Like everything."
+  ],
+  "gift": [
+    "A gift card. For the coffee place. ...You've noticed how much coffee I drink. Thank you."
+  ],
+  "wingman": [
+    "I can take that one, it touches my area. Short version: it's on track. Next?"
+  ],
+  "snitch": [
+    "Priya says she can't get an answer out of you. Priya is carrying half this team, {name}. Answer her.",
+    "Priya just told me she's given up waiting on you. That's not a sentence I enjoy hearing."
+  ]
+}

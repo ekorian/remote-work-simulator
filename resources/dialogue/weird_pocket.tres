@@ -1,0 +1,82 @@
+[gd_resource type="Resource" script_class="DialogueDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/dialogue_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = "weird_pocket"
+beats = [
+  {
+    "who": "martin",
+    "no_excuse": true,
+    "text": "...mmph... *rustle* ...no, the QUARTERLY one... mmf... *rustle* ...and then I'll check on... mmph...",
+    "choices": [
+      {
+        "t": "Say nothing. Listen.",
+        "a": "chat",
+        "ok": {
+          "intel": true,
+          "say": "He has pocket-dialled you. Through the fabric you make out his plans:"
+        }
+      },
+      {
+        "t": "\"Martin? You've pocket-dialled me.\"",
+        "a": "honest",
+        "ok": {
+          "end": true,
+          "susp": -2,
+          "say": "...Oh! OH. How long were you... Never mind. Good initiative, picking up."
+        }
+      },
+      {
+        "t": "Hang up quietly.",
+        "a": "ignore",
+        "ok": {
+          "end": true
+        }
+      }
+    ],
+    "silence": {
+      "say": "...mmf... *rustle*"
+    }
+  },
+  {
+    "who": "martin",
+    "no_excuse": true,
+    "text": "...mmf... who's breathing? ...is someone... *rustle* ...HELLO?",
+    "choices": [
+      {
+        "t": "Hang up. Now.",
+        "a": "ignore",
+        "ok": {}
+      },
+      {
+        "t": "\"Sorry, wrong Martin.\"",
+        "a": "bluff",
+        "p": 46,
+        "ok": {
+          "say": "...Oh. Sorry. *click*"
+        },
+        "ko": {
+          "susp": 4,
+          "say": "...{name}? Were you LISTENING?"
+        }
+      },
+      {
+        "t": "Hold your breath.",
+        "a": "bluff",
+        "p": 62,
+        "ok": {
+          "say": "...Must be the Wi-Fi. *click*"
+        },
+        "ko": {
+          "susp": 3,
+          "say": "I can hear a television. Whose television is that?"
+        }
+      }
+    ],
+    "silence": {
+      "say": "...Must be the Wi-Fi. *click*"
+    }
+  }
+]

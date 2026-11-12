@@ -1,0 +1,118 @@
+[gd_resource type="Resource" script_class="DialogueDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/dialogue_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = "brenda_hello"
+beats = [
+  {
+    "who": "brenda",
+    "text": "THERE you are! Brenda, Office Experience. I do desks, badges and birthdays, and I know everything about everyone. So. How are you finding Martin?",
+    "choices": [
+      {
+        "t": "\"He seems very... passionate about synergy.\"",
+        "a": "chat",
+        "ok": {
+          "rel": 3,
+          "say": "Ha! Diplomatic. I like you. He cried at the Q2 offsite, you know. During the trust fall."
+        }
+      },
+      {
+        "t": "\"Honestly? He terrifies me.\"",
+        "a": "honest",
+        "ok": {
+          "rel": 5,
+          "say": "Good instinct. He counts green dots. Keep yours green and he'll never think about you again."
+        }
+      },
+      {
+        "t": "\"Sorry Brenda, I'm slammed. Another time?\"",
+        "a": "bluff",
+        "p": 55,
+        "ok": {
+          "rel": -1,
+          "end": true,
+          "say": "Slammed. On day one. Of course you are, sweetie."
+        },
+        "ko": {
+          "rel": -4,
+          "say": "Nobody is slammed on day one. Sit."
+        }
+      }
+    ]
+  },
+  {
+    "who": "brenda",
+    "text": "Now. The team. I'll tell you about ONE of them properly, because I have a birthday cake to hide. Who?",
+    "choices": [
+      {
+        "t": "\"Tell me about Kevin.\"",
+        "a": "chat",
+        "ok": {
+          "rel": 2,
+          "say": "Kevin tells Martin EVERYTHING. Leave Kevin on read and Martin knows in ten minutes. Flatter him and he'll sing your praises instead."
+        }
+      },
+      {
+        "t": "\"Tell me about Dave.\"",
+        "a": "chat",
+        "ok": {
+          "rel": 2,
+          "say": "Dave hasn't done a ticket since 2019. But cover for Dave and Dave covers for you. He'll swear you were in a meeting with him."
+        }
+      },
+      {
+        "t": "\"Tell me about Priya.\"",
+        "a": "chat",
+        "ok": {
+          "rel": 2,
+          "say": "Priya does everyone's job. If she likes you she'll do yours too. She likes people who listen. Nobody listens to Priya."
+        }
+      },
+      {
+        "t": "\"I'd rather not gossip about colleagues.\"",
+        "a": "honest",
+        "ok": {
+          "rel": -4,
+          "say": "Oh. One of THOSE."
+        }
+      }
+    ]
+  },
+  {
+    "who": "brenda",
+    "text": "Last thing. People who stay on my good side hear things first. Spot checks. Surprise calls. Who's being 'restructured'. So we'll stay in touch. Yes?",
+    "choices": [
+      {
+        "t": "\"You'll be my first call, Brenda.\"",
+        "a": "flatter",
+        "p": 78,
+        "ok": {
+          "rel": 5,
+          "say": "Oh, I LIKE you."
+        },
+        "ko": {
+          "rel": 1,
+          "say": "Mm. They all say that in week one."
+        }
+      },
+      {
+        "t": "\"Deal. What do you want in return?\"",
+        "a": "chat",
+        "ok": {
+          "rel": 3,
+          "say": "Gossip, sweetie. Bring me gossip. And pick up when I ring."
+        }
+      },
+      {
+        "t": "\"I prefer to keep my head down.\"",
+        "a": "honest",
+        "ok": {
+          "rel": -2,
+          "say": "Heads that stay down get counted too."
+        }
+      }
+    ]
+  }
+]

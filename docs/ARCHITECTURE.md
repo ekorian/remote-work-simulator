@@ -28,7 +28,7 @@ scripts/simulation/  WorkSystem, Comms, Home, Presence, Activities
 scripts/deception/   DeceptionManager, Claim
 scripts/automation/  AutomationManager
 scripts/events/      EventDirector, Dialogue, Tutorial
-scripts/npcs/        NPCManager
+scripts/npcs/        NPCManager, Social
 scripts/data/        Resource classes (one per content type) and Db
 scripts/player/      Player, Character, CameraRig
 scripts/apartment/   World, Apartment, Interactable, Kit
@@ -54,6 +54,7 @@ system as a child node and exposes it as a typed member.
 | `Game.automation` | AutomationManager | Gadgets, levels, reliability, heat, combinations |
 | `Game.events` | EventDirector | Scheduling, conditions, pacing, firing events |
 | `Game.npcs` | NPCManager | Relationship, mood, knowledge, escalation per person |
+| `Game.social` | Social | Colleagues: friendship tiers, telling on you, favours, small talk, gifts |
 | `Game.saves` | SaveManager | Save slots, versioning |
 | `Game.presence` | Presence | Online status; whether an absence is explained |
 | `Game.activities` | Activities | The timed activity in progress |
@@ -102,7 +103,7 @@ in `scripts/data/`:
 | `resources/deception` | ClaimDef | The ten excuse categories |
 | `resources/gadgets` | GadgetDef | Gadgets and their levels |
 | `resources/gadgets/combos` | ComboDef | Gadget combinations |
-| `resources/npcs` | NpcDef | People |
+| `resources/npcs` | NpcDef | People: who they are, their voice, and for colleagues how readily they tell on you and which favours they do |
 | `resources/tasks` | TaskDef | Tickets |
 | `resources/balancing` | DifficultyDef | The four difficulties |
 | `resources/text` | TextBankDef | Flavour lines |
@@ -161,6 +162,45 @@ does.
 A claim that expires or is verified without being caught counts as a
 successful deception.
 
+## Colleagues
+
+`NPCManager` keeps the numbers for every character; `Social` gives them
+consequences for the ones whose `NpcDef` says `colleague = true`. Nothing in
+either names a person.
+
+- **Tiers.** `Social.tier(id)` reads the relationship as one of five
+  `Social.Tier` values. `TIERS` holds, per tier, the multiplier on telling and
+  on gossip (both zero from Friendly up).
+- **Telling on you.** Everything that leaves a colleague hanging goes through
+  one door, `Social.unanswered(id, how, declined)`: an expired prompt
+  (`Comms._expire`), a call that rang out or was rejected (`Comms._miss`).
+  It rolls `snitch_chance(id)` (the NpcDef's `snitch` times the tier
+  multiplier), and on a hit raises suspicion and either has the manager say
+  so or fires the `snitch_followup` event with `{who}` in its context.
+- **Favours.** An NpcDef lists `favours`: `{id, type, tier, cost, ...}`.
+  `favour_view()` says whether one can be asked (tier, favours owed, once a
+  day) and `ask()` performs it. Types that are asked for: `ticket`, `bury`,
+  `cover`, `vouch`, `intel`, `distract`, `skip_meeting`. Types that simply
+  hold while the friendship does (`passive`): `tipoff` (the director calls
+  `Social.tip_off` before any event with a `tip`), `wingman` (an extra answer
+  in team meetings, added by `Comms.call_choices`), `hype` (daily praise).
+- **Casual calls.** A meeting created for a caller of kind `coworker` or
+  `stranger` is `casual`: no fatigue, the time is logged as slacking, the
+  clone does not attend, and missing it goes to `Social.unanswered` instead
+  of the manager. A stranger's call creates no facts for the deception
+  engine; a colleague's does.
+
+## Voices
+
+`tools/gen_audio.py` synthesises three takes of gibberish per voice
+(`assets/audio/voice_<id>_<n>.wav`): a sawtooth source through vowel
+formants, syllable by syllable, with per-voice pitch, pace and melody, then
+effects for the damaged lines (echo, ring modulation, bit crushing, stutter,
+drop-outs). An NpcDef names its `voice`; a call can override it for everyone
+(`meeting.voice_id`, e.g. Dave on a bad line) and a beat for one line
+(`voice`). `Sfx.voice(id)` plays a take and returns its length, and the call
+screen reveals the line's text over that time.
+
 ## Automation
 
 A gadget level lists abilities in `can` (`presence`, `illusion`, `auto_reply`,
@@ -185,8 +225,17 @@ An `EventDef` says how it can happen:
   a choice outcome, a claim follow-up, a gadget failure.
 
 `conditions` keys: `day_min`, `day_max`, `from`, `to`, `flag`, `not_flag`,
-`owns`, `ability`, `susp_min/max`, `ill_min/max`, `absent_min`, `status`,
-`escalation_min`, `claim`, `open_task`, `urgent_task`, `faked_task`.
+`not_flags`, `owns`, `tier_min`/`tier_max` (`{npc: tier}`), `ability`,
+`susp_min/max`, `ill_min/max`, `absent_min`, `status`, `escalation_min`,
+`claim`, `open_task`, `urgent_task`, `faked_task`.
+
+A call event's `meeting` dictionary may set `voice` (audio only), `voice_id`,
+`ask` (the caller asks by message first, and only rings if you agree),
+`cast`, `private` and `casual`. The `weird` pool holds the strange calls: the
+director places at most one a day, before the filler takes the gaps. An event
+with a `tip` (`scan`, `call`, `screen`) is something a well-informed friend
+warns you about: `EventDirector.upcoming_checks()` is what both the warnings
+and the "what is Martin planning" favour read.
 
 Pacing (`can_interrupt`): nothing interrupts a call; two calls never ring at
 once; a conversation with a pending prompt gets no second one; at most three
@@ -202,13 +251,20 @@ in one place (`Comms.resolve`):
 {t: text, a: action id,
  p: base % for a bluff roll | ability: gadget ability to roll |
  evidence: id (succeeds only if true) | match: subject (memory check),
- tags: [...], req: {ability|favor|money|evidence},
+ tags: [...], req: {ability|favor|money|evidence|flag|tier},
+ if: {conditions under which the choice exists at all},
  ok: {...}, ko: {...}}
 ```
 
-Outcome keys: `susp`, `ill`, `hp`, `en`, `money`, `favor`, `rel`, `cover`,
-`buff`, `flag`, `say`, `end`, `task`, `progress`, `give`, `claim`,
-`claim_status`, `fix_gadget`, `due_in`, `event`, `later {in, ev}`, `stat`.
+Outcome keys: `susp`, `ill`, `hp`, `en`, `money`, `favor`, `rel`,
+`rels {npc: delta}`, `cover`, `buff`, `flag`, `flags`, `say`, `end`, `task`,
+`progress`, `give`, `claim`, `claim_status`, `fix_gadget`, `due_in`, `event`,
+`later {in, ev}`, `call`, `call_in`, `block {title, dur}`, `boss_busy`,
+`lose_task`, `intel`, `toast`, `stat`.
+
+A dialogue beat may carry an `if` too: beats whose condition does not hold
+are skipped, which is how a call branches on what was said a moment ago or
+earlier in the week.
 
 ## Views
 
@@ -249,7 +305,13 @@ Outcome keys: `susp`, `ill`, `hp`, `en`, `money`, `favor`, `rel`, `cover`,
   `DeceptionManager.has_evidence`; for a new fact, add it to `FACTS` and
   call `observe` where it happens.
 - **A character:** add an `NpcDef`. They get relationship, mood and knowledge
-  tracking automatically and can be the `from` of any event.
+  tracking automatically and can be the `from` of any event. Set `colleague`
+  and give them `favours` and they can be befriended and may tell on you.
+- **A voice:** add an entry to `VOICES` in `tools/gen_audio.py` (and a case in
+  `wreck()` if the line should sound damaged), run it, and name the voice on
+  an NpcDef or a call.
+- **A call:** an `EventDef` of kind `call` plus a `DialogueDef`. A schedule
+  makes it part of someone's story; `pool = "weird"` makes it a strange call.
 - **An apartment object:** add it to `Home.THINGS`, give it options in
   `Home.options()`/`use()`, and build its mesh in `apartment.gd`.
 - **An action:** declare it in `WorkSystem.DEFS` first. Undeclared ids are
@@ -261,10 +323,13 @@ cache is refreshed). `tools/validate.sh` checks every reference.
 ## Known limitations
 
 - Tickets, prompts, meetings and mails are Dictionaries, not typed classes.
-- One save version; older saves are rejected rather than migrated.
+- One save version (3); older saves are rejected rather than migrated.
 - Ambience is not positional.
 - Text is English only and not routed through Godot's translation system.
 - Keyboard and mouse only; no gamepad mapping or rebinding UI.
+- Voices are gibberish. The text carries the meaning; nothing is lip-synced
+  and the meter on the call screen follows a clock, not the audio.
+- Colleagues exist in chat and on calls only: none of them visits the flat.
 - The AI Doppelganger is the simplified version: it attends meetings, works
   one ticket and occasionally makes a decision for you. There is no clone
   storyline.

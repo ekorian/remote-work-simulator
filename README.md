@@ -15,6 +15,7 @@ In Remote Work Simulator, productivity is the enemy.
 | --- | --- |
 | ![Choosing an excuse](docs/screenshots/excuses.png) | ![The Alibi Ledger and gadgets](docs/screenshots/ledger.png) |
 | ![A meeting](docs/screenshots/meeting.png) | ![The gadget shop](docs/screenshots/shop.png) |
+| ![A colleague's page: friendship and favours](docs/screenshots/colleague.png) | ![A call from sub-basement 3](docs/screenshots/call.png) |
 
 This repository is the playable vertical slice: one apartment, one week, four
 difficulties, 20 to 40 minutes per run.
@@ -69,6 +70,13 @@ fake it, delegate it, excuse it, automate it, or bury it in paperwork.
 meeting on camera, and he will ask about it. The Alibi Ledger (ShadowIT, on the
 work computer) lists every story you have told and what would expose it.
 
+**Colleagues** call and message you. Leave one hanging and they may tell
+Martin; pick up, cover for them and listen, and they become friends who take
+your tickets, cover your absences and warn you before he checks on you. Each
+has a story told in calls over the week, and each has a voice. From Tuesday,
+so do the unknown numbers: a robocall about your chair's warranty, somebody's
+grandmother, a fax machine.
+
 **Gadgets** keep you looking present while you are not: MouseMover.exe, the
 Keyboard Duck, Chatbot Team, the Meeting Assistant and the AI Doppelganger, each
 with three levels, a reliability, and its own way of going wrong.
@@ -105,11 +113,14 @@ What the tests cover:
   instant defeat for every legitimate work action, claim creation, expiry and
   contradiction for all ten categories, gadget activation, upgrades, failures
   and combinations, event preconditions, pacing and modal conflicts, NPC state,
-  the economy, and a save/load round trip.
-- `tests/run_test`: three bots (idle, honest worker, skilled slacker) play whole
-  weeks on all four difficulties with invariants checked every simulated minute.
-  It fails if a run softlocks, if standing still can win, if an honest worker
-  can win Extreme, or if skilled avoidance stops being viable.
+  colleagues (friendship tiers, telling on you, every favour, every scripted
+  and strange call played to the end three ways), the economy, and a
+  save/load round trip.
+- `tests/run_test`: bots (idle, honest worker, skilled slacker, and a slacker
+  who ignores every colleague) play whole weeks with invariants checked every
+  simulated minute. It fails if a run softlocks, if standing still can win, if
+  an honest worker can win Extreme, if skilled avoidance stops being viable,
+  or if ignoring colleagues stops costing more than befriending them.
 - `tests/world_test`: builds the real apartment and walks the player to every
   object with physics and collisions on.
 - `tools/shots.sh <scene>` renders scripted screenshots offscreen (needs `xvfb`);
@@ -133,7 +144,7 @@ scripts/simulation/  WorkSystem, Comms, Home, Presence, Activities
 scripts/deception/   DeceptionManager and the Claim model
 scripts/automation/  AutomationManager
 scripts/events/      EventDirector, Dialogue, Tutorial
-scripts/npcs/        NPCManager
+scripts/npcs/        NPCManager, Social (colleagues)
 scripts/data/        Resource classes for authored content
 scripts/player/      player controller, character, camera
 scripts/apartment/   the 3D flat and its objects

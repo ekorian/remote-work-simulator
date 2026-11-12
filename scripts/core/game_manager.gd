@@ -11,7 +11,7 @@ signal day_started(day: int)
 signal workday_ended(report: Dictionary)
 signal run_ended(result: Dictionary)
 
-const SAVE_VERSION := 2
+const SAVE_VERSION := 3
 
 # --- Systems -----------------------------------------------------------------
 var time: TimeManager
@@ -25,6 +25,7 @@ var comms: Comms
 var deception: DeceptionManager
 var automation: AutomationManager
 var npcs: NPCManager
+var social: Social
 var events: EventDirector
 var tutor: Tutorial
 var saves: SaveManager
@@ -55,6 +56,7 @@ func _init() -> void:
 	activities = _add("activities", Activities.new())
 	home = _add("home", Home.new())
 	npcs = _add("npcs", NPCManager.new())
+	social = _add("social", Social.new())
 	work = _add("work", WorkSystem.new())
 	comms = _add("comms", Comms.new())
 	deception = _add("deception", DeceptionManager.new())
@@ -201,6 +203,8 @@ func _blank_stats() -> Dictionary:
 		"auto_runs": 0, "auto_ok": 0,
 		"tasks_done": 0, "tasks_faked": 0, "tasks_delegated": 0, "tasks_failed": 0,
 		"absent_min": 0, "salary": 0, "spent": 0,
+		"calls_taken": 0, "calls_dodged": 0, "colleagues_ignored": 0, "snitched": 0,
+		"favours_called": 0, "small_talk": 0, "gifts": 0, "tipoffs": 0, "tasks_lost": 0,
 	}
 
 
@@ -267,6 +271,9 @@ func build_report() -> Dictionary:
 		"meetings_avoided": int(td.meetings_avoided),
 		"meetings_attended": int(td.meetings_attended),
 		"meetings_missed": int(td.meetings_missed),
+		"calls_taken": int(td.get("calls_taken", 0)),
+		"snitched": int(td.get("snitched", 0)),
+		"favours_called": int(td.get("favours_called", 0)),
 		"salary": int(pay.total),
 		"salary_lines": pay.lines,
 		"susp_gained": float(td.susp_gained),
@@ -379,6 +386,10 @@ func build_result(kind: String, info: Dictionary) -> Dictionary:
 	var paid := float((time.day + 1) * 480 if won else time.day * 480 + clampi(int(time.minute) - Cfg.WORK_START, 0, 480))
 	var avoidance := 100.0 if paid <= 0.0 else clampf(100.0 * (1.0 - float(worked) / paid), 0.0, 100.0)
 	var runs := int(wk.auto_runs)
+	var friends := 0
+	for id in social.colleagues():
+		if social.tier(id) >= Social.Tier.FRIENDLY:
+			friends += 1
 	var rating := ""
 	if won and worked == 0:
 		rating = "IMMACULATE: zero minutes of actual work"
@@ -389,6 +400,10 @@ func build_result(kind: String, info: Dictionary) -> Dictionary:
 		"deceptions": int(wk.get("lies_landed", 0)),
 		"caught": deception.caught(),
 		"claims": deception.claims.size(),
+		"friends": friends,
+		"colleagues": social.colleagues().size(),
+		"snitched": int(wk.get("snitched", 0)),
+		"favours_called": int(wk.get("favours_called", 0)),
 		"auto_eff": -1.0 if runs == 0 else 100.0 * float(wk.auto_ok) / float(runs),
 		"rating": rating,
 		"kind": kind,

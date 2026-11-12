@@ -88,8 +88,9 @@ func show_result(res: Dictionary) -> void:
 	g2.add_child(_stat("AUTOMATION EFFICIENCY", "n/a" if eff < 0.0 else "%d%%" % int(round(eff)), UI.TEAL))
 	g2.add_child(_stat("PAID HOURS SLACKED", Cfg.fmt_dur(float(wk.get("slack_min", 0))), UI.TEAL))
 	_body.add_child(g2)
-	var extra := "Score %d  -  %d meetings avoided  -  %d stories told, %d caught  -  %d tickets faked, %d delegated" % [
-		int(res.score), int(wk.meetings_avoided), int(res.get("claims", 0)), int(res.get("caught", 0)), int(wk.tasks_faked), int(wk.tasks_delegated)]
+	var extra := "Score %d  -  %d meetings avoided  -  %d stories told, %d caught  -  %d tickets faked, %d delegated\n%d of %d colleagues befriended  -  %d favours called in  -  told on %d times" % [
+		int(res.score), int(wk.meetings_avoided), int(res.get("claims", 0)), int(res.get("caught", 0)), int(wk.tasks_faked), int(wk.tasks_delegated),
+		int(res.get("friends", 0)), int(res.get("colleagues", 0)), int(res.get("favours_called", 0)), int(res.get("snitched", 0))]
 	var el := UI.label(extra, 12, UI.DIM, true)
 	el.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_body.add_child(el)

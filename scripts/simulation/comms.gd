@@ -13,7 +13,7 @@ var threads: Dictionary = {}     ## thread id -> {msgs: [], unread: int}
 var prompts: Array = []          ## messages waiting for an answer
 var meetings: Array = []
 var mails: Array = []
-var live_call: Dictionary = {}   ## {mid, beats, i, phone, per} while in a call
+var live_call: Dictionary = {}   ## {mid, beats, i, phone, per, wing} while in a call
 
 
 func _ready() -> void:
@@ -193,6 +193,12 @@ func choice_view(c: Dictionary, context: String = "chat", listener: String = "")
 	if req.has("money") and not Game.economy.can_afford(int(req.money)):
 		v.ok = false
 		v.why = "Needs $%d" % int(req.money)
+	if req.has("flag") and not Game.flag(str(req.flag)):
+		v.ok = false
+		v.why = str(req.get("why", "You don't know enough"))
+	if req.has("tier") and Game.social.tier(listener) < int(req.tier):
+		v.ok = false
+		v.why = "Needs: %s" % str(Social.TIERS[int(req.tier)].name)
 	if req.has("evidence") and not Game.deception.has_evidence(str(req.evidence)):
 		v.ok = false
 		v.why = "Needs: %s" % str(DeceptionManager.EVIDENCE_TEXT.get(str(req.evidence), req.evidence))
@@ -265,6 +271,9 @@ func resolve(c: Dictionary, context: String, ctx: Dictionary, excuse_id: String 
 				Game.bump("lies_landed")
 		out = c.get("ok", {}) if res.ok else c.get("ko", c.get("ok", {}))
 		res.say = str(out.get("say", ""))
+		if out.has("intel"):
+			var seen := Game.events.forecast()
+			res.say += "\n" + ("\n".join(seen) if not seen.is_empty() else "Nothing else is planned for today.")
 	if not Game.time.running():
 		return res
 	res.done = true
@@ -293,12 +302,30 @@ func apply(out: Dictionary, reason: String, ctx: Dictionary = {}) -> void:
 		Game.economy.add_favor(int(out.favor))
 	if out.has("rel"):
 		Game.npcs.adjust(from, float(out.rel))
+	if out.has("rels"):
+		for who in out.rels:
+			Game.npcs.adjust(str(ctx.get("who", "")) if str(who) == "{who}" else str(who), float(out.rels[who]))
+	if out.has("toast"):
+		Bus.toast.emit(fmt(str(out.toast)), str(out.get("toast_kind", "good")))
+	if out.has("block"):
+		# Someone put a meeting in your calendar for you: evidence, and a status.
+		var b: Dictionary = out.block
+		add_meeting({"title": str(b.get("title", "Sync")), "start": int(Game.time.minute), "dur": int(b.get("dur", 30)), "kind": "block", "who": "me", "video": false})
+		Game.presence.update()
+	if out.has("boss_busy"):
+		Game.flags["boss_busy_until"] = maxi(int(Game.flags.get("boss_busy_until", -1)), Game.time.now() + int(out.boss_busy))
+	if out.has("lose_task"):
+		var gone := Game.work.most_urgent_task()
+		if not gone.is_empty():
+			Game.work.lose_task(str(gone.id))
 	if out.has("cover"):
 		Game.presence.grant_cover(int(out.cover), str(out.get("cover_cat", "story")))
 	if out.has("buff"):
 		Game.stats.add_buff(str(out.buff[0]), int(out.buff[1]))
 	if out.has("flag"):
 		Game.set_flag(str(out.flag))
+	for extra in out.get("flags", []):
+		Game.set_flag(str(extra))
 	if out.has("stat"):
 		Game.bump(str(out.stat))
 	if out.has("task"):
@@ -328,6 +355,10 @@ func apply(out: Dictionary, reason: String, ctx: Dictionary = {}) -> void:
 			Game.automation.g(gid).broken = false
 			Game.automation.g(gid).wear = 0.0
 			Bus.gadget_changed.emit(gid)
+	if out.has("call"):
+		Game.events.fire(str(out.call), {"asked": true, "urgent": true})
+	if out.has("call_in"):
+		Game.events.fire_later(int(out.call_in[0]), str(out.call_in[1]), {"asked": true, "urgent": true})
 	if out.has("event"):
 		Game.events.fire(str(out.event), {"task": str(ctx.get("task", "")), "claim": str(ctx.get("claim", "")), "urgent": true})
 	if out.has("later"):
@@ -342,6 +373,10 @@ func _hand_off(who: String) -> void:
 		return
 	t.by = who
 	t.helper_left = int(t.effort) * 35
+	for f in Game.social.favours(who):
+		if str(f.type) == "ticket":
+			t.helper_left = int(t.effort) * int(f.get("speed", 35))
+			t["botch"] = float(f.get("botch", 0.04))
 	Game.bump("tasks_delegated")
 	Bus.toast.emit("%s is now quietly doing %s." % [Game.npcs.display_name(who), str(t.key)], "good")
 	Bus.task_changed.emit(t)
@@ -368,6 +403,7 @@ func add_prompt(def: Dictionary) -> Dictionary:
 		"stalled": false, "mail": str(def.get("mail", "")), "auto_tried": false,
 		"no_excuse": bool(def.get("no_excuse", kind != "chat")),
 		"claim": str(def.get("claim", "")), "task": str(def.get("task", "")), "gadget": str(def.get("gadget", "")),
+		"who": str(def.get("who", "")),
 	}
 	prompts.append(p)
 	if kind == "chat":
@@ -413,15 +449,29 @@ func prompt_for_mail(mail_id: String) -> Dictionary:
 	return {}
 
 
+func shown(list: Array) -> Array:
+	## The choices that exist right now: one with an `if` only appears when
+	## its condition holds ({flag, not_flag, owns, tier_min, tier_max, ...}).
+	var out: Array = []
+	for c in list:
+		var cond: Dictionary = c.get("if", {})
+		if cond.is_empty() or Game.events.check(cond, {}, true):
+			out.append(c)
+	return out
+
+
 func choices_of(p: Dictionary) -> Array:
-	var out: Array = p.choices.duplicate()
+	var out: Array = shown(p.choices)
+	var card := Game.social.leverage(str(p.from))
+	if not card.is_empty() and p.kind == "chat":
+		out.append(card)              # you know something about them: once, it settles anything
 	if not bool(p.no_excuse):
 		out.append({"t": "Make an excuse...", "a": "excuse", "excuse": true})
 	return out
 
 
 func prompt_ctx(p: Dictionary, via: String = "desk") -> Dictionary:
-	return {"from": str(p.from), "about": str(p.text), "claim": str(p.claim), "task": str(p.task), "gadget": str(p.get("gadget", "")), "via": via}
+	return {"from": str(p.from), "about": str(p.text), "claim": str(p.claim), "task": str(p.task), "gadget": str(p.get("gadget", "")), "who": str(p.get("who", "")), "via": via}
 
 
 func answer(pid: String, idx: int, excuse_id: String = "", via: String = "desk") -> Dictionary:
@@ -488,6 +538,10 @@ func _expire(p: Dictionary) -> void:
 	apply(ex, "Ignored: %s" % Game.npcs.display_name(str(p.from)), prompt_ctx(p))
 	if not Game.time.running():
 		return
+	if bool(ex.get("snitch", true)):
+		Game.social.unanswered(str(p.from), "message")     # colleagues talk
+	if not Game.time.running():
+		return
 	if p.kind == "chat":
 		post(str(p.thread), str(p.from), str(ex.get("say", Game.pick(["Hello??", "...", "Guess you're busy. Noted.", "Read 14 minutes ago. Interesting."]))), "bad")
 	Bus.sfx.emit("bad")
@@ -516,14 +570,22 @@ func _auto_reply(p: Dictionary) -> void:
 # ---------------------------------------------------------------------------
 
 func add_meeting(def: Dictionary) -> Dictionary:
+	var who := str(def.get("who", Game.npcs.boss_id()))
+	var kind := str(def.get("kind", "meeting"))
+	# A casual call is one nobody at SynerCorp keeps score of: a colleague
+	# who wants to talk, or a stranger. It costs no health and missing it is
+	# between you and the caller.
+	var casual := kind == "call" and who != Game.npcs.boss_id() and Game.npcs.kind(who) in ["coworker", "stranger"]
 	var m := {
 		"id": Game.next_id("m"), "key": str(def.get("id", "")), "title": str(def.title),
 		"day": int(def.get("day", Game.time.day)), "start": int(def.start), "dur": int(def.get("dur", 30)),
-		"kind": str(def.get("kind", "meeting")), "who": str(def.get("who", Game.npcs.boss_id())),
-		"mandatory": bool(def.get("mandatory", false)), "video": bool(def.get("video", true)),
+		"kind": kind, "who": who,
+		"mandatory": bool(def.get("mandatory", false)), "video": bool(def.get("video", true)) and not bool(def.get("voice", false)),
 		"script": str(def.get("script", "")), "state": "upcoming", "ring_until": -1,
 		"excuse_tried": false, "no_dodge": bool(def.get("no_dodge", false)),
 		"surprise": bool(def.get("surprise", false)), "warned": false,
+		"casual": bool(def.get("casual", casual)), "cast": def.get("cast", []), "retry": bool(def.get("retry", false)),
+		"private": bool(def.get("private", false)), "voice_id": str(def.get("voice_id", "")),
 	}
 	meetings.append(m)
 	Bus.meeting_changed.emit(m)
@@ -622,13 +684,15 @@ func decline_excuse(mid: String, excuse_id: String) -> Dictionary:
 	m.excuse_tried = true
 	var boss := Game.npcs.boss_id()
 	var who := str(m.who) if Game.npcs.has(str(m.who)) else boss
+	var casual := bool(m.get("casual", false))
+	var thread := dm_thread(who) if casual else boss      # a colleague hears it from you directly
 	Game.deception.observe("desk_message" if Game.presence.at_desk else "phone_message")
 	var att := Game.deception.attempt(excuse_id, "meeting", who, str(m.title))
 	var line := str(Db.claims[excuse_id].line)
 	var cl: Claim = att.claim
 	if cl != null:
 		line = line.replace("{subject}", cl.subject)
-	post(boss, "me", "Re: %s - %s" % [str(m.title), line])
+	post(thread, "me", "Re: %s - %s" % [str(m.title), line])
 	var ok := bool(att.ok)
 	var reply := str(att.say)
 	if ok and bool(m.mandatory) and not Game.chance(70.0):
@@ -636,13 +700,16 @@ func decline_excuse(mid: String, excuse_id: String) -> Dictionary:
 		reply = "Sorry to hear that, but this one is mandatory. See you there."
 	if ok:
 		m.state = "excused"
-		Game.bump("meetings_avoided")
-		post(boss, who if threads.has(who) else boss, reply, "good")
+		Game.bump("calls_dodged" if casual else "meetings_avoided")
+		post(thread, who if threads.has(who) else boss, reply, "good")
 		Bus.toast.emit("You're excused from \"%s\"." % str(m.title), "good")
 		Bus.sfx.emit("good")
 	else:
-		Game.stats.add("susp", 5.0, "Excuse rejected")
-		post(boss, boss, reply, "bad")
+		if casual:
+			Game.npcs.adjust(who, -3.0)
+		else:
+			Game.stats.add("susp", 5.0, "Excuse rejected")
+		post(thread, who if casual else boss, reply, "bad")
 		Bus.toast.emit("Excuse rejected. You still have to deal with \"%s\"." % str(m.title), "bad")
 		Bus.sfx.emit("bad")
 	Bus.meeting_changed.emit(m)
@@ -676,6 +743,8 @@ func can_send_clone(m: Dictionary) -> String:
 	## "" if a clone could attend this meeting, otherwise why not.
 	if not can_dodge(m):
 		return "This one cannot be avoided."
+	if bool(m.get("casual", false)):
+		return "Your clone does not do small talk."
 	if not Game.automation.can("attend_meetings"):
 		return "Needs a working %s." % Game.automation.owner_of("attend_meetings")
 	if bool(m.mandatory) and Game.automation.effect("attend_mandatory", 0.0) <= 0.0:
@@ -714,14 +783,20 @@ func join(mid: String, via_phone: bool = false) -> bool:
 	m.state = "live"
 	var beats := Dialogue.build(m)
 	live_call = {
-		"mid": mid, "beats": beats, "i": 0, "phone": via_phone,
+		"mid": mid, "beats": beats, "i": 0, "phone": via_phone, "wing": false,
 		"per": maxi(2, int(float(m.dur) / float(maxi(1, beats.size())))),
 	}
+	_skip_beats()
 	Game.presence.in_call = true
 	Game.activities.stop()
 	Game.time.set_speed(1.0)
 	Game.presence.update()
-	Game.deception.observe("phone_meeting" if via_phone else "video_meeting")
+	# What the office can see of it. A stranger on your own phone line is nobody's business.
+	if Game.npcs.kind(str(m.who)) != "stranger":
+		if via_phone:
+			Game.deception.observe("phone_meeting")
+		else:
+			Game.deception.observe("video_meeting" if bool(m.video) else "desk_message")
 	Game.events.on_call_join()
 	Bus.meeting_changed.emit(m)
 	return true
@@ -732,7 +807,45 @@ func in_call() -> bool:
 
 
 func call_context() -> String:
-	return "phone" if bool(live_call.get("phone", false)) else "video"
+	## "video" only when a camera is actually on you.
+	if bool(live_call.get("phone", false)) or not bool(call_meeting().get("video", true)):
+		return "phone"
+	return "video"
+
+
+func call_cast(m: Dictionary) -> Array:
+	## Who is on the line besides you.
+	var cast: Array = m.get("cast", [])
+	if not cast.is_empty():
+		return cast.duplicate()
+	var who := str(m.who) if Game.npcs.has(str(m.who)) else Game.npcs.boss_id()
+	if str(m.kind) == "call" or bool(m.get("casual", false)):
+		return [who]
+	var out: Array = [Game.npcs.boss_id()]
+	for id in Db.npcs:
+		if bool(Db.npcs[id].get("in_meetings", false)) and not id in out:
+			out.append(id)
+	if not who in out:
+		out.append(who)
+	return out
+
+
+func ring_sound(m: Dictionary) -> String:
+	if not bool(m.get("casual", false)):
+		return "ring_loop"
+	return "ring_weird" if Game.npcs.kind(str(m.who)) == "stranger" else "ring_peer"
+
+
+func _beat_on(b: Dictionary) -> bool:
+	## A beat may depend on what was said earlier, or on who your friends
+	## are: {flag, not_flag, not_flags, tier_min, tier_max, owns, day_min, ...}.
+	var cond: Dictionary = b.get("if", {})
+	return cond.is_empty() or Game.events.check(cond, {}, true)
+
+
+func _skip_beats() -> void:
+	while int(live_call.i) < live_call.beats.size() and not _beat_on(live_call.beats[int(live_call.i)]):
+		live_call.i = int(live_call.i) + 1
 
 
 func call_meeting() -> Dictionary:
@@ -751,15 +864,26 @@ func call_choices() -> Array:
 	var b := call_beat()
 	if b.is_empty():
 		return []
-	var out: Array = b.choices.duplicate()
-	if Game.automation.can("meeting_answers"):
+	var out: Array = shown(b.choices)
+	var m := call_meeting()
+	var casual := bool(m.get("casual", false))
+	if not casual and Game.automation.can("meeting_answers"):
 		out.append({
 			"t": "Let the Meeting Assistant answer.", "a": "assistant_answer", "ability": "meeting_answers",
 			"ok": {"susp": -1, "ill": 3, "say": str(Game.pick(Db.lines("assistant_ok")))},
 			"ko": {"susp": 7, "say": str(Game.pick(Db.lines("assistant_absurd")))},
 		})
-	if not bool(call_meeting().get("no_dodge", false)) and not bool(b.get("no_excuse", false)):
-		out.append({"t": "Bail out with an excuse...", "a": "excuse", "excuse": true, "ok": {"end": true}, "ko": {"susp": 8}})
+	# A friend in the room takes one question per meeting for you.
+	var wing := Game.social.wingman(m)
+	if wing != "" and not bool(live_call.get("wing", false)) and str(b.get("who", "")) != wing:
+		out.append({
+			"t": "Look at %s. (%s takes this one.)" % [Game.npcs.first_name(wing), Game.npcs.first_name(wing)],
+			"a": "delegate_colleague", "wing": wing,
+			"ok": {"susp": -1, "ill": 2, "say": "%s: %s" % [Game.npcs.first_name(wing), Game.social.line_for(wing, "wingman")]},
+		})
+	var stranger := Game.npcs.kind(str(m.get("who", ""))) == "stranger"
+	if not bool(m.get("no_dodge", false)) and not bool(b.get("no_excuse", false)) and not stranger:
+		out.append({"t": "Bail out with an excuse...", "a": "excuse", "excuse": true, "ok": {"end": true}, "ko": {"rel": -3} if casual else {"susp": 8}})
 	return out
 
 
@@ -780,6 +904,8 @@ func call_choose(idx: int, excuse_id: String = "") -> Dictionary:
 		return res
 	if bool(c.get("excuse", false)) and res.ok:
 		res["bailed"] = true
+	if c.has("wing"):
+		live_call.wing = true
 	_call_step(res)
 	return res
 
@@ -794,7 +920,8 @@ func call_timeout() -> Dictionary:
 			if str(list[i].get("ability", "")) == "meeting_answers":
 				return call_choose(i)
 	var b := call_beat()
-	var sil: Dictionary = b.get("silence", {"susp": 5, "say": "...{name}? You're on mute. Or frozen. Moving on."})
+	var quiet := {"rel": -2, "say": "...Hello? Are you still there?"} if bool(call_meeting().get("casual", false)) else {"susp": 5, "say": "...{name}? You're on mute. Or frozen. Moving on."}
+	var sil: Dictionary = b.get("silence", quiet)
 	apply(sil, "Awkward silence", _call_ctx())
 	var res := {"done": true, "ok": false, "say": fmt(str(sil.get("say", ""))), "end": false}
 	_call_step(res)
@@ -806,8 +933,13 @@ func _call_step(res: Dictionary) -> void:
 		return
 	var per := int(live_call.per)
 	live_call.i = int(live_call.i) + 1
-	Game.bump("pretend_min", per)
-	Game.stats.add("health", -Cfg.BEAT_HP * float(Game.diff().stress), "Meeting fatigue")
+	_skip_beats()
+	if bool(call_meeting().get("casual", false)):
+		if Game.time.in_work_hours():
+			Game.bump("slack_min", per)          # chatting on company time is not work
+	else:
+		Game.bump("pretend_min", per)
+		Game.stats.add("health", -Cfg.BEAT_HP * float(Game.diff().stress), "Meeting fatigue")
 	if not in_call():
 		res.end = true
 		return
@@ -830,15 +962,18 @@ func call_end(bailed: bool = false) -> void:
 	live_call = {}
 	Game.presence.in_call = false
 	if not m.is_empty():
+		var casual := bool(m.get("casual", false))
 		if bailed:
 			m.state = "excused"
-			Game.bump("meetings_avoided")
+			Game.bump("calls_dodged" if casual else "meetings_avoided")
 		else:
 			m.state = "done"
-			Game.bump("meetings_attended")
+			Game.bump("calls_taken" if casual else "meetings_attended")
+			if casual:
+				Game.social.picked_up(str(m.who))
 			var after: Dictionary = Db.dialogues.get(str(m.script), {}).get("after", {})
 			if not after.is_empty():
-				apply(after, str(m.title))
+				apply(after, str(m.title), {"from": str(m.who)})
 			if str(m.script) == "review":
 				Game.events.review_verdict()
 		Bus.meeting_changed.emit(m)
@@ -851,6 +986,21 @@ func call_hang_up() -> void:
 	if not in_call():
 		return
 	var m := call_meeting()
+	if bool(m.get("casual", false)):
+		# Rude, but it stays between the two of you.
+		var who := str(m.who)
+		if Game.social.is_colleague(who):
+			Game.npcs.adjust(who, -4.0)
+			Game.npcs.irritate(who, 5.0)
+			post(dm_thread(who), who, str(Game.pick(["Did you just hang up on me?", "...OK then.", "Rude. Noted."])), "bad")
+		live_call = {}
+		Game.presence.in_call = false
+		m.state = "done"
+		Game.bump("calls_dodged")
+		Bus.meeting_changed.emit(m)
+		Game.presence.touch()
+		Game.presence.update()
+		return
 	Game.stats.add("susp", 9.0 if bool(m.get("mandatory", false)) else 6.0, "Dropped off a call")
 	say(Game.npcs.boss_id(), "Did you just... leave?", false)
 	call_end(false)
@@ -865,6 +1015,18 @@ func reject_call(mid: String) -> void:
 
 
 func _miss(m: Dictionary, rejected: bool = false) -> void:
+	if bool(m.get("casual", false)):
+		# Nobody at SynerCorp keeps score of this one, unless the caller makes them.
+		m.state = "missed"
+		Game.bump("calls_dodged")
+		Bus.meeting_changed.emit(m)
+		var who := str(m.who)
+		if Game.social.is_colleague(who):
+			Game.social.unanswered(who, "call", rejected)
+			# They try once more later on; after that the moment has passed.
+			if Game.time.running() and not bool(m.get("retry", false)) and str(m.key) != "" and int(Game.time.minute) < 930:
+				Game.events.fire_later(Game.rng.randi_range(40, 70), str(m.key), {"retry": true})
+		return
 	if Game.presence.covered() and not bool(m.no_dodge):
 		m.state = "excused"
 		Game.bump("meetings_avoided")
@@ -996,7 +1158,7 @@ func _on_minute() -> void:
 					if not ringing().is_empty() or in_call():
 						m.start = t + 1          # never two calls at once: this one waits
 						continue
-					if Game.automation.is_on(Game.automation.provider("attend_meetings")) and can_send_clone(m) == "" and Game.automation.try_attend(m):
+					if not bool(m.get("casual", false)) and Game.automation.is_on(Game.automation.provider("attend_meetings")) and can_send_clone(m) == "" and Game.automation.try_attend(m):
 						m.state = "looped"
 						Game.bump("meetings_avoided")
 						Game.stats.add("ill", 3.0, "Attended (in spirit)")
@@ -1006,12 +1168,12 @@ func _on_minute() -> void:
 					m.state = "ringing"
 					m.ring_until = t + maxi(4, int(round((5.0 if bool(m.surprise) else 8.0) * float(Game.diff().window))))
 					if Game.presence.can_notice():
-						Bus.sfx.emit("ring")
+						Bus.sfx.emit(ring_sound(m).trim_suffix("_loop"))
 						Game.time.alert()
 					else:
 						Bus.sfx.emit("ping_far")
 					Bus.meeting_changed.emit(m)
-				elif not bool(m.warned) and t >= start - 10:
+				elif not bool(m.warned) and not bool(m.get("casual", false)) and t >= start - 10:
 					m.warned = true
 					notify("SynerCalendar", "\"%s\" starts in %d min." % [str(m.title), start - t], "info", false)
 			"ringing":

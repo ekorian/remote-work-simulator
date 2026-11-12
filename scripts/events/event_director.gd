@@ -16,6 +16,9 @@ const MAX_PENDING := 3           ## unanswered prompts before new ones are held 
 const DEFER_MINUTES := 5
 const MAX_DEFERS := 8
 const CALL_CHANCE := [0.0, 45.0, 55.0, 65.0, 40.0]   ## surprise call, by day
+const WEIRD_CHANCE := [0.0, 65.0, 90.0, 70.0, 90.0]   ## something strange on the line, by day
+const TIP_LEAD := 12             ## minutes of warning a tip-off gives
+const TIP_TITLES := {"scan": "a SynerWatch spot check", "call": "a surprise call", "screen": "a look at your screen"}
 
 var last_fired: Dictionary = {}  ## event id -> absolute minute it last fired
 var count: Dictionary = {}       ## event id -> times fired this run
@@ -86,6 +89,13 @@ func plan_day() -> void:
 				Game.time.schedule(base + at, "event", {"id": id})
 				if str(def.kind) in ["chat", "call"] or str(def.action) == "audit":
 					busy.append([at - 12, at + 12])
+	# The calls nobody can explain get first pick of the gaps, before the
+	# filler takes them. (Colleagues' own calls are scripted: see their events.)
+	var weird := _pool("weird")
+	if not weird.is_empty() and Game.chance(float(WEIRD_CHANCE[day])):
+		var wt := _free_slot(busy, 600, 955, 6)
+		if wt >= 0:
+			Game.time.schedule(base + wt, "event", {"id": str(weird[Game.rng.randi() % weird.size()])})
 	# Filler: the boss checking in, colleagues wanting things.
 	var freq := sqrt(Game.npcs.frequency())      # a suspicious boss checks in more, within reason
 	for group in [["boss", (2.0 if day == 0 else 3.0) * float(d.boss_check) * freq], ["peer", (1.0 if day == 0 else 2.0) * float(d.event_rate)]]:
@@ -117,8 +127,11 @@ func _pool(pool: String) -> Array:
 	var out: Array = []
 	for id in Db.events:
 		var def: Dictionary = Db.events[id]
-		if str(def.pool) == pool and not _skipped(def) and check(def.conditions, {}, true):
-			out.append(id)
+		if str(def.pool) != pool or _skipped(def) or not check(def.conditions, {}, true):
+			continue
+		if bool(def.once) and last_fired.has(id):
+			continue
+		out.append(id)
 	return out
 
 
@@ -168,8 +181,18 @@ func check(cond: Dictionary, ctx: Dictionary = {}, planning: bool = false) -> bo
 		return false
 	if cond.has("not_flag") and Game.flag(str(cond.not_flag)):
 		return false
+	for f in cond.get("not_flags", []):
+		if Game.flag(str(f)):
+			return false
 	if cond.has("owns") and not Game.automation.owns(str(cond.owns)):
 		return false
+	# Friendship: {npc id: tier} (see Social.Tier).
+	for who in cond.get("tier_min", {}):
+		if Game.social.tier(str(who)) < int(cond.tier_min[who]):
+			return false
+	for who in cond.get("tier_max", {}):
+		if Game.social.tier(str(who)) > int(cond.tier_max[who]):
+			return false
 	if planning:
 		return true
 	var m := Game.time.minute
@@ -251,7 +274,8 @@ func can_interrupt(def: Dictionary, ctx: Dictionary = {}) -> String:
 		return "a call is ringing"
 	if comms.prompts.size() >= MAX_PENDING:
 		return "too many unanswered messages"
-	if str(def.kind) == "chat" and not comms.prompt_for_thread(_thread(def)).is_empty():
+	var asks := str(def.kind) == "call" and bool(def.meeting.get("ask", false)) and not bool(ctx.get("asked", false)) and not bool(ctx.get("retry", false))
+	if (str(def.kind) == "chat" or asks) and not comms.prompt_for_thread(_thread(def)).is_empty():
 		return "that conversation is waiting on you"
 	if str(def.kind) == "call":
 		if int(Game.time.minute) > 985:
@@ -263,6 +287,8 @@ func can_interrupt(def: Dictionary, ctx: Dictionary = {}) -> String:
 	if not bool(ctx.get("urgent", false)) and (str(def.pool) != "" or str(def.trigger) != ""):
 		if Game.time.now() - last_attention < MIN_GAP:
 			return "too soon after the last interruption"
+		if str(def.from) == Game.npcs.boss_id() and Game.time.now() < int(Game.flags.get("boss_busy_until", -1)):
+			return "someone is keeping the boss busy"
 	return ""
 
 
@@ -285,7 +311,7 @@ func fire(id: String, ctx: Dictionary = {}) -> bool:
 	var def: Dictionary = Db.events[id]
 	if _skipped(def):
 		return false
-	if bool(def.once) and last_fired.has(id):
+	if bool(def.once) and last_fired.has(id) and not bool(ctx.get("retry", false)) and not bool(ctx.get("asked", false)):
 		return false
 	if not check(def.conditions, ctx):
 		return false
@@ -334,7 +360,42 @@ func _subs(text: String, ctx: Dictionary) -> String:
 	for key in ["subject", "title"]:
 		if out.contains("{%s}" % key):
 			out = out.replace("{%s}" % key, str(ctx.get(key, "")))
+	if out.contains("{who}"):
+		out = out.replace("{who}", Game.npcs.first_name(str(ctx.get("who", ""))))
 	return out
+
+
+func _subs_choices(list: Array, ctx: Dictionary) -> Array:
+	## Choices whose wording refers to the situation ({who}, {task}).
+	var out: Array = list.duplicate(true)
+	for c in out:
+		c["t"] = _subs(str(c.t), ctx)
+		for key in ["ok", "ko"]:
+			if c.has(key) and c[key].has("say"):
+				c[key]["say"] = _subs(str(c[key].say), ctx)
+	return out
+
+
+func _ask_to_talk(def: Dictionary, ctx: Dictionary) -> void:
+	## A colleague asks before calling. Saying no is an answer; silence is not.
+	var who := str(def.from)
+	var id := str(def.id)
+	var lines: Array = Game.npcs.def(who).get("ask_lines", [])
+	var text := str(Game.pick(lines)) if not lines.is_empty() else "Got five minutes for a quick call?"
+	Game.comms.add_prompt({
+		"id": id + "_ask", "from": who, "thread": _thread(def), "text": text, "window": 14, "no_excuse": false,
+		"task": str(ctx.get("task", "")),
+		"choices": [
+			{"t": "\"Sure, call me.\"", "a": "chat", "ok": {"rel": 1, "call": id}},
+			{"t": "\"Give me twenty minutes.\"", "a": "ack", "ok": {"call_in": [20, id], "say": "Twenty minutes. I'm setting a timer."}},
+			{
+				"t": "\"Can't today. Completely underwater.\"", "a": "deflect", "p": 60,
+				"ok": {"rel": -1, "say": "No worries! Another time."},
+				"ko": {"rel": -4, "say": "Underwater. Your status has said 'Away' since lunch."},
+			},
+		],
+		"expire": {"susp": 0, "say": "OK. I'll take the silence as a no."},
+	})
 
 
 func _dispatch(def: Dictionary, ctx: Dictionary) -> void:
@@ -343,18 +404,23 @@ func _dispatch(def: Dictionary, ctx: Dictionary) -> void:
 		"chat":
 			Game.comms.add_prompt({
 				"id": str(def.id), "from": str(def.from), "thread": _thread(def), "text": _subs(str(def.text), ctx),
-				"choices": def.choices, "window": float(def.window) * float(mods.get("window", 1.0)), "routine": bool(def.routine),
+				"choices": _subs_choices(def.choices, ctx), "window": float(def.window) * float(mods.get("window", 1.0)), "routine": bool(def.routine),
 				"expire": def.expire if not def.expire.is_empty() else {"susp": 7}, "no_excuse": bool(def.no_excuse),
 				"claim": str(ctx.get("claim", "")), "task": str(ctx.get("task", "")), "gadget": str(ctx.get("gadget", "")),
+				"who": str(ctx.get("who", "")),
 			})
 		"mail":
 			Game.comms.add_mail(def)
 		"meeting":
 			Game.comms.add_meeting(_meeting_def(def, int(Game.time.minute)))
 		"call":
+			if bool(def.meeting.get("ask", false)) and not bool(ctx.get("asked", false)) and not bool(ctx.get("retry", false)):
+				_ask_to_talk(def, ctx)
+				return
 			var m := _meeting_def(def, int(Game.time.minute))
 			m["kind"] = "call"
 			m["surprise"] = true
+			m["retry"] = bool(ctx.get("retry", false))
 			Game.comms.add_meeting(m)
 		"task":
 			Game.work.add_task(str(def.task))
@@ -362,6 +428,8 @@ func _dispatch(def: Dictionary, ctx: Dictionary) -> void:
 			Game.comms.say(str(def.from), _subs(str(def.text), ctx))
 		"system":
 			call("_sys_" + str(def.action), def.get("args", {}), ctx)
+	if str(def.task) != "" and str(def.kind) != "task" and Db.tasks.has(str(def.task)):
+		Game.work.add_task(str(def.task))            # news that comes with a ticket attached
 
 
 func _on_timer(event: String, args: Dictionary) -> void:
@@ -391,6 +459,7 @@ func _on_minute() -> void:
 			fire(str(e.id), e.ctx)
 	if not Game.time.in_work_hours():
 		return
+	_tip_offs(now)
 	# Reactive events.
 	for id in Db.events:
 		var def: Dictionary = Db.events[id]
@@ -419,6 +488,40 @@ func on_escalation(level: int) -> void:
 			fire_later(Game.rng.randi_range(30, 50), "audit_surprise", {})
 
 
+func upcoming_checks() -> Array:
+	## What the manager has planned for the rest of today: [{at, tip, timer}].
+	var out: Array = []
+	var end := Game.time.abs_at(Game.time.day, Cfg.WORK_END)
+	for e in Game.time.timers:
+		if str(e.ev) != "event" or int(e.at) > end:
+			continue
+		var def: Dictionary = Db.events.get(str(e.args.get("id", "")), {})
+		if def.is_empty() or str(def.tip) == "" or _skipped(def) or not check(def.conditions, {}, true):
+			continue
+		out.append({"at": int(e.at), "tip": str(def.tip), "timer": e})
+	out.sort_custom(func(a, b): return int(a.at) < int(b.at))
+	return out
+
+
+func forecast() -> Array:
+	## The same, as lines a well-connected friend would send you.
+	var out: Array = []
+	for c in upcoming_checks():
+		out.append("Around %s: %s." % [Cfg.fmt_time(float(int(c.at) % 1440)), str(TIP_TITLES.get(str(c.tip), "something"))])
+	return out
+
+
+func _tip_offs(now: int) -> void:
+	## A friend who hears things warns you shortly before a surprise check.
+	for c in upcoming_checks():
+		var e: Dictionary = c.timer
+		if int(c.at) - now > TIP_LEAD or bool(e.args.get("tipped", false)):
+			continue
+		e.args["tipped"] = true
+		if Game.social.tip_off(str(c.tip)):
+			return
+
+
 func _bounce(task_id: String) -> void:
 	var t := Game.work.task(task_id)
 	if t.is_empty():
@@ -431,7 +534,8 @@ func _bounce(task_id: String) -> void:
 func on_call_join() -> void:
 	## A call just started on camera: something may go wrong during it.
 	var call := Game.comms.live_call
-	if call.is_empty() or bool(call.get("phone", false)) or bool(Game.comms.call_meeting().get("no_dodge", false)):
+	var joined := Game.comms.call_meeting()
+	if call.is_empty() or bool(call.get("phone", false)) or bool(joined.get("no_dodge", false)) or bool(joined.get("casual", false)):
 		return
 	for id in Db.events:
 		var def: Dictionary = Db.events[id]

@@ -1,0 +1,73 @@
+[gd_resource type="Resource" script_class="DialogueDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/dialogue_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = "brenda_review"
+beats = [
+  {
+    "who": "brenda",
+    "text": "Your review is at half three. I have SEEN the file. Linda's bringing a list of every excuse you made this week, and how many fell apart. Want to know the rest?",
+    "choices": [
+      {
+        "t": "\"Tell me everything.\"",
+        "a": "chat",
+        "ok": {
+          "rel": 2,
+          "say": "If stories fell apart, do NOT say 'check your system' to Linda. She IS the system. And Martin asks the five-years question last. He adores 'synergy at scale'."
+        }
+      },
+      {
+        "t": "\"Could a page of that file... go missing?\"",
+        "a": "flatter",
+        "p": 72,
+        "if": {
+          "tier_min": {
+            "brenda": 3
+          }
+        },
+        "ok": {
+          "susp": -8,
+          "say": "Oops. The stapler ate page two. Terrible. I'll have to tell Linda it's 'being re-scanned'."
+        },
+        "ko": {
+          "rel": -2,
+          "say": "I gossip, sweetie. I don't shred."
+        }
+      },
+      {
+        "t": "\"I'd rather not know.\"",
+        "a": "honest",
+        "ok": {
+          "rel": -1,
+          "say": "Brave. Silly, but brave."
+        }
+      }
+    ]
+  },
+  {
+    "who": "brenda",
+    "text": "Whatever happens in there: nobody has entertained me this much since the Great Reply-All of '21.",
+    "choices": [
+      {
+        "t": "\"Likewise, Brenda.\"",
+        "a": "chat",
+        "ok": {
+          "rel": 2,
+          "hp": 2,
+          "say": "Go get 'em. Sit up straight. Wear a shirt."
+        }
+      },
+      {
+        "t": "\"If they fire me, the gossip is all yours.\"",
+        "a": "chat",
+        "ok": {
+          "rel": 3,
+          "hp": 2,
+          "say": "Oh, I'd tell it SO well."
+        }
+      }
+    ]
+  }
+]

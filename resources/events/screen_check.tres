@@ -35,3 +35,4 @@ choices = [
 ]
 expire = {"susp": 11, "say": "No screen share. I'm logging that."}
 schedule = [{"day": 3, "at": 925}, {"day": 4, "at": 815}]
+tip = "screen"

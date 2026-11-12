@@ -18,7 +18,7 @@ extends DataDef
 @export var no_excuse := false         ## excuses are not offered
 # --- when it happens ---
 @export var schedule: Array = []       ## fixed slots: [{day, at}]
-@export var pool := ""                 ## random filler pool: boss | peer
+@export var pool := ""                 ## random filler pool: boss | peer | call | weird
 @export var trigger := ""              ## "state": checked every minute; "call_join": when a call starts
 @export var conditions: Dictionary = {}
 @export var cooldown := 0              ## minutes before it can fire again (0 = once per day)
@@ -27,4 +27,5 @@ extends DataDef
 @export var task := ""                 ## ticket id to assign (kind "task")
 @export var action := ""               ## handler name for kind "system"
 @export var args: Dictionary = {}
-@export var meeting: Dictionary = {}   ## {dur, script, mandatory, no_dodge, who} for meetings and calls
+@export var meeting: Dictionary = {}   ## {dur, script, mandatory, no_dodge, who, cast, private, ask, voice (audio only), voice_id, casual}
+@export var tip := ""                  ## what a well-informed friend would warn you about: scan | call | screen

@@ -15,14 +15,15 @@ choices = [
     "t": "Cover for Dave.",
     "a": "do_favor",
     "p": 80,
-    "ok": {"favor": 1, "say": "Legend. I owe you one."},
+    "ok": {"favor": 1, "rel": 5, "say": "Legend. I owe you one."},
     "ko": {
       "favor": 1,
+      "rel": 4,
       "susp": 5,
       "say": "Martin asked which vendor. You said 'the usual one'. He bought it, barely. Still owe you."
     }
   },
-  {"t": "Sorry, can't risk it.", "a": "honest", "ok": {"say": "Cold. OK."}}
+  {"t": "Sorry, can't risk it.", "a": "honest", "ok": {"rel": -2, "say": "Cold. OK."}}
 ]
 expire = {"susp": 0, "say": "I'll take that as a no."}
 window = 30

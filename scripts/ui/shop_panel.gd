@@ -135,19 +135,27 @@ func _build() -> void:
 	var gv := UI.vbox(6)
 	gp.add_child(gv)
 	gv.add_child(UI.title("Gift Card \"For The Team\"", 19))
-	var gt := UI.wrap("Send Dave a gift card. Dave will owe you one favour, which you can spend in SynerTasks to hand him a ticket. One per day. You have %d favour(s)." % Game.economy.favors, 12, UI.DIM)
+	var gt := UI.wrap("Send a colleague a gift card: they owe you one favour and like you a good deal more. Friends stop telling on you and start covering for you. One per day. You have %d favour(s)." % Game.economy.favors, 12, UI.DIM)
 	gt.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	gv.add_child(gt)
-	gv.add_child(UI.pill("SOCIAL", Color("ff9ecb"), 10))
+	var gcost := Game.social.gift_price()
 	var gf := UI.hbox(8)
 	gv.add_child(gf)
-	var gcost := Game.economy.price(AutomationManager.BRIBE_PRICE)
 	gf.add_child(UI.title("$%d" % gcost, 20, UI.ACCENT))
+	gf.add_child(UI.pill("SOCIAL", Color("ff9ecb"), 10))
 	gf.add_child(UI.spacer())
-	if Game.automation.can_bribe():
-		var gb := UI.button("Buy", func(): Game.automation.bribe(), "primary", 15)
-		gb.disabled = not Game.economy.can_afford(gcost)
-		gf.add_child(gb)
-	else:
+	if not Game.social.can_gift():
 		gf.add_child(UI.pill("ONE PER DAY", UI.DIM, 10))
+	else:
+		# One button per colleague, in the colour of how they feel about you.
+		var who_row := HFlowContainer.new()
+		who_row.add_theme_constant_override("h_separation", 5)
+		who_row.add_theme_constant_override("v_separation", 5)
+		gv.add_child(who_row)
+		for id in Game.social.colleagues():
+			var gb := UI.button(Game.npcs.first_name(id), func(): Game.social.gift(id), "ghost", 12)
+			gb.add_theme_color_override("font_color", Game.social.tier_color(id))
+			gb.tooltip_text = "%s: %s (%d/100)" % [Game.npcs.display_name(id), Game.social.tier_name(id), int(round(Game.npcs.relationship(id)))]
+			gb.disabled = not Game.economy.can_afford(gcost)
+			who_row.add_child(gb)
 	_grid.add_child(gp)

@@ -8,7 +8,6 @@ extends GameSystem
 ## game asks `can("presence")` or `provider("auto_reply")`. No gadget is
 ## ever referred to by name in code, so a new one is a new resource file.
 
-const BRIBE_PRICE := 45
 const REPORT_TIMES := [-1, 600, 780, 990]   ## off, 10:00, 13:00, 16:30
 const SERVICE_WEAR := 15.0
 
@@ -381,30 +380,6 @@ func assign_ai(task_id: String) -> void:
 	autos.ai_task = task_id
 	autos.ai_left = 40
 	Bus.gadget_changed.emit("")
-
-
-func can_bribe() -> bool:
-	return Game.active and not Game.flag("bribe_day_%d" % Game.time.day)
-
-
-func bribe() -> bool:
-	## A gift card "for the team". One favour per day, for cash.
-	if not can_bribe():
-		Bus.toast.emit("One suspiciously generous gift card per day is the limit.", "warn")
-		return false
-	var cost := Game.economy.price(BRIBE_PRICE)
-	if not Game.economy.can_afford(cost):
-		Bus.toast.emit("You can't afford that. Payday is at 17:00.", "warn")
-		return false
-	if not Game.work.perform("flatter", {"label": "Gift card for a colleague"}):
-		return false
-	Game.set_flag("bribe_day_%d" % Game.time.day)
-	Game.economy.add_money(-cost, "Gift card")
-	Game.economy.add_favor(1)
-	Game.npcs.adjust("dave", 6.0)
-	Bus.sfx.emit("buy")
-	Bus.toast.emit("Dave got a gift card. Dave now owes you one.", "money")
-	return true
 
 
 # ---------------------------------------------------------------------------

@@ -15,23 +15,23 @@ choices = [
     "t": "\"LGTM\" (do not open it).",
     "a": "react",
     "p": 70,
-    "ok": {"ill": 2, "say": "Fastest review ever, thanks!!"},
+    "ok": {"ill": 2, "rel": 3, "say": "Fastest review ever, thanks!!"},
     "ko": {"susp": 8, "ill": -3, "say": "Uh. You approved the one that deletes the staging database."}
   },
   {
     "t": "Actually review all 4,000 lines",
     "a": "help_colleague",
-    "ok": {"favor": 1, "ill": 5, "susp": -2, "say": "Wow, 37 comments. You're a real one. I owe you."}
+    "ok": {"favor": 1, "rel": 8, "ill": 5, "susp": -2, "say": "Wow, 37 comments. You're a real one. I owe you."}
   },
   {
     "t": "Tell Kevin you're swamped.",
     "a": "deflect",
     "p": 72,
     "ok": {"say": "No worries, I'll ask Priya."},
-    "ko": {"susp": 3, "say": "Swamped? Your status says 'Away'."}
+    "ko": {"susp": 3, "rel": -2, "say": "Swamped? Your status says 'Away'."}
   }
 ]
-expire = {"susp": 2}
+expire = {"susp": 0, "say": "No reply? OK! I'll note that. For visibility."}
 window = 30
 routine = false
 no_excuse = true

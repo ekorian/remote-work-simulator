@@ -1,0 +1,95 @@
+[gd_resource type="Resource" script_class="NpcDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/npc_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = "brenda"
+display_name = "Brenda Okafor"
+role = "Office Experience Lead"
+color = Color(1, 0.7098, 0.5176, 1)
+kind = "coworker"
+gullibility = 6.0
+start_relationship = 50.0
+look = {
+  "skin": 3,
+  "hair": 1,
+  "hair_color": 2,
+  "shirt": 5,
+  "pants": 1,
+  "accessory": 1
+}
+colleague = true
+snitch = 0.4
+voice = "brenda"
+favours = [
+  {
+    "id": "tipoff",
+    "type": "tipoff",
+    "tier": 3,
+    "passive": true,
+    "title": "Warns you before surprise checks",
+    "hint": "She sees every calendar: a message about ten minutes before Martin or IT comes looking."
+  },
+  {
+    "id": "invite",
+    "type": "skip_meeting",
+    "tier": 3,
+    "cost": 1,
+    "title": "Lose my invite to the next meeting",
+    "hint": "1 favour. Takes you off the next meeting that is not mandatory.",
+    "ask": "Brenda. That next meeting. Do I really have to be in it?",
+    "say": "Oh NO. The invite for '{meeting}' seems to have dropped you. Technology! I'll send your apologies."
+  },
+  {
+    "id": "distract",
+    "type": "distract",
+    "tier": 4,
+    "cost": 1,
+    "minutes": 45,
+    "title": "Keep Martin busy",
+    "hint": "1 favour. 45 minutes without his check-ins.",
+    "ask": "Could you keep Martin occupied for a while?",
+    "say": "I'll ask him to walk me through the new org chart. He LOVES the org chart. That's forty-five minutes, minimum."
+  }
+]
+ask_lines = [
+  "Hi sweetie! Free for a quick call? It's nothing! It's a little bit something.",
+  "Are you there? I can see your dot. Pick up, I have NEWS."
+]
+lines = {
+  "small_talk": [
+    "Oh, you know me! Busy, busy. Denise's timeshare fell through again. Don't ask. Do ask.",
+    "Lovely of you to check in! Nobody checks in on the checker-inner.",
+    "I'm planning three birthdays and a leaving do. I'm THRIVING."
+  ],
+  "friendly": [
+    "You know you're one of my favourites now. If I hear Martin's about to go checking on people, you'll hear it from me first."
+  ],
+  "friend": [
+    "You're family. Office family, the good kind. If you need Martin out of your hair, I know exactly which topics he can't resist."
+  ],
+  "hostile": [
+    "I've stopped telling Martin you're 'settling in nicely'. I tell him the truth now. Which is that I have no idea where you are."
+  ],
+  "missed_call": [
+    "I rang! You didn't pick up! I'm not upset. I'm a little upset.",
+    "Voicemail again! I left you a long one. There's a second one coming."
+  ],
+  "gift": [
+    "A GIFT CARD. For ME? Nobody gets the office manager anything. I'm framing it."
+  ],
+  "tip_scan": [
+    "Sweetie. IT just booked 'Spot checks' on the shared calendar. That's in about ten minutes. Now would be a good time to look alive."
+  ],
+  "tip_call": [
+    "Martin just asked me which of the remote people are 'actually there'. I said ALL of them! He's about to ring round. Be there."
+  ],
+  "tip_screen": [
+    "Martin's doing his 'show me your screen' thing again. He just did Dave. It went badly. Tidy up!"
+  ],
+  "snitch": [
+    "Brenda rang me. Worried. Says you never pick up. She wanted to send someone round to check you're alive.",
+    "Brenda tells me she's left you four voicemails. Four, {name}."
+  ]
+}

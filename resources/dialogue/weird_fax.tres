@@ -1,0 +1,69 @@
+[gd_resource type="Resource" script_class="DialogueDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/dialogue_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = "weird_fax"
+beats = [
+  {
+    "who": "fax",
+    "text": "SKREEEEEEE-- KSSHHHHHH-- bidibidibidi-- KRRRRRRRR-- *beep*",
+    "choices": [
+      {
+        "t": "Screech back. \"SKREEEE?\"",
+        "a": "bluff",
+        "p": 52,
+        "ok": {
+          "end": true,
+          "flag": "fax_form",
+          "toast": "A fax arrives: a signed Form 27-B from 1997. It has no date field. It is valid forever.",
+          "say": "KSSHH-- *ding*. Handshake accepted."
+        },
+        "ko": {
+          "en": -2,
+          "say": "KRRRRRR. (It sounds offended.)"
+        }
+      },
+      {
+        "t": "\"Hello? ...Hello?\"",
+        "a": "chat",
+        "ok": {
+          "say": "bidibidi-- SKREEEEE"
+        }
+      },
+      {
+        "t": "Hang up.",
+        "a": "ignore",
+        "ok": {
+          "end": true
+        }
+      }
+    ]
+  },
+  {
+    "who": "fax",
+    "text": "...beep. ...beep. ...SKREEEEEE?",
+    "choices": [
+      {
+        "t": "\"SKREEEE.\" With feeling this time.",
+        "a": "bluff",
+        "p": 68,
+        "ok": {
+          "flag": "fax_form",
+          "toast": "A fax arrives: a signed Form 27-B from 1997. It has no date field. It is valid forever.",
+          "say": "KSSHH-- *ding*. Handshake accepted."
+        },
+        "ko": {
+          "en": -2,
+          "say": "*click*"
+        }
+      },
+      {
+        "t": "Hang up.",
+        "a": "ignore",
+        "ok": {}
+      }
+    ]
+  }
+]

@@ -1,0 +1,57 @@
+[gd_resource type="Resource" script_class="DialogueDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/dialogue_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = "gerald_offer"
+beats = [
+  {
+    "who": "gerald",
+    "text": "...It is Gerald. ...A box has split. ...Some of your tickets are... on the floor. ...I could put them back. ...Or I could... sweep.",
+    "choices": [
+      {
+        "t": "\"Sweep, Gerald. Let them rest.\"",
+        "a": "delegate_colleague",
+        "ok": {
+          "rel": 3,
+          "lose_task": true,
+          "say": "...It is done. ...One ticket... is no longer anywhere."
+        }
+      },
+      {
+        "t": "\"What would you want in return?\"",
+        "a": "chat",
+        "ok": {
+          "rel": 3,
+          "favor": 1,
+          "say": "...Someone to ring this extension. ...Sometimes. ...That is all. ...I will owe YOU."
+        }
+      },
+      {
+        "t": "\"Put them back. I need those.\"",
+        "a": "honest",
+        "ok": {
+          "rel": -1,
+          "ill": 2,
+          "say": "...How... diligent. ...Filing."
+        }
+      },
+      {
+        "t": "\"Could I be 'down in Records' for an hour?\"",
+        "a": "chat",
+        "if": {
+          "tier_min": {
+            "gerald": 3
+          }
+        },
+        "ok": {
+          "rel": 2,
+          "cover": 60,
+          "cover_cat": "colleague",
+          "say": "...You are on the rota. ...Nobody has checked the rota... since the flood."
+        }
+      }
+    ]
+  }
+]

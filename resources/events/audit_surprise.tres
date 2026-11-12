@@ -11,3 +11,4 @@ action = "audit"
 args = {"warned": false}
 cooldown = 120
 schedule = [{"day": 3, "at": [800, 950]}, {"day": 1, "at": [800, 950], "diffs": ["senior", "unemployed"]}]
+tip = "scan"

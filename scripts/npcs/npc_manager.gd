@@ -44,7 +44,7 @@ func setup_run() -> void:
 	_boss = ""
 	for id in Db.npcs:
 		var d: Dictionary = Db.npcs[id]
-		state[id] = {"rel": float(d.start_relationship), "irritation": 0.0, "mood": "neutral", "known": [], "caught": 0, "last_contact": -999, "contacts": 0}
+		state[id] = {"rel": float(d.start_relationship), "irritation": 0.0, "mood": "neutral", "known": [], "caught": 0, "last_contact": -999, "contacts": 0, "snitched": 0}
 		if bool(d.is_boss):
 			_boss = id
 
@@ -104,6 +104,15 @@ func color(id: String) -> Color:
 
 func role(id: String) -> String:
 	return str(def(id).get("role", ""))
+
+
+func kind(id: String) -> String:
+	return str(def(id).get("kind", ""))
+
+
+func voice(id: String) -> String:
+	## Voice id used on calls ("" = the generic mumble).
+	return str(def(id).get("voice", ""))
 
 
 func record(id: String) -> Dictionary:

@@ -1,0 +1,13 @@
+[gd_resource type="Resource" script_class="NpcDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/npc_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = "fax"
+display_name = "A fax machine"
+role = "It is 2026"
+color = Color(0.7373, 0.7373, 0.6667, 1)
+kind = "stranger"
+has_dm = false
+voice = "fax"

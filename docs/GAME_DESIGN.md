@@ -28,7 +28,7 @@ gadgets fake a presence, bureaucracy and favours make work disappear.
 | --- | --- | --- |
 | Health | Real work, accepted responsibilities, each meeting question, time at the desk | Leisure, food, sleep |
 | Energy | Lies, fake work, bureaucracy, walking, gadget upkeep | Food, coffee, naps, sleep |
-| Suspicion | Convincing answers, stories that check out, real work, Illusion above 60 | Unexplained absence, ignored messages, missed meetings, failed lies, contradictions, gadget failures, failed scans, missed deadlines |
+| Suspicion | Convincing answers, stories that check out, real work, Illusion above 60, a friend vouching for you | Unexplained absence, ignored messages, missed meetings, failed lies, contradictions, gadget failures, failed scans, missed deadlines, a colleague telling Martin you can't be reached |
 | Productivity Illusion | Time (faster when away), missed meetings and deadlines, failures | Fake updates, fake reports, emoji reactions, jargon, the Keyboard Duck, closed tickets |
 
 Illusion saturates: the more impressive you already look, the less each fake
@@ -114,8 +114,9 @@ Each ticket shows what Martin sees and what exists.
 - **Clarification request** and **Form 27-B** are paperwork: they are the
   evidence that makes those stories check out. The form may also bury the
   ticket for good.
-- **Favour**: a colleague does it properly. Favours come from covering for
-  colleagues, or a gift card.
+- **Favour**: a colleague does it. Priya is fast and flawless, Kevin is quick
+  and cuts corners, Dave is slow, and Gerald can make the ticket stop existing.
+  Favours come from covering for colleagues, from their calls, or a gift card.
 - **AI Doppelganger** (level 2) works one ticket in the background.
 - **Do the actual work** is always available, clearly marked, and hurts.
 
@@ -127,6 +128,9 @@ a calendar conflict you created, send your clone, make an excuse, or let it
 ring out. Inside a call each question is timed; every answer is classified
 like any other action, and silence is its own outcome. Friday's performance
 review cannot be avoided, and its questions are built from your week.
+
+Calls from colleagues and from unknown numbers are a different thing: see
+"Colleagues" and "Strange calls" below.
 
 ## Automation
 
@@ -175,22 +179,97 @@ Keeping an eye on you, Micromanaging (hourly status lines), Building a case
 (a formal warning, unannounced scans). Each step makes him contact you more
 often and scrutinise meetings harder.
 
+## Colleagues
+
+Five people at SynerCorp are colleagues rather than management. Each one can
+tell on you, and each one can be turned into the reason you don't have to work.
+
+| | Who | Tells Martin when ignored | As a friend |
+| --- | --- | --- | --- |
+| Priya Nair | Does everyone's job | Sometimes | Takes tickets (fast, flawless), takes a question for you in team meetings, vouches for you to Martin |
+| Kevin Marsh | Reports everything, loves visibility | Nearly always | Takes tickets (they may bounce), reads you Martin's calendar, talks you up in the channel every day, fixes your numbers on his dashboard |
+| Dave Kowalski | Has not done a ticket since 2019 | Almost never | Covers for you (45 or 90 minutes of official absence), takes tickets (slowly), warns you before surprise checks |
+| Brenda Okafor | Office manager, knows everything | Often | Warns you before surprise checks, loses your invite to a meeting, keeps Martin busy for 45 minutes |
+| Gerald Pym | Records, sub-basement 3 | Never | Misfiles a ticket so it stops existing, puts you on the basement rota (an hour of official absence) |
+
+**Friendship** is the relationship value (0 to 100) every character already
+had, read in five tiers: Has it in for you, Cold, Colleague, Friendly, Partner
+in crime. It rises when you pick up their calls, cover for them, answer
+kindly, make small talk (once a day each) or send a gift card (one a day),
+and falls when you ignore, refuse or blame them. Each colleague's page in
+SynerTeams shows the tier, how far the next one is, and what it unlocks.
+
+**Telling on you.** When a colleague's message expires or their call rings
+out, they may tell Martin: Suspicion rises, and four times out of ten he then
+asks you about it himself, naming who told him. The chance is the colleague's
+own readiness to tell (Kevin 75%, Brenda 40%, Priya 20%, Dave 8%, Gerald 0%)
+scaled by the tier: more for someone cold or hostile, and zero from Friendly
+up. Rejecting a call halves it, an accepted excuse cancels it, and nobody
+tells on someone who is officially out. A colleague tells at most twice a
+day. One who has it in for you also reports any absence of 25 minutes.
+
+**Friends** never tell on you, keep your stories to themselves (stories told
+to people who dislike you reach Martin faster), and do favours. Some are
+automatic once the friendship is there (warnings, a wingman in meetings,
+public praise); the rest are asked for on their SynerTeams page and cost
+favours, the currency colleagues owe you.
+
+**Their calls.** Colleagues ring you, sometimes asking by message first.
+These calls are not meetings: they cost no Health, the time counts as paid
+slacking, and missing one never reaches Martin unless the caller takes it
+there. Each colleague has a story told over the week in calls, and what you
+said earlier changes what comes next:
+
+- **Brenda** introduces the cast on Monday, trades secrets on Wednesday
+  (what you learn about Kevin or Dave is a card you can play once, on
+  anything they ask of you), and tells you what is in your review file on
+  Friday.
+- **Dave** rings from the driving range on Tuesday needing a fake vendor, and
+  on Thursday when Martin asks for the vendor's name.
+- **Priya** needs someone to listen on Tuesday, and on Thursday has her
+  resignation written. If she sends it, her work lands on you.
+- **Kevin** shows you a dashboard on Wednesday on which your status is green
+  99.7% of the time, including at 3am.
+- **Gerald** rings from sub-basement 3 on Tuesday, and on Friday a box has
+  split and some of your tickets are on the floor.
+
+A colleague whose call you miss tries once more later that day.
+
+## Strange calls
+
+From Tuesday, unknown numbers ring. Nobody at SynerCorp ever hears about
+these calls, so they can be rejected freely, but most are worth taking:
+
+| Call | Sounds like | Worth it for |
+| --- | --- | --- |
+| The chair-warranty robocall | A robot, one word at a time | Leave it on speaker: a 25-minute "vendor call" appears in your calendar |
+| A fax machine | A fax machine | Screech back convincingly and it faxes you a Form 27-B, which is evidence for a process blocker |
+| Somebody's Nana | A warbling landline | She thinks you are Tobias. Stay on and she will back up a family emergency |
+| Number withheld | A cheap voice changer | Sells you what Martin does at two on Tuesdays and Thursdays: a card to play on him, once |
+| Martin's pocket | Fabric | Say nothing and you overhear the rest of his plans for the day |
+| You | You, corrupted | Your AI Doppelganger wants Fridays and a name (only if you own one) |
+
+Every character has a voice: gibberish, but with their own pitch, pace and
+melody, played line by line on calls. Dave on the driving range has one bar
+of signal, and Gerald sounds like he is at the bottom of a lift shaft.
+
 ## The week
 
 | Day | Introduces | Notable events |
 | --- | --- | --- |
-| Monday | Controls, the workstation, messaging, fake progress, the first lie | Standup, sprint planning, first tickets, the timesheet |
-| Tuesday | Automation: MouseMover and the Keyboard Duck go on sale | Phishing test, the calendar-conflict trick, a reply-all storm |
-| Wednesday | "Trust, but verify": stories get checked; the Alibi Ledger | A device scan, a production incident, the connection-trouble question, Mandatory Fun |
-| Thursday | Gadget strain, failures and combinations | SynerWatch goes live, the skip-level with senior management, a productivity audit, a 1:1 |
-| Friday | The performance review | Another scan, a demo demand, the review at 15:30 |
+| Monday | Controls, the workstation, messaging, fake progress, the first lie | Standup, sprint planning, first tickets, the timesheet, Brenda's welcome call |
+| Tuesday | Automation: MouseMover and the Keyboard Duck go on sale | Phishing test, the calendar-conflict trick, a reply-all storm, Gerald, Dave at the driving range, Priya |
+| Wednesday | "Trust, but verify": stories get checked; the Alibi Ledger | A device scan, a production incident, the connection-trouble question, Mandatory Fun, Brenda's secrets, Kevin's dashboard |
+| Thursday | Gadget strain, failures and combinations | SynerWatch goes live, the skip-level with senior management, a productivity audit, a 1:1, Dave's vendor, Priya's resignation |
+| Friday | The performance review | Another scan, a demo demand, Gerald's box, Brenda on your file, the review at 15:30 |
 
 The ten events the design calls for: a surprise boss message, the daily
 standup, an urgent unfinished task (when a deadline is close and nothing is
 done), an accidental screen share (during a video call), the internet-outage
 excuse, a mouse-jiggler malfunction, a surprise video call, the corporate
 productivity audit, the meeting with senior management, and the Friday
-review. Around forty more fill the week.
+review. Around sixty more fill the week, among them ten scripted calls from
+colleagues and six strange ones.
 
 ## The apartment
 
@@ -225,10 +304,11 @@ Every interactive object has a purpose:
 The final screen shows work avoidance (the share of paid time with no real
 work), salary earned, actual work time, successful deceptions, final suspicion,
 final health and automation efficiency. A week with zero real work earns the
-special rating **IMMACULATE**.
+special rating **IMMACULATE**. It also counts the colleagues you befriended,
+the favours you called in and how often you were told on.
 
 The letter grade is separate and is made of *paid slacking*: leisure taken
-between 09:00 and 17:00. With zero real work, 8 hours of it over the week is
+between 09:00 and 17:00, time on the phone with colleagues included. With zero real work, 8 hours of it over the week is
 an A and 14 hours an S; any real work caps the grade at B. This is what stops
 "sit at the desk all week" from being the best strategy.
 

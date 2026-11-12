@@ -1,0 +1,116 @@
+[gd_resource type="Resource" script_class="DialogueDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/dialogue_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = "kevin_dashboard"
+beats = [
+  {
+    "who": "kevin",
+    "text": "Heyyy! Quick one. I built a Culture of Accountability dashboard. It tracks everyone's green-dot uptime. You're at 99.7%. Even at lunch. Even at 3am. Wild, right?",
+    "choices": [
+      {
+        "t": "\"That's dedication, Kevin. Mine, I mean.\"",
+        "a": "bluff",
+        "p": 50,
+        "ok": {
+          "rel": 1,
+          "say": "Ha! Right. Dedication. Sure!"
+        },
+        "ko": {
+          "rel": -2,
+          "susp": 5,
+          "say": "It's just... statistically impossible? I might flag it. For accuracy."
+        }
+      },
+      {
+        "t": "\"This is incredible. Have you shown Helena?\"",
+        "a": "flatter",
+        "p": 76,
+        "ok": {
+          "rel": 7,
+          "say": "You think? HELENA? Oh my god. I need to make a deck."
+        },
+        "ko": {
+          "rel": 1,
+          "say": "Don't patronise me. (But do you really think so?)"
+        }
+      },
+      {
+        "t": "\"Does it also track who dropped staging in March?\"",
+        "a": "bluff",
+        "if": {
+          "flag": "dirt_kevin",
+          "not_flag": "dirt_kevin_used"
+        },
+        "ok": {
+          "rel": -3,
+          "favor": 1,
+          "flags": [
+            "kevin_owned",
+            "dirt_kevin_used"
+          ],
+          "say": "...Who told you. BRENDA. OK. OK! What dashboard? There is no dashboard. I owe you."
+        }
+      },
+      {
+        "t": "\"Kevin, I have to jump. Deliverables.\"",
+        "a": "deflect",
+        "p": 55,
+        "ok": {
+          "end": true,
+          "say": "Go crush it!"
+        },
+        "ko": {
+          "rel": -2,
+          "susp": 2,
+          "say": "Your calendar's empty. I can see it. Dashboard!"
+        }
+      }
+    ]
+  },
+  {
+    "who": "kevin",
+    "if": {
+      "not_flag": "kevin_owned"
+    },
+    "text": "Anyway! I'm showing it to Martin tomorrow. Unless you want to be my accountability buddy? Daily check-ins. I'd vouch for your numbers.",
+    "choices": [
+      {
+        "t": "\"Sure. Buddies.\"",
+        "a": "accept_duty",
+        "ok": {
+          "rel": 9,
+          "flag": "kevin_buddy",
+          "say": "YES. 9:15 every day. I'll send a recurring invite. And an onboarding doc."
+        }
+      },
+      {
+        "t": "\"Or you just... leave my row off. As a friend.\"",
+        "a": "flatter",
+        "p": 60,
+        "req": {
+          "tier": 3
+        },
+        "ok": {
+          "rel": 2,
+          "flag": "kevin_owned",
+          "say": "For you? Row deleted. You were never on it."
+        },
+        "ko": {
+          "rel": -2,
+          "say": "Data is data, buddy."
+        }
+      },
+      {
+        "t": "\"Hard pass.\"",
+        "a": "honest",
+        "ok": {
+          "rel": -4,
+          "say": "OK! No worries! I'll present the raw data then. :)"
+        }
+      }
+    ]
+  }
+]

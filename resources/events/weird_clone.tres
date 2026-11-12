@@ -1,0 +1,20 @@
+[gd_resource type="Resource" script_class="EventDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/event_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = "weird_clone"
+title = "You are calling"
+kind = "call"
+from = "echo"
+meeting = {
+  "dur": 6,
+  "script": "weird_clone",
+  "voice": true
+}
+conditions = {
+  "owns": "doppelganger"
+}
+pool = "weird"
+once = true

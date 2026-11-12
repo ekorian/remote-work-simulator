@@ -211,7 +211,9 @@ func has_evidence(ev: String) -> bool:
 		"outage_reported":
 			return Game.time.now() < int(Game.flags.get("isp_until", -1))
 		"form_filed":
-			return Game.flag("cr_day_%d" % Game.time.day)
+			return Game.flag("cr_day_%d" % Game.time.day) or Game.flag("fax_form")
+		"family_alibi":
+			return Game.flag("nana_alibi")
 		"clarification_open":
 			for t in Game.work.open_tasks():
 				if bool(t.clarified):
@@ -228,7 +230,7 @@ const EVIDENCE_TEXT := {
 	"router_off": "router unplugged", "laptop_updating": "laptop really updating", "doctor_note": "doctor's note",
 	"calendar_block": "calendar block", "incident_active": "a real incident is on", "outage_reported": "IT reported outages",
 	"form_filed": "Form 27-B on file", "clarification_open": "clarification pending", "printer_jam": "jammed printer",
-	"high_illusion": "you look busy",
+	"high_illusion": "you look busy", "family_alibi": "a grandmother who will swear to it",
 }
 
 
@@ -566,9 +568,10 @@ func _on_minute() -> void:
 	if Game.presence.status in ["online", "busy"]:
 		observe("online_status")
 	# Office gossip: a story told to a coworker eventually reaches the boss.
+	# Friends keep it to themselves; people who dislike you pass it on faster.
 	var boss := Game.npcs.boss_id()
 	for c in live_claims():
-		if c.told_to != boss and not Game.npcs.knows(boss, c.id) and Game.chance(1.2):
+		if c.told_to != boss and not Game.npcs.knows(boss, c.id) and Game.chance(1.2 * Game.social.gossip_factor(c.told_to)):
 			Game.npcs.learn(boss, c.id)
 			c.witnesses.append(boss)
 			var clash := conflict_with(c.type, boss)

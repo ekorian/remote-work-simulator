@@ -14,3 +14,5 @@ has_dm = false
 gullibility = -10.0
 start_relationship = 45.0
 look = {"skin": 0, "hair": 1, "hair_color": 4, "shirt": 5, "pants": 1, "accessory": 1}
+voice = "linda"
+in_meetings = true

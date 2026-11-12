@@ -1,0 +1,20 @@
+[gd_resource type="Resource" script_class="EventDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/event_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = "brenda_review"
+title = "Brenda is calling"
+kind = "call"
+from = "brenda"
+meeting = {
+  "dur": 7,
+  "script": "brenda_review"
+}
+schedule = [
+  {
+    "day": 4,
+    "at": 680
+  }
+]

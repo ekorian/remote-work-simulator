@@ -15,10 +15,10 @@ choices = [
     "t": "Play along: \"Finalising it now.\"",
     "a": "do_favor",
     "p": 72,
-    "ok": {"favor": 1, "say": "Beautiful. I owe you."},
-    "ko": {"favor": 1, "susp": 5, "say": "He asked to see it. Sorry. Still owe you."}
+    "ok": {"favor": 1, "rel": 5, "say": "Beautiful. I owe you."},
+    "ko": {"favor": 1, "rel": 4, "susp": 5, "say": "He asked to see it. Sorry. Still owe you."}
   },
-  {"t": "\"Not my circus, Dave.\"", "a": "honest", "ok": {"say": "Brutal."}}
+  {"t": "\"Not my circus, Dave.\"", "a": "honest", "ok": {"rel": -2, "say": "Brutal."}}
 ]
 expire = {"susp": 0, "say": "OK, I told him it was Kevin."}
 window = 28

@@ -8,5 +8,5 @@ id = "one_on_one"
 title = "1:1 with Martin"
 kind = "meeting"
 from = "martin"
-meeting = {"dur": 30, "script": "one_on_one", "mandatory": true}
+meeting = {"dur": 30, "script": "one_on_one", "mandatory": true, "private": true}
 schedule = [{"day": 3, "at": 855}]

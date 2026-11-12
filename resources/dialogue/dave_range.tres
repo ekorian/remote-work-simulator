@@ -1,0 +1,116 @@
+[gd_resource type="Resource" script_class="DialogueDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/dialogue_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = "dave_range"
+beats = [
+  {
+    "who": "dave",
+    "text": "--ey! Can you hear me? I'm at the-- *krrsh* --ange. The DRIVING range. Listen. Martin thinks I'm in a 'vendor sync'. I need-- *krrsh* --someone to be the vendor.",
+    "choices": [
+      {
+        "t": "\"Fine. I'm the vendor. What do I sell?\"",
+        "a": "do_favor",
+        "ok": {
+          "rel": 6,
+          "flag": "dave_pact",
+          "say": "Cloud... something. Enterprise cloud. You're 'Synapse Dynamics'. Beautiful. *THWACK*"
+        }
+      },
+      {
+        "t": "\"What's in it for me?\"",
+        "a": "chat",
+        "ok": {
+          "rel": 2,
+          "favor": 1,
+          "flag": "dave_pact",
+          "say": "You cover my Tuesdays, I cover your... everything else. And I owe you one. Deal? *THWACK* Deal."
+        }
+      },
+      {
+        "t": "\"Dave, you're going to get us both fired.\"",
+        "a": "honest",
+        "ok": {
+          "rel": -2,
+          "say": "Only if one of us talks. *krrsh* --nd it won't be me."
+        }
+      },
+      {
+        "t": "\"Sorry, you're breaking up.\"",
+        "a": "deflect",
+        "p": 70,
+        "ok": {
+          "end": true,
+          "say": "--ello? Hel--"
+        },
+        "ko": {
+          "rel": -3,
+          "say": "I can hear YOU fine."
+        }
+      }
+    ]
+  },
+  {
+    "who": "dave",
+    "if": {
+      "flag": "dave_pact"
+    },
+    "text": "So if Martin rings you: the sync ran long, the vendor was 'very aligned', and we need 'another session Thursday'. Say it back.",
+    "choices": [
+      {
+        "t": "\"Ran long, very aligned, another session Thursday.\"",
+        "a": "chat",
+        "ok": {
+          "rel": 3,
+          "cover": 40,
+          "cover_cat": "colleague",
+          "say": "Perfect. And as of right now YOU are in that vendor sync too. Nobody will look for you for a while. *THWACK*"
+        }
+      },
+      {
+        "t": "\"Ran long, very... aligned? Thursday?\"",
+        "a": "chat",
+        "ok": {
+          "rel": 1,
+          "say": "Close enough. Martin stops listening after the second word."
+        }
+      },
+      {
+        "t": "\"I'm writing none of this down.\"",
+        "a": "honest",
+        "ok": {
+          "rel": 2,
+          "say": "Smart. No paper trail. You're a natural."
+        }
+      }
+    ]
+  },
+  {
+    "who": "dave",
+    "if": {
+      "not_flag": "dave_pact"
+    },
+    "text": "Fine. FINE. But if Martin asks where I am, you say 'vendor sync'. That's it. Two words.",
+    "choices": [
+      {
+        "t": "\"Two words. I can do two words.\"",
+        "a": "do_favor",
+        "ok": {
+          "rel": 4,
+          "favor": 1,
+          "say": "Legend. I owe you."
+        }
+      },
+      {
+        "t": "\"No words. I never got this call.\"",
+        "a": "honest",
+        "ok": {
+          "rel": -2,
+          "say": "*THWACK* ...Cold."
+        }
+      }
+    ]
+  }
+]

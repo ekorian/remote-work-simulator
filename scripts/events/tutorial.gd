@@ -21,6 +21,7 @@ const DAYS := [
 		{"id": "shop", "title": "Automate your presence", "text": "MouseMover.exe is on sale today. Use the Gaming PC (the dark desk with the RGB strip) and buy it from ShadyDeals.biz."},
 		{"id": "enable", "title": "Switch it on", "text": "Use the Keyboard & Mouse on your work desk, or the ShadowIT app, to switch it ON. Your status stays green while you roam."},
 		{"id": "roam", "title": "Slack while it covers", "text": "With MouseMover running, go and do something better. Gadgets wear out: service them before they fail."},
+		{"id": "ally", "title": "Make an ally", "text": "Colleagues you leave hanging may tell {boss}. Ones who like you cover for you instead. Pick up when one calls, do one a favour, or open their chat in SynerTeams for small talk."},
 	],
 	[
 		{"id": "ledger", "title": "Read your Alibi Ledger", "text": "{boss} is getting suspicious and now checks your stories. Open ShadowIT on the work computer: the ledger lists every claim and what would expose it."},
@@ -45,9 +46,13 @@ const HINTS := {
 	"heat": "Running gadgets generate Heat. SynerWatch scans can catch you: switch things off before a scan.",
 	"claim": "Your story is now in the Alibi Ledger. While it is active, some actions would contradict it: the desktop warns you.",
 	"contradiction": "You were caught contradicting yourself. Whoever heard the story will want an explanation: answer them.",
-	"favor": "Someone owes you a favour. Spend it in SynerTasks to hand a ticket to a colleague.",
+	"favor": "Someone owes you a favour. Spend it on a colleague in SynerTeams: a ticket taken off your hands, a meeting skipped, a good word.",
 	"fast": "Time fast-forwards during activities. Press F to stop early if something comes up.",
 	"upgrade": "Gadgets can be upgraded at the Gaming PC: more reliable, less Heat, new abilities.",
+	"colleague": "Colleagues remember who answers. Leave one hanging and they may tell your manager; be good to them and they become friends who cover for you.",
+	"snitch": "A colleague you ignored just told your manager. In SynerTeams, each colleague's page shows how likely they are to do that.",
+	"friend": "You made a friend. Open their chat in SynerTeams: friends never tell on you, and you can ask them for favours.",
+	"casual_call": "A colleague is calling. These calls cost no Health and count as time off: pick up to make friends. Rejecting is safer than letting it ring out.",
 }
 
 var on := false
@@ -62,6 +67,7 @@ func _ready() -> void:
 	Bus.prompt_resolved.connect(func(_p, o): if not bool(o.get("expired", false)) and not bool(o.get("auto", false)): tick("reply"))
 	Bus.action_performed.connect(_on_action)
 	Bus.gadget_changed.connect(_on_gadget)
+	Bus.prompt_added.connect(func(p): if Game.social.is_colleague(str(p.from)): hint("colleague"))
 	Bus.activity_started.connect(_on_activity)
 	Bus.meeting_changed.connect(_on_meeting)
 	Game.time.minute_passed.connect(_on_minute)
@@ -177,6 +183,8 @@ func _on_action(id: String, _cls: int, _ctx: Dictionary) -> void:
 			tick("excuse")
 		"maintain":
 			tick("service")
+		"small_talk", "gift", "ask_favor", "do_favor":
+			tick("ally")
 
 
 func _on_claim(c: Claim) -> void:
@@ -215,6 +223,12 @@ func _on_activity(a: Dictionary) -> void:
 
 
 func _on_meeting(m: Dictionary) -> void:
+	if bool(m.get("casual", false)):
+		if str(m.state) == "ringing" and Game.social.is_colleague(str(m.who)):
+			hint("casual_call")
+		elif str(m.state) == "done" and Game.social.is_colleague(str(m.who)):
+			tick("ally")
+		return                      # not a meeting: it does not count for the checklist
 	if str(m.kind) == "block" or not str(m.state) in ["done", "excused", "declined", "looped", "missed"]:
 		return
 	tick("standup")

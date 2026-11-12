@@ -24,7 +24,7 @@ else
   echo "   clean start, clean shutdown"
 fi
 echo "== scenes, resources and gameplay invariants"
-"$GODOT" --headless --path . res://tests/rules_test.tscn 2>&1 | clean | grep -E '^==|FAIL|checks|RESULT' | sed 's/^/   /'
+timeout "${TEST_TIMEOUT:-600}" "$GODOT" --headless --path . res://tests/rules_test.tscn 2>&1 | clean | grep -E '^==|FAIL|checks|RESULT' | sed 's/^/   /'
 [ "${PIPESTATUS[0]}" -eq 0 ] || FAIL=1
 [ "$FAIL" -eq 0 ] && echo "VALIDATION PASSED" || echo "VALIDATION FAILED"
 exit $FAIL

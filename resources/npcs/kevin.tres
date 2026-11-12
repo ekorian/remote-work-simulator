@@ -12,3 +12,85 @@ kind = "coworker"
 gullibility = 4.0
 start_relationship = 45.0
 look = {"skin": 1, "hair": 3, "hair_color": 3, "shirt": 0, "pants": 0, "accessory": 2}
+colleague = true
+in_meetings = true
+snitch = 0.75
+voice = "kevin"
+favours = [
+  {
+    "id": "ticket",
+    "type": "ticket",
+    "tier": 2,
+    "cost": 1,
+    "speed": 22,
+    "botch": 0.2,
+    "title": "Take a ticket off my hands",
+    "hint": "1 favour. Quick. He cuts corners: it may bounce.",
+    "ask": "Kevin, how would you like some extra visibility?",
+    "say": "On it!! Shipping {task} tonight. Tests are a mindset."
+  },
+  {
+    "id": "intel",
+    "type": "intel",
+    "tier": 3,
+    "cost": 0,
+    "title": "What is Martin planning today?",
+    "hint": "Free, once a day. Lists today's surprise checks.",
+    "ask": "You can see Martin's calendar, right? Anything I should know about?",
+    "say": "Between us? Here's the rest of his day:"
+  },
+  {
+    "id": "hype",
+    "type": "hype",
+    "tier": 3,
+    "passive": true,
+    "title": "Talks you up in #team-synergy",
+    "hint": "Every day he praises you in public: +Productivity Illusion."
+  },
+  {
+    "id": "numbers",
+    "type": "vouch",
+    "tier": 4,
+    "cost": 1,
+    "susp": 6,
+    "ill": 6,
+    "title": "Fix my numbers on your dashboard",
+    "hint": "1 favour. -6 Suspicion, +6 Illusion.",
+    "ask": "About that dashboard. Could my numbers look a little... better?",
+    "say": "Done. You are now 'top quartile'. Do not ask what the quartiles are."
+  }
+]
+ask_lines = [
+  "Heyyy! Got five for a quick sync? I have a deck. It's only a small deck.",
+  "Can I grab you for two minutes? For visibility."
+]
+lines = {
+  "small_talk": [
+    "SO good! 4:40 wake-up, cold plunge, two PRs. You?",
+    "Crushing it! Have you seen my dashboard? You should see my dashboard.",
+    "Great! I'm manifesting a promotion. It's a process."
+  ],
+  "friendly": [
+    "OK, I've decided we're allies. Allies don't flag each other. I'll even talk you up in the channel. For visibility."
+  ],
+  "friend": [
+    "You and me: a two-person tiger team. Your numbers are safe with me. I can make them whatever you want."
+  ],
+  "hostile": [
+    "Just so you know, I've added a tab to my dashboard. It's called '{name}'. Martin has edit access."
+  ],
+  "missed_call": [
+    "No answer? I'll make a note. I make a note of everything.",
+    "Missed call logged: 1. (I log them.)"
+  ],
+  "gift": [
+    "A gift card!! This is going straight into my gratitude journal. And my dashboard. As a positive."
+  ],
+  "snitch": [
+    "Kevin flagged that you're not responding to him. He had a chart, {name}. With a trend line.",
+    "Kevin tells me your response time to him today is 'infinite'. His word."
+  ],
+  "snitch_absence": [
+    "Kevin mentioned your status has been 'Away' for a while. He sent a screenshot. With a timestamp."
+  ]
+}

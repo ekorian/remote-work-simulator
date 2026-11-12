@@ -1,0 +1,105 @@
+[gd_resource type="Resource" script_class="DialogueDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/dialogue_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = "brenda_dirt"
+beats = [
+  {
+    "who": "brenda",
+    "text": "You did NOT hear this from me. Kevin dropped the staging database in March and blamed 'cosmic rays'. And Dave closed forty tickets in one afternoon by marking them 'cannot reproduce'. I'll give you the receipts for ONE. Which?",
+    "choices": [
+      {
+        "t": "\"Kevin. Tell me about the database.\"",
+        "a": "chat",
+        "ok": {
+          "rel": 2,
+          "flag": "dirt_kevin",
+          "say": "The incident report is still in my drawer. He begged me to lose it. Next time Kevin wants something from you, you'll have a new answer."
+        }
+      },
+      {
+        "t": "\"Dave. Tell me about the forty tickets.\"",
+        "a": "chat",
+        "ok": {
+          "rel": 2,
+          "flag": "dirt_dave",
+          "say": "Forty! In ninety minutes! He's terrified someone will reopen them. Next time Dave asks you for something, mention March."
+        }
+      },
+      {
+        "t": "\"Brenda, I don't want to know.\"",
+        "a": "honest",
+        "ok": {
+          "rel": -3,
+          "end": true,
+          "say": "Everyone wants to know. Fine. Suit yourself."
+        }
+      }
+    ]
+  },
+  {
+    "who": "brenda",
+    "text": "Now. Fair's fair. What have YOU got for me?",
+    "choices": [
+      {
+        "t": "Invent something: \"I heard Dave is interviewing at a competitor.\"",
+        "a": "blame",
+        "p": 64,
+        "ok": {
+          "rel": 5,
+          "rels": {
+            "dave": -5
+          },
+          "say": "NO. Dave?! This is going in the newsletter."
+        },
+        "ko": {
+          "rel": -2,
+          "say": "Dave can't even interview for lunch. Try harder."
+        }
+      },
+      {
+        "t": "\"Helena's assistant orders her lunch under a fake name.\"",
+        "a": "bluff",
+        "p": 70,
+        "ok": {
+          "rel": 4,
+          "say": "A FAKE NAME. Delicious."
+        },
+        "ko": {
+          "rel": -1,
+          "say": "I started that one, sweetie."
+        }
+      },
+      {
+        "t": "Tell her a true one: \"I own a device that moves my mouse.\"",
+        "a": "honest",
+        "ok": {
+          "rel": 8,
+          "susp": 2,
+          "say": "You DON'T. Oh, I love it. Your secret is safe with me. Mostly."
+        }
+      },
+      {
+        "t": "\"Nothing yet. I owe you one.\"",
+        "a": "chat",
+        "req": {
+          "favor": 1
+        },
+        "ok": {
+          "rel": 3,
+          "say": "I'll collect. I always collect."
+        }
+      },
+      {
+        "t": "\"I've got nothing, Brenda.\"",
+        "a": "honest",
+        "ok": {
+          "rel": -2,
+          "say": "Then bring me something by Friday."
+        }
+      }
+    ]
+  }
+]

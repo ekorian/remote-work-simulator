@@ -10,5 +10,93 @@ role = "Senior Engineer (allegedly)"
 color = Color(1, 0.8196, 0.4, 1)
 kind = "coworker"
 gullibility = 8.0
-start_relationship = 60.0
+start_relationship = 56.0
 look = {"skin": 2, "hair": 6, "hair_color": 1, "shirt": 4, "pants": 2, "accessory": 0, "stache": true}
+colleague = true
+in_meetings = true
+snitch = 0.08
+voice = "dave"
+favours = [
+  {
+    "id": "cover",
+    "type": "cover",
+    "tier": 3,
+    "cost": 0,
+    "minutes": 45,
+    "title": "Cover for me",
+    "hint": "Free, once a day. 45 minutes in which nobody asks where you are.",
+    "ask": "Dave. I'm going dark for a bit.",
+    "say": "Say no more. You're in a 'vendor sync'. Nobody has ever asked a follow-up question about a vendor sync."
+  },
+  {
+    "id": "ticket",
+    "type": "ticket",
+    "tier": 2,
+    "cost": 1,
+    "repeat": true,
+    "speed": 30,
+    "botch": 0.04,
+    "title": "Take a ticket off my hands",
+    "hint": "1 favour. Slow, but it gets done.",
+    "ask": "Dave, about that favour you owe me.",
+    "say": "Fine. I'll do {task}. But we're even. And you never saw me at the driving range."
+  },
+  {
+    "id": "tipoff",
+    "type": "tipoff",
+    "tier": 4,
+    "passive": true,
+    "title": "Warns you before surprise checks",
+    "hint": "A message about ten minutes before Martin or IT comes looking."
+  },
+  {
+    "id": "afternoon",
+    "type": "cover",
+    "tier": 4,
+    "cost": 1,
+    "minutes": 90,
+    "title": "Cover me all afternoon",
+    "hint": "1 favour. 90 minutes of official absence.",
+    "ask": "Dave. I need the long one.",
+    "say": "Offsite 'vendor workshop'. I've put us both down. I've never been to one, but I hear they run long."
+  }
+]
+ask_lines = [
+  "You around? Got a thing to run past you. Not a work thing. God, no.",
+  "Call me when you can. Use the phone, not the work thing. They log the work thing."
+]
+lines = {
+  "small_talk": [
+    "Living the dream. By which I mean I'm at the driving range.",
+    "Can't complain. Well. I can. I just don't put it in writing.",
+    "Week's going great. I've been in 'vendor sync' since Monday."
+  ],
+  "friendly": [
+    "You're one of the good ones. Next time you need to vanish for a bit, message me first. I'll handle Martin."
+  ],
+  "friend": [
+    "Right. You're in the circle now. There's two of us in the circle. I hear things before they happen: I'll warn you."
+  ],
+  "hostile": [
+    "I covered for you. You can't even pick up. We're done, mate. Good luck with Martin."
+  ],
+  "missed_call": [
+    "Rang you. Nothing. That's my move, that is.",
+    "No answer. Respect, honestly. But also: rude."
+  ],
+  "gift": [
+    "A gift card for the driving range. You get me. Nobody here gets me."
+  ],
+  "tip_scan": [
+    "Heads up: IT just asked me if my laptop was 'meant to be doing that'. They're scanning. You're next."
+  ],
+  "tip_call": [
+    "Martin just hung up on me mid-sentence. He's doing his rounds. Look alive."
+  ],
+  "tip_screen": [
+    "Martin's asking people to share their screens. Close the thing. You know the thing."
+  ],
+  "snitch": [
+    "Dave, of all people, says he can't reach you. DAVE. Think about that."
+  ]
+}

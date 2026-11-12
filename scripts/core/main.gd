@@ -492,7 +492,12 @@ func _process(_delta: float) -> void:
 	var act := str(Game.activities.current.get("id", "")) if busy else ""
 	Sfx.loop("typing", desktop.visible or act in ["work", "grind"], -16.0, "SFX")
 	Sfx.loop("tv_loop", act in ["tv", "console"], -14.0, "SFX")
-	Sfx.loop("ring_loop", ring.visible or (not Game.comms.ringing().is_empty() and not Game.comms.in_call() and Game.presence.can_notice()), -10.0, "SFX")
+	# A colleague, a stranger and a meeting each ring differently.
+	var ringing := Game.comms.ringing()
+	var audible: bool = not ringing.is_empty() and not Game.comms.in_call() and (ring.visible or Game.presence.can_notice())
+	var tone := Game.comms.ring_sound(ringing) if audible else ""
+	for r in ["ring_loop", "ring_peer", "ring_weird"]:
+		Sfx.loop(r, r == tone, -10.0, "SFX")
 	Sfx.loop("snore", act in ["nap", "power_nap", "desk_nap"], -14.0, "SFX")
 
 

@@ -1,0 +1,77 @@
+[gd_resource type="Resource" script_class="DialogueDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/dialogue_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = "weird_nana"
+beats = [
+  {
+    "who": "nana",
+    "text": "Toooobias? Is that yoooou? You never caaaall. I made the soup. The one you like. With the bones.",
+    "choices": [
+      {
+        "t": "\"...Yes, Nana. It's Tobias.\"",
+        "a": "chat",
+        "ok": {
+          "hp": 4,
+          "flag": "nana",
+          "say": "I KNEW it. You sound thin. Are you eating?"
+        }
+      },
+      {
+        "t": "\"Sorry, wrong number. I'm not Tobias.\"",
+        "a": "honest",
+        "ok": {
+          "say": "That is exactly what Tobias would say."
+        }
+      },
+      {
+        "t": "Hang up on somebody's grandmother.",
+        "a": "ignore",
+        "ok": {
+          "end": true,
+          "hp": -2,
+          "say": "You feel it in your chest."
+        }
+      }
+    ]
+  },
+  {
+    "who": "nana",
+    "text": "And how is the wooork? Are they nice to you at the SynerCorp? That boss of yours. The Martian.",
+    "choices": [
+      {
+        "t": "\"Martin. He's a lot, Nana.\"",
+        "a": "chat",
+        "ok": {
+          "hp": 3,
+          "say": "You tell the Martian your Nana said to be NICE."
+        }
+      },
+      {
+        "t": "\"Nana, if a man called Martin ever rings: I was with you all day.\"",
+        "a": "chat",
+        "if": {
+          "flag": "nana"
+        },
+        "ok": {
+          "flag": "nana_alibi",
+          "toast": "Nana will back up a family emergency. For the rest of the week it comes with evidence.",
+          "say": "With me all day. Eating soup. I'll tell him, Tobias. I'll tell him TWICE."
+        }
+      },
+      {
+        "t": "\"I have to go, Nana. Work.\"",
+        "a": "bluff",
+        "p": 78,
+        "ok": {
+          "say": "Always the work. Ring your mother."
+        },
+        "ko": {
+          "say": "Sit. I am not finished. Your cousin Dermot has a boat now."
+        }
+      }
+    ]
+  }
+]

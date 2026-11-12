@@ -1,0 +1,93 @@
+[gd_resource type="Resource" script_class="DialogueDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/dialogue_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = "priya_vent"
+beats = [
+  {
+    "who": "priya",
+    "text": "Eleven meetings today. ELEVEN. I have four tickets due and Kevin 'refactored' my module into one 900-line function called doStuff2. Sorry. I just needed to say it out loud to a person.",
+    "choices": [
+      {
+        "t": "Just listen. \"That's awful. Keep going.\"",
+        "a": "chat",
+        "ok": {
+          "rel": 6,
+          "say": "Thank you. Nobody ever says 'keep going'."
+        }
+      },
+      {
+        "t": "\"Have you tried... prioritising?\"",
+        "a": "jargon",
+        "p": 38,
+        "ok": {
+          "rel": 1,
+          "say": "...Yes. Thank you. Very helpful."
+        },
+        "ko": {
+          "rel": -4,
+          "say": "Prioritising. I'll add it to the list. At the bottom."
+        }
+      },
+      {
+        "t": "Offer to take one of her tickets yourself",
+        "a": "help_colleague",
+        "ok": {
+          "rel": 12,
+          "favor": 2,
+          "say": "You'd actually... You have no idea what this means. I owe you two."
+        }
+      },
+      {
+        "t": "\"Honestly? I haven't done any work since Monday.\"",
+        "a": "honest",
+        "ok": {
+          "rel": 4,
+          "flag": "priya_knows",
+          "say": "...I KNEW it. And you know what? I'm not even angry. I'm jealous."
+        }
+      }
+    ]
+  },
+  {
+    "who": "priya",
+    "text": "How do you do it? You're always so calm. Your tickets never seem to bother you.",
+    "choices": [
+      {
+        "t": "\"Boundaries.\"",
+        "a": "bluff",
+        "p": 66,
+        "ok": {
+          "rel": 2,
+          "say": "Boundaries. Huh. I should get some of those."
+        },
+        "ko": {
+          "rel": -1,
+          "say": "That is not an answer."
+        }
+      },
+      {
+        "t": "\"Step one: stop caring. Step two: a mouse jiggler.\"",
+        "a": "honest",
+        "if": {
+          "flag": "priya_knows"
+        },
+        "ok": {
+          "rel": 5,
+          "say": "A mouse... OK. Send me the link. For research."
+        }
+      },
+      {
+        "t": "\"Coffee and denial.\"",
+        "a": "chat",
+        "ok": {
+          "rel": 3,
+          "hp": 2,
+          "say": "Ha. Same, minus the denial."
+        }
+      }
+    ]
+  }
+]

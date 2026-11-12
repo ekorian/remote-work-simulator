@@ -8,5 +8,5 @@ id = "skip_level"
 title = "Skip-Level with Helena Voss (SVP)"
 kind = "meeting"
 from = "helena"
-meeting = {"dur": 30, "script": "senior", "mandatory": true, "who": "helena"}
+meeting = {"dur": 30, "script": "senior", "mandatory": true, "who": "helena", "private": true}
 schedule = [{"day": 3, "at": 780}]

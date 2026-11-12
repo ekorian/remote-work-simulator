@@ -1,0 +1,91 @@
+[gd_resource type="Resource" script_class="DialogueDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/dialogue_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = "priya_quit"
+beats = [
+  {
+    "who": "priya",
+    "text": "I'm writing my resignation. It's two words long. Give me one reason not to send it.",
+    "choices": [
+      {
+        "t": "\"Because without you they'd make ME do the work.\"",
+        "a": "honest",
+        "ok": {
+          "rel": 5,
+          "say": "...That is the most honest thing anyone has said to me all year."
+        }
+      },
+      {
+        "t": "\"The team needs you, Priya.\"",
+        "a": "flatter",
+        "p": 52,
+        "ok": {
+          "rel": 3,
+          "say": "The team needs a second Priya."
+        },
+        "ko": {
+          "rel": -3,
+          "say": "The team needs me to do the team's job."
+        }
+      },
+      {
+        "t": "\"Don't quit. Just stop trying. I can teach you.\"",
+        "a": "chat",
+        "if": {
+          "tier_min": {
+            "priya": 3
+          }
+        },
+        "ok": {
+          "rel": 8,
+          "favor": 1,
+          "flag": "priya_slacks",
+          "say": "Teach me. I want to be bad at this. I want to be SO bad at this. I owe you one already."
+        }
+      },
+      {
+        "t": "\"Send it. Life is short.\"",
+        "a": "honest",
+        "ok": {
+          "rel": 1,
+          "flag": "priya_quits",
+          "end": true,
+          "later": {
+            "in": 40,
+            "ev": "priya_resigned"
+          },
+          "say": "...Sent. Oh. Oh, that felt incredible."
+        }
+      }
+    ]
+  },
+  {
+    "who": "priya",
+    "if": {
+      "not_flag": "priya_quits"
+    },
+    "text": "OK. I'm not sending it. Today. ...Is there anything on your plate I can take? It calms me down. I know. I KNOW.",
+    "choices": [
+      {
+        "t": "\"Since you offered: my most urgent ticket.\"",
+        "a": "delegate_colleague",
+        "ok": {
+          "give": "priya",
+          "say": "Send it. It'll be done within the hour. Don't thank me."
+        }
+      },
+      {
+        "t": "\"No. Close the laptop, Priya.\"",
+        "a": "chat",
+        "ok": {
+          "rel": 6,
+          "hp": 2,
+          "say": "...Closing it. Thank you."
+        }
+      }
+    ]
+  }
+]

@@ -11,3 +11,4 @@ from = "martin"
 pool = "call"
 meeting = {"dur": 12, "script": "sync", "mandatory": false}
 schedule = []
+tip = "call"

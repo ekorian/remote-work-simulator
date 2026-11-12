@@ -6,6 +6,7 @@ extends Node
 const DIR := "res://assets/audio/"
 const BUSES := ["Music", "SFX", "Ambience"]
 const POOL := 10
+const VOICE_TAKES := 3           ## recorded lines per voice: voice_<id>_1 .. _3
 
 var _cache: Dictionary = {}
 var _players: Array[AudioStreamPlayer] = []
@@ -16,6 +17,8 @@ var _music_name := ""
 var _last_play: Dictionary = {}
 var _silent := false             ## headless runs (tests, CI) have no audio device: play nothing
 var _music_tween: Tween
+var _voice: AudioStreamPlayer    ## one voice at a time: a new line cuts the old one off
+var _voice_take := -1
 
 
 func _ready() -> void:
@@ -35,6 +38,9 @@ func _ready() -> void:
 	_music = AudioStreamPlayer.new()
 	_music.bus = "Music"
 	add_child(_music)
+	_voice = AudioStreamPlayer.new()
+	_voice.bus = "SFX"
+	add_child(_voice)
 	Bus.sfx.connect(play)
 
 
@@ -59,6 +65,8 @@ func _exit_tree() -> void:
 		_music_tween = null
 	_music.stop()
 	_music.stream = null
+	_voice.stop()
+	_voice.stream = null
 	_cache.clear()
 
 
@@ -92,6 +100,38 @@ func play(name: String, volume_db: float = 0.0, pitch_var: float = 0.04) -> void
 	p.volume_db = volume_db
 	p.pitch_scale = 1.0 + randf_range(-pitch_var, pitch_var)
 	p.play()
+
+
+func has_voice(id: String) -> bool:
+	return id != "" and ResourceLoader.exists("%svoice_%s_1.wav" % [DIR, id])
+
+
+func voice(id: String, volume_db: float = -2.0) -> float:
+	## Someone says a line in their own voice (gibberish, but theirs).
+	## Returns how long it lasts, so the text can keep pace; 0 if silent.
+	if _silent:
+		return 0.0
+	var takes: Array = []
+	for i in range(1, VOICE_TAKES + 1):
+		if stream("voice_%s_%d" % [id, i]) != null:
+			takes.append(i)
+	if takes.is_empty():
+		play("talk")
+		return 0.0
+	if takes.size() > 1:
+		takes.erase(_voice_take)          # never the same take twice running
+	_voice_take = int(takes[randi() % takes.size()])
+	var s := stream("voice_%s_%d" % [id, _voice_take])
+	_voice.stream = s
+	_voice.volume_db = volume_db
+	_voice.pitch_scale = 1.0 + randf_range(-0.03, 0.03)
+	_voice.play()
+	return s.get_length()
+
+
+func stop_voice() -> void:
+	if _voice != null and _voice.playing:
+		_voice.stop()
 
 
 func loop(name: String, on: bool, volume_db: float = -8.0, bus: String = "Ambience") -> void:

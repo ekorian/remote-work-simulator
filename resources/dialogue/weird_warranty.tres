@@ -1,0 +1,78 @@
+[gd_resource type="Resource" script_class="DialogueDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/dialogue_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = "weird_warranty"
+beats = [
+  {
+    "who": "robocall",
+    "text": "THIS. IS. AN. URGENT. MESSAGE. REGARDING. YOUR. SYNERCORP-ISSUED. CHAIR'S. EXTENDED. WARRANTY. PRESS. ONE. TO. SPEAK. TO. A. SPECIALIST.",
+    "choices": [
+      {
+        "t": "Press 1.",
+        "a": "chat",
+        "ok": {
+          "say": "PLEASE. HOLD. YOUR. CALL. IS. IMPORTANT. TO. NO. ONE."
+        }
+      },
+      {
+        "t": "Put it on speaker and leave it running. You're 'on a call'.",
+        "a": "hold_line",
+        "ok": {
+          "end": true,
+          "cover": 25,
+          "cover_cat": "call",
+          "block": {
+            "title": "Vendor call: seating infrastructure",
+            "dur": 25
+          },
+          "say": "Your calendar now shows a 25-minute vendor call. The robot does not mind."
+        }
+      },
+      {
+        "t": "Hang up.",
+        "a": "ignore",
+        "ok": {
+          "end": true
+        }
+      }
+    ]
+  },
+  {
+    "who": "robocall",
+    "text": "ALL. SPECIALISTS. ARE. BUSY. TO. CONTINUE. IN. SPANISH. PRESS. TWO. TO. REPORT. A. COLLEAGUE. PRESS. THREE.",
+    "choices": [
+      {
+        "t": "Press 3. Report Kevin.",
+        "a": "chat",
+        "ok": {
+          "hp": 3,
+          "say": "THANK. YOU. KEVIN. HAS. BEEN. REPORTED. TO. KEVIN."
+        }
+      },
+      {
+        "t": "Press 2.",
+        "a": "chat",
+        "ok": {
+          "hp": 1,
+          "say": "USTED. HA. SIDO. SELECCIONADO. PARA. UNA. SILLA."
+        }
+      },
+      {
+        "t": "Stay on hold. Indefinitely.",
+        "a": "hold_line",
+        "ok": {
+          "cover": 25,
+          "cover_cat": "call",
+          "block": {
+            "title": "Vendor call: seating infrastructure",
+            "dur": 25
+          },
+          "say": "The hold music is a fax of a song. Your calendar says you're busy."
+        }
+      }
+    ]
+  }
+]

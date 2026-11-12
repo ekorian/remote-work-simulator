@@ -1,0 +1,106 @@
+[gd_resource type="Resource" script_class="DialogueDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/dialogue_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = "dave_panic"
+beats = [
+  {
+    "who": "dave",
+    "text": "OK don't panic. I'm panicking. Martin wants the vendor's NAME for the expense report. There is no vendor. There was never a vendor.",
+    "choices": [
+      {
+        "t": "\"Synapse Dynamics. Your contact is Brett. Brett is on leave.\"",
+        "a": "bluff",
+        "p": 62,
+        "if": {
+          "flag": "dave_pact"
+        },
+        "ok": {
+          "rel": 9,
+          "flag": "dave_saved",
+          "say": "BRETT. Brett is on leave. You're a genius. I owe you my career."
+        },
+        "ko": {
+          "rel": 2,
+          "susp": 6,
+          "say": "He googled it. It's a pilates studio. I said you'd explain. Sorry."
+        }
+      },
+      {
+        "t": "\"Tell him the vendor is under NDA.\"",
+        "a": "jargon",
+        "p": 68,
+        "tags": [
+          "jargon"
+        ],
+        "ok": {
+          "rel": 6,
+          "flag": "dave_saved",
+          "say": "NDA. Nobody questions an NDA. Why did I not think of NDA."
+        },
+        "ko": {
+          "rel": 1,
+          "susp": 4,
+          "say": "He wants to see the NDA."
+        }
+      },
+      {
+        "t": "\"Blame Kevin. Say he sent the wrong calendar link.\"",
+        "a": "blame",
+        "p": 56,
+        "ok": {
+          "rel": 4,
+          "rels": {
+            "kevin": -6
+          },
+          "flag": "dave_saved",
+          "say": "Kevin 'must have sent the wrong link'. Chef's kiss."
+        },
+        "ko": {
+          "susp": 5,
+          "rels": {
+            "kevin": -8
+          },
+          "say": "Kevin has receipts. Kevin ALWAYS has receipts."
+        }
+      },
+      {
+        "t": "\"Dave. I can't be part of this.\"",
+        "a": "honest",
+        "ok": {
+          "rel": -6,
+          "end": true,
+          "say": "...Wow. OK. I'll remember that at standup."
+        }
+      }
+    ]
+  },
+  {
+    "who": "dave",
+    "if": {
+      "flag": "dave_saved"
+    },
+    "text": "I mean it. Anything you need this week. A ticket, an alibi, a witness. Say the word.",
+    "choices": [
+      {
+        "t": "\"I'll hold you to that.\"",
+        "a": "chat",
+        "ok": {
+          "rel": 2,
+          "favor": 1,
+          "say": "Hold away."
+        }
+      },
+      {
+        "t": "\"Start now: take my most urgent ticket.\"",
+        "a": "delegate_colleague",
+        "ok": {
+          "give": "dave",
+          "say": "Send it over. I'll... look at it. Properly, even."
+        }
+      }
+    ]
+  }
+]

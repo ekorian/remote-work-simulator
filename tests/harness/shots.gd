@@ -226,6 +226,109 @@ func _scene_overlays() -> void:
 	main.close_pause()
 
 
+func _quiet() -> void:
+	## Nothing else is planned, pending or ringing.
+	Game.time.timers.clear()
+	Game.events.deferred.clear()
+	Game.events.last_attention = -999
+	Game.comms.meetings.clear()
+	Game.stats.values.susp = 20.0
+	main.ring.visible = false
+
+
+func _ring_now(event: String) -> Dictionary:
+	## Make a call event ring right now, whatever else was planned.
+	_quiet()
+	Game.events.fire(event, {"asked": true, "urgent": true})
+	_skip(1)
+	return Game.comms.ringing()
+
+
+func _scene_colleagues() -> void:
+	## Colleague and stranger calls, the friendship panel, favours.
+	var w: World = main.world
+	await _start("survivor", false)
+	Game.time.timers.clear()
+	Game.comms.prompts.clear()
+	Game.presence.set_at_desk(true)
+	_skip(100)
+	await wait(2.5)                   # let the day card fade
+	Game.npcs.adjust("dave", 12.0)
+	Game.npcs.adjust("kevin", -8.0)
+	Game.economy.add_favor(2)
+	main.open_desktop("teams")
+	var m := _ring_now("brenda_hello")
+	main.open_ring(true)
+	await wait(0.5)
+	await snap("col_ring_colleague")
+	main.join_call(str(m.id), false)
+	await wait(0.5)
+	await snap("col_call_colleague")
+	main.call_view._on_chosen(1, "")
+	await wait(0.6)
+	await snap("col_call_reply")
+	while Game.comms.in_call():
+		Game.comms.call_choose(0)
+	main.call_view._finish()
+	await wait(0.3)
+	Game.time.day = 1
+	m = _ring_now("gerald_first")
+	main.open_ring(true)
+	await wait(0.4)
+	main.join_call(str(m.id), false)
+	await wait(2.6)
+	await snap("col_call_gerald")
+	while Game.comms.in_call():
+		Game.comms.call_choose(0)
+	main.call_view._finish()
+	await wait(0.3)
+	Game.events.last_attention = -999
+	m = _ring_now("weird_warranty")
+	main.open_ring(true)
+	await wait(0.5)
+	await snap("col_ring_stranger")
+	if not m.is_empty():
+		main.join_call(str(m.id), false)
+		await wait(0.7)
+		await snap("col_call_stranger")
+		Game.comms.call_hang_up()
+		main.call_view._finish()
+	else:
+		print("weird_warranty did not ring: ", Game.events.can_interrupt(Db.events["weird_warranty"], {"urgent": true}), " deferred ", Game.events.deferred)
+	await wait(0.3)
+	# SynerTeams: where you stand with each of them.
+	_quiet()
+	Game.work.add_task("deck")
+	for who in ["dave", "kevin", "priya"]:
+		main.desktop.thread = who
+		main.desktop._dirty = true
+		await wait(0.5)
+		await snap("col_teams_" + who)
+	Game.social.small_talk("dave")
+	Game.social.ask("dave", "cover")
+	main.desktop.thread = "dave"
+	main.desktop._dirty = true
+	await wait(0.5)
+	await snap("col_teams_dave_asked")
+	Game.events.fire("priya_vent", {"urgent": true})
+	main.desktop.thread = "priya"
+	main.desktop._dirty = true
+	await wait(0.5)
+	await snap("col_teams_ask")
+	main.desktop.task_id = str(Game.work.tasks.back().id)
+	main.desktop.open_app("tasks")
+	await wait(0.5)
+	await snap("col_tasks")
+	main.desktop.close()
+	await wait(0.3)
+	Game.economy.money = 400
+	w.place_player(w.apartment.things["gaming_pc"].use_point(), 0.0)
+	main.open_shop()
+	await wait(0.5)
+	await snap("col_shop")
+	main.shop.close()
+
+
 func _scene_ends() -> void:
 	await _start("survivor", false)
 	Game.time.manual = true
@@ -430,6 +533,13 @@ func _scene_autoplay() -> void:
 	var w: World = main.world
 	main.start_run(_auto_diff, LOOK, true)
 	await wait(0.5)
+	# Where the suspicion came from, for the summary.
+	var why := {}
+	Game.stats.changed.connect(func(stat: String, _v: float, delta: float, reason: String):
+		if stat == "susp" and delta > 0.0:
+			var key := reason.get_slice(":", 0) if reason != "" else "(passive)"
+			why[key] = float(why.get(key, 0.0)) + delta
+	)
 	Engine.time_scale = 10.0
 	var frames := 0
 	var t0 := Time.get_ticks_msec()
@@ -462,6 +572,17 @@ func _scene_autoplay() -> void:
 	print("AUTOPLAY %s: %s  day=%s  susp=%.0f  hp=%.0f  worked=%s  money=%s  frames=%d" % [
 		_auto_diff, str(res.get("kind", "unfinished")), str(Game.time.day), float(Game.stats.values.susp),
 		float(Game.stats.values.health), str(Game.week.get("worked_min", "?")), str(Game.economy.money), frames])
+	var keys: Array = why.keys()
+	keys.sort_custom(func(a, b): return float(why[a]) > float(why[b]))
+	var top: Array = []
+	for k in keys.slice(0, 9):
+		top.append("%s +%.0f" % [str(k), float(why[k])])
+	print("  suspicion from: ", ", ".join(top))
+	var wk := Game.week
+	var parts: Array = []
+	for k in ["absent_min", "prompts_answered", "prompts_ignored", "meetings_attended", "meetings_missed", "calls_taken", "calls_dodged", "colleagues_ignored", "snitched", "favours_called", "excuses"]:
+		parts.append("%s=%d" % [k, int(wk.get(k, 0))])
+	print("  week: ", ", ".join(parts))
 
 
 func _auto_step(w: World) -> void:

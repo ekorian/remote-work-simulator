@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="NpcDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/npc_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = "nana"
+display_name = "Somebody's Nana"
+role = "Wrong number"
+color = Color(0.8, 0.7216, 0.9412, 1)
+kind = "stranger"
+has_dm = false
+gullibility = 12.0
+voice = "nana"

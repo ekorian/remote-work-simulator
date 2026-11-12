@@ -1,0 +1,13 @@
+[gd_resource type="Resource" script_class="NpcDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/npc_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = "echo"
+display_name = "You?"
+role = "Calling from your own number"
+color = Color(0.3529, 0.8196, 0.4784, 1)
+kind = "stranger"
+has_dm = false
+voice = "glitch"

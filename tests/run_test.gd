@@ -1,6 +1,8 @@
 extends Node
-## Headless full-run tests: three kinds of player across four difficulties,
-## each playing whole weeks through the same API the UI uses.
+## Headless full-run tests: four kinds of player across four difficulties,
+## each playing whole weeks through the same API the UI uses. "ghost" is the
+## skilled slacker who never answers a colleague: it measures what colleagues
+## cost you when ignored and what they are worth when befriended.
 ##
 ## Verifies that the game reaches both victory and defeat, that all five days
 ## progress without softlocks, that invariants hold on every simulated
@@ -19,6 +21,8 @@ var _last_slack := -99
 var _minutes := 0
 var _violations: Dictionary = {}
 var _why: Dictionary = {}
+var _rel: Dictionary = {}          ## colleague -> summed final relationship (trace)
+var _ghost := false                ## the slacker ignores every colleague
 
 
 func _ready() -> void:
@@ -88,10 +92,12 @@ func _balance() -> void:
 	var table := {}
 	var outcomes := {}
 	var stuck := 0
-	for bot in ["idle", "worker", "slacker"]:
+	for bot in ["idle", "worker", "slacker", "ghost"]:
 		for diff in Cfg.DIFF_ORDER:
+			if bot == "ghost" and diff != "survivor":
+				continue
 			var wins := 0
-			var sums := {"day": 0.0, "susp": 0.0, "hp": 0.0, "worked": 0.0, "money": 0.0, "slack": 0.0, "lies": 0.0, "caught": 0.0}
+			var sums := {"day": 0.0, "susp": 0.0, "hp": 0.0, "worked": 0.0, "money": 0.0, "slack": 0.0, "lies": 0.0, "caught": 0.0, "told": 0.0, "friends": 0.0, "gained": 0.0, "favours": 0.0, "calls": 0.0}
 			var grades := {}
 			var kinds := {}
 			for i in runs:
@@ -112,9 +118,17 @@ func _balance() -> void:
 				sums.slack += float(r.week.get("slack_min", 0))
 				sums.lies += float(r.claims)
 				sums.caught += float(r.caught)
+				sums.told += float(r.week.get("snitched", 0))
+				sums.friends += float(r.get("friends", 0))
+				sums.gained += float(r.week.susp_gained)
+				sums.favours += float(r.week.get("favours_called", 0))
+				sums.calls += float(r.week.get("calls_taken", 0))
 			var n := float(runs)
 			var rate := 100.0 * float(wins) / n
-			table["%s/%s" % [bot, diff]] = {"rate": rate, "worked": sums.worked / n, "grades": grades, "lies": sums.lies / n, "caught": sums.caught / n}
+			table["%s/%s" % [bot, diff]] = {
+				"rate": rate, "worked": sums.worked / n, "grades": grades, "lies": sums.lies / n, "caught": sums.caught / n,
+				"told": sums.told / n, "friends": sums.friends / n, "gained": sums.gained / n, "favours": sums.favours / n, "calls": sums.calls / n,
+			}
 			var gtxt := ""
 			for g in ["S", "A", "B", "C", "D"]:
 				if grades.has(g):
@@ -144,6 +158,19 @@ func _balance() -> void:
 		t.check(float(table["slacker/" + diff].worked) == 0.0, "slacker does zero real work on %s" % diff)
 	t.check(float(table["slacker/survivor"].lies) >= 2.0, "the slacker actually uses the deception engine (%.1f claims per run)" % float(table["slacker/survivor"].lies))
 	t.check(int(table["slacker/survivor"].grades.get("S", 0)) + int(table["slacker/survivor"].grades.get("A", 0)) > 0, "A or S is reachable on Corporate Survivor")
+	# Colleagues: worth befriending, costly to ignore.
+	var nice: Dictionary = table["slacker/survivor"]
+	var cold: Dictionary = table["ghost/survivor"]
+	print("  colleagues on survivor   told-on  friends  favours  calls  susp gained")
+	print("    answers them           %7.1f  %7.1f  %7.1f  %5.1f  %11.0f" % [float(nice.told), float(nice.friends), float(nice.favours), float(nice.calls), float(nice.gained)])
+	print("    ignores them           %7.1f  %7.1f  %7.1f  %5.1f  %11.0f" % [float(cold.told), float(cold.friends), float(cold.favours), float(cold.calls), float(cold.gained)])
+	t.check(float(nice.calls) >= 6.0, "a week has plenty of colleague calls to take (%.1f)" % float(nice.calls))
+	t.check(float(nice.friends) >= 2.0, "answering colleagues makes friends (%.1f per run)" % float(nice.friends))
+	t.check(float(nice.favours) >= 2.0, "and friends get used (%.1f favours per run)" % float(nice.favours))
+	t.check(float(cold.told) >= 2.0, "ignoring colleagues gets you told on (%.1f times per run)" % float(cold.told))
+	t.check(float(cold.told) > float(nice.told) + 1.5, "far more than answering them does (%.1f vs %.1f)" % [float(cold.told), float(nice.told)])
+	t.check(float(cold.friends) < float(nice.friends), "and makes no friends (%.1f vs %.1f)" % [float(cold.friends), float(nice.friends)])
+	t.check(float(cold.gained) > float(nice.gained), "it costs suspicion (%.0f vs %.0f gained)" % [float(cold.gained), float(nice.gained)])
 
 
 func _run(bot: String, diff: String, seed_v: int) -> Dictionary:
@@ -159,7 +186,8 @@ func _run(bot: String, diff: String, seed_v: int) -> Dictionary:
 				_bot_idle()
 			"worker":
 				_bot_worker()
-			"slacker":
+			"slacker", "ghost":
+				_ghost = bot == "ghost"
 				_bot_slacker()
 		if not Game.time.running():
 			break
@@ -338,6 +366,8 @@ func _bot_slacker() -> void:
 			c.call_choose(int(pick[0]), str(pick[1]))
 		return
 	var ring := c.ringing()
+	if not ring.is_empty() and _ghost and bool(ring.get("casual", false)):
+		ring = {}                         # let it ring
 	if not ring.is_empty():
 		Game.activities.stop()
 		Game.presence.set_at_desk(true)
@@ -351,6 +381,8 @@ func _bot_slacker() -> void:
 		return
 	# Answer whatever is pending, most urgent first.
 	var pending := c.pending()
+	if _ghost:
+		pending = pending.filter(func(q): return not Game.social.is_colleague(str(q.from)))
 	if not pending.is_empty():
 		var p: Dictionary = pending[0]
 		if not Game.activities.busy() or int(p.due) - now <= 6:
@@ -384,6 +416,12 @@ func _bot_slacker() -> void:
 	var covered: bool = auto.can("presence") or Game.presence.covered() or Game.presence.status in ["lunch", "updating", "busy", "meeting"]
 	var nm0 := c.next_meeting()
 	var clear := nm0.is_empty() or int(nm0.start) - minute > 50
+	if safe and not covered and clear and not _ghost and minute < 930 and now - _last_slack >= 20:
+		# Nobody is covering: ask a friend to.
+		for who in Game.social.who_can("cover"):
+			if Game.social.ask_type(str(who), "cover"):
+				covered = true
+				break
 	if safe and covered and clear and not _scan_soon() and minute < 960 and now - _last_slack >= 20:
 		Game.presence.set_at_desk(false)
 		_last_slack = now + 45
@@ -406,6 +444,12 @@ func _bot_slacker() -> void:
 	if minute >= 600 and not Game.work.report_sent() and not auto.can("auto_report"):
 		Game.work.fake_report(false)
 		return
+	# Keep the colleagues warm.
+	if not _ghost and Game.stats.get_value("energy") > 55.0 and minute > 560:
+		for who in Game.social.colleagues():
+			if not Game.social.talked_today(str(who)) and Game.comms.prompt_for_thread(str(who)).is_empty():
+				Game.social.small_talk(str(who))
+				return
 	# The Tuesday trick: block the calendar over an optional meeting.
 	var nm := c.next_meeting()
 	if not nm.is_empty() and not bool(nm.mandatory) and not bool(nm.no_dodge) and not c.conflicts(nm) and int(nm.start) - minute <= 60 and int(nm.start) > minute:
@@ -415,7 +459,7 @@ func _bot_slacker() -> void:
 		if str(task.by) != "":
 			continue
 		var id := str(task.id)
-		if Game.economy.favors > 0 and int(task.effort) >= 2 and Game.work.task_delegate(id):
+		if not _ghost and Game.economy.favors > 0 and int(task.effort) >= 2 and Game.work.task_delegate(id):
 			return
 		if auto.can("do_tickets") and str(auto.autos.ai_task) == "" and Game.work.task_ai(id):
 			return
@@ -505,6 +549,8 @@ func _trace() -> void:
 			statuses[key] = int(statuses.get(key, 0)) + 1
 		for id in Game.events.count:
 			fired[id] = int(fired.get(id, 0)) + int(Game.events.count[id])
+		for id in Game.social.colleagues():
+			_rel[id] = float(_rel.get(id, 0.0)) + Game.npcs.relationship(id)
 	print("TRACE %s/%s: %d/%d wins" % [bot, diff, wins, runs])
 	print("  day  runs  susp   ill    en    hp  absent  excuses  avoided  missed  slack")
 	for d in 5:
@@ -520,11 +566,24 @@ func _trace() -> void:
 	for k in ["excuses", "excuses_failed", "contradictions", "lies_landed", "prompts_answered", "prompts_ignored", "tasks_done", "tasks_faked", "tasks_delegated", "tasks_failed", "auto_runs", "auto_ok", "slack_min", "absent_min"]:
 		parts.append("%s=%.1f" % [k, float(week.get(k, 0.0)) / float(runs)])
 	print("  week avg: ", ", ".join(parts))
+	var social: Array = []
+	for k in ["calls_taken", "calls_dodged", "colleagues_ignored", "snitched", "favours_called", "small_talk", "gifts", "tipoffs", "tasks_lost", "susp_gained"]:
+		social.append("%s=%.1f" % [k, float(week.get(k, 0.0)) / float(runs)])
+	print("  colleagues: ", ", ".join(social))
+	var ends: Array = []
+	for id in _rel:
+		ends.append("%s=%.0f" % [id, float(_rel[id]) / float(runs)])
+	print("  relationship at the end: ", ", ".join(ends))
 	print("  claims: ", statuses)
 	var ids: Array = fired.keys()
 	ids.sort_custom(func(a, b): return int(fired[a]) > int(fired[b]))
 	var top: Array = []
 	for id in ids.slice(0, 24):
 		top.append("%s=%.1f" % [id, float(fired[id]) / float(runs)])
+	var calls: Array = []
+	for id in ids:
+		if str(Db.events[id].kind) == "call":
+			calls.append("%s=%.2f" % [id, float(fired[id]) / float(runs)])
+	print("  calls per run: ", ", ".join(calls))
 	print("  events per run: ", ", ".join(top))
 	print("  invariant violations: ", _violations)
