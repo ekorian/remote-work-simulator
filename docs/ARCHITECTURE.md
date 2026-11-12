@@ -32,6 +32,7 @@ scripts/npcs/        NPCManager, Social
 scripts/data/        Resource classes (one per content type) and Db
 scripts/player/      Player (first person), Character (the body in the menus)
 scripts/apartment/   World, Apartment, Interactable, Holdable, Kit, FoodKit
+scripts/town/        Town, TownPerson
 scripts/ui/          HUD, SynerOS desktop, dialogs, menus, shared widgets
 resources/           all authored content, as .tres
 tests/               headless tests and the screenshot/autoplay harness
@@ -285,6 +286,35 @@ Positions are the view's business until a save, when they are written back
 into `at`. What lies about each morning is drawn from its own random stream
 (seeded from the run and the day), so it cannot change what else happens.
 
+## The town
+
+`Town.build(apartment)` adds the street to the Apartment node: geometry,
+colliders, shop tills and other `Interactable`s (registered in
+`apartment.things` like any object in the flat), named item spots, shelf
+slots, bin and hoop triggers. Because it is the same node, one navigation
+grid covers flat and street, joined by the front doorway.
+
+The rules stay in the simulation and know nothing of the street's shape:
+
+- `Home.SHOPS` says what each shop sells and when; `shop_stock(shop)` is the
+  day's selection (its own dice, seeded by run, day and shop), `buy` takes
+  the money and puts the item in your hand. `World._stock_shelves()` only
+  shows that list: one model and one pick volume per shelf slot.
+- `Home.pockets` is a list of item ids. A pocketed item has no body in the
+  world; `_sync_items` skips it. `hold` pockets what was in the hand when it
+  fits, `stow`, `draw`, `cycle` move things between hand and pockets.
+- `Home.PROPS` are the objects that are not food: what a click does with
+  one, whether it fits a pocket, whether it counts as an ornament.
+- `Town.PEOPLE` lists who is about, where, and during which hours. A
+  `TownPerson` is a `Character` with a pick volume; colleagues use the look
+  from their `NpcDef`. Twice a second the world asks each colleague who is
+  present whether the player is in front of them and close; if so it calls
+  `Social.spotted(id)`, which decides (excused? once today? how likely is
+  this person to tell?) and reuses the same path as an ignored message.
+
+`ItemIcons` renders a small picture of each carried thing once, from the same
+`FoodKit` model, in its own `SubViewport`; headless runs fall back to names.
+
 ## Views
 
 - `World` owns what you see: lighting from the clock, the crosshair's ray
@@ -355,7 +385,11 @@ cache is refreshed). `tools/validate.sh` checks every reference.
 ## Known limitations
 
 - Tickets, prompts, meetings and mails are Dictionaries, not typed classes.
-- One save version (4); older saves are rejected rather than migrated.
+- One save version (5); older saves are rejected rather than migrated.
+- People in the street do not collide with you or with each other, and walk
+  fixed routes; cars are parked for good.
+- The street is lit with real sun shadows; the flat is not (see `_update_sky`),
+  so the two look slightly different through the open door.
 - Held items are drawn in the world, not on a separate layer: pressed against
   a wall, what you are holding can poke into it.
 - The windows are lit panes, not openings: there is nothing outside.

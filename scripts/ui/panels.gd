@@ -60,8 +60,9 @@ static func controls_panel() -> Control:
 	for row in [
 		["Mouse", "Look around"], ["W A S D / arrows", "Walk"], ["Shift", "Hurry (costs more Energy)"],
 		["E  or  left click", "Use what the crosshair is on / pick it up / stop an activity"],
-		["Left click", "Eat, drink or squeeze what you are holding"], ["Right click", "Put it down where you are looking"], ["Q", "Throw it"],
-		["1 - 9", "Pick an option or an answer"], ["Tab", "Phone: answer chats and calls from anywhere"],
+		["Left click", "Eat, drink or use what you are holding"], ["Right click", "Put it down where you are looking"], ["Q", "Throw it"],
+		["R", "Pocket what you are holding / take the next thing out"], ["1 - 8  or  wheel", "Take something out of a pocket"],
+		["1 - 9", "Pick an option or an answer (when a list is open)"], ["Tab", "Phone: answer chats and calls from anywhere"],
 		["Alt (hold)", "Free the mouse pointer"], ["Esc", "Leave the desk / close / pause"],
 	]:
 		g.add_child(UI.pill(str(row[0]), UI.ACCENT, 13))
@@ -78,6 +79,7 @@ static func how_to_panel() -> Control:
 		["spark", UI.BLUE, "Productivity Illusion", "How busy you LOOK. Feed it with fake updates, fake reports and emoji. High Illusion makes Suspicion fade."],
 		["moon", UI.TEAL, "Paid slacking", "Surviving is a pass. Your grade is the hours you spent on the sofa, the console and the bed between 09:00 and 17:00."],
 		["bolt", UI.GREEN, "Junk food", "It turns up around the flat every morning. Pick it up, carry it about, eat it a bite at a time for Energy. You can only eat so much at once, and the wrappers belong in a bin."],
+		["coin", UI.ACCENT, "The town", "Your front door opens onto a street: three shops, a coffee cart, a park. Buy things by looking at them. While you are out your status says Away, and a colleague who sees you during work hours may tell your manager. Lunch and evenings are safe."],
 	]:
 		var h := UI.hbox(10)
 		h.add_child(UI.icon(str(row[0]), 26, row[1]))

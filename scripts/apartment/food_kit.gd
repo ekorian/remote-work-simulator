@@ -36,10 +36,11 @@ const MODELS := [
 	"cone", "ice_tub", "popsicle", "pudding",
 	"chips", "popcorn", "nachos", "cereal", "onion_rings",
 	"pizza_slice", "pizza_box", "burger", "hot_dog", "fries", "nuggets", "taco", "burrito", "toastie", "drumsticks", "corn_dog", "noodles", "pancakes", "waffle",
-	"soda_can", "energy_can", "soda_cup", "milkshake", "choc_milk",
+	"soda_can", "energy_can", "soda_cup", "milkshake", "choc_milk", "coffee_cup",
 ]
 const TRASH := ["trash_wrapper", "trash_can", "trash_cup", "trash_box", "trash_bag", "trash_stick", "trash_pizza_box"]
-const TOYS := ["stress_ball", "rubber_duck", "paper_ball"]
+const TOYS := ["stress_ball", "rubber_duck", "paper_ball", "basketball", "book", "gnome", "cactus", "trophy", "teddy", "snow_globe",
+	"traffic_cone", "flowers", "newspaper", "scratch_card"]
 
 
 static func has(model: String) -> bool:
@@ -98,6 +99,18 @@ static func build(model: String, parent: Node3D, tint: Color = Color.WHITE) -> D
 		"stress_ball": _stress_ball(n, tint, out)
 		"rubber_duck": _rubber_duck(n, out)
 		"paper_ball": _crumple(n, PAPER, out, 0.045)
+		"coffee_cup": _coffee_cup(n, out)
+		"basketball": _basketball(n, out)
+		"book": _book(n, out)
+		"gnome": _gnome(n, out)
+		"cactus": _cactus(n, out)
+		"trophy": _trophy(n, out)
+		"teddy": _teddy(n, out)
+		"snow_globe": _snow_globe(n, out)
+		"traffic_cone": _traffic_cone(n, out)
+		"flowers": _flowers(n, out)
+		"newspaper": _newspaper(n, out)
+		"scratch_card": _scratch_card(n, out)
 		_:
 			Kit.box(n, Vector3(0.08, 0.08, 0.08), Vector3(0, 0.04, 0), Color("ff00ff"))
 	return out
@@ -683,3 +696,138 @@ static func _rubber_duck(n: Node3D, out: Dictionary) -> void:
 		Kit.ball(b, 0.0045, Vector3(0.011 * s, 0.046, 0.04), Color("2f2c3e"), 5)
 	out.body = b
 	out.size = Vector3(0.08, 0.1, 0.11)
+
+
+# --- more things to carry about -------------------------------------------------
+
+static func _coffee_cup(n: Node3D, out: Dictionary) -> void:
+	Kit.cyl(n, 0.03, 0.105, Vector3(0, 0.0525, 0), PAPER, 14, 0.04)
+	Kit.cyl(n, 0.036, 0.045, Vector3(0, 0.06, 0), Color("b98a5a"), 14, 0.039)            # sleeve
+	Kit.cyl(n, 0.043, 0.012, Vector3(0, 0.111, 0), Color("3a2a22"), 14)
+	Kit.cyl(n, 0.03, 0.008, Vector3(0, 0.12, 0), Color("3a2a22"), 12)
+	Kit.box(n, Vector3(0.012, 0.004, 0.008), Vector3(0, 0.125, 0.018), PAPER)
+	out.size = Vector3(0.09, 0.13, 0.09)
+
+
+static func _basketball(n: Node3D, out: Dictionary) -> void:
+	var b := Kit.node(n, Vector3(0, 0.12, 0))
+	Kit.ball(b, 0.12, Vector3.ZERO, Color("e8762b"), 16)
+	for rot in [Vector3.ZERO, Vector3(PI / 2.0, 0, 0), Vector3(0, 0, PI / 2.0)]:
+		var seam := Kit.torus(b, 0.1205, 0.004, Vector3.ZERO, Color("2f2c3e"), 20, 4)
+		seam.rotation = rot
+	out.size = Vector3(0.24, 0.24, 0.24)
+
+
+static func _book(n: Node3D, out: Dictionary) -> void:
+	Kit.box(n, Vector3(0.13, 0.028, 0.19), Vector3(0, 0.014, 0), Color("d93a4a"))
+	Kit.box(n, Vector3(0.122, 0.022, 0.184), Vector3(0.006, 0.014, 0), PAPER)
+	Kit.box(n, Vector3(0.132, 0.003, 0.192), Vector3(0, 0.029, 0), Color("d93a4a"))
+	Kit.box(n, Vector3(0.09, 0.002, 0.03), Vector3(0, 0.031, -0.05), MUSTARD)
+	Kit.box(n, Vector3(0.07, 0.002, 0.012), Vector3(0, 0.031, 0.01), PAPER)
+	var arrow := Kit.wedge(n, Vector3(0.05, 0.002, 0.05), Vector3(0, 0.031, 0.06), MUSTARD)
+	arrow.rotation.y = PI
+	out.size = Vector3(0.135, 0.034, 0.195)
+
+
+static func _gnome(n: Node3D, out: Dictionary) -> void:
+	Kit.cyl(n, 0.07, 0.03, Vector3(0, 0.015, 0), Color("5a7a3a"), 10)
+	Kit.cyl(n, 0.065, 0.13, Vector3(0, 0.095, 0), Color("3b6fd9"), 10, 0.055)
+	Kit.box(n, Vector3(0.13, 0.02, 0.012), Vector3(0, 0.085, 0.058), Color("2f2c3e"))
+	Kit.ball(n, 0.05, Vector3(0, 0.19, 0), Color("f3c19c"), 10)
+	var beard := Kit.cone(n, 0.05, 0.1, Vector3(0, 0.15, 0.03), PAPER, 8)
+	beard.rotation.x = PI
+	Kit.ball(n, 0.014, Vector3(0, 0.185, 0.05), Color("e89a8a"), 6)
+	Kit.cone(n, 0.058, 0.15, Vector3(0, 0.295, 0), TOMATO, 10)
+	for s in [-1.0, 1.0]:
+		Kit.ball(n, 0.007, Vector3(0.02 * s, 0.2, 0.045), Color("2f2c3e"), 5)
+	out.size = Vector3(0.15, 0.37, 0.15)
+
+
+static func _cactus(n: Node3D, out: Dictionary) -> void:
+	Kit.cyl(n, 0.045, 0.06, Vector3(0, 0.03, 0), Color("d98a5f"), 10, 0.055)
+	Kit.cyl(n, 0.05, 0.008, Vector3(0, 0.062, 0), Color("6b4a2f"), 10)
+	Kit.capsule(n, 0.03, 0.13, Vector3(0, 0.125, 0), Color("4fae5a"), 8)
+	var arm := Kit.capsule(n, 0.016, 0.06, Vector3(0.04, 0.13, 0), Color("4fae5a"), 6)
+	arm.rotation.z = -0.9
+	Kit.capsule(n, 0.015, 0.05, Vector3(0.06, 0.16, 0), Color("4fae5a"), 6)
+	Kit.ball(n, 0.014, Vector3(0, 0.195, 0), Color("ff7eb6"), 6)
+	out.size = Vector3(0.14, 0.21, 0.11)
+
+
+static func _trophy(n: Node3D, out: Dictionary) -> void:
+	var gold := Color("f2c230")
+	Kit.box(n, Vector3(0.09, 0.03, 0.09), Vector3(0, 0.015, 0), CHOC_DARK)
+	Kit.box(n, Vector3(0.06, 0.012, 0.002), Vector3(0, 0.016, 0.046), gold)
+	Kit.cyl(n, 0.012, 0.05, Vector3(0, 0.055, 0), gold, 8)
+	Kit.cyl(n, 0.02, 0.07, Vector3(0, 0.115, 0), gold, 12, 0.045)
+	for s in [-1.0, 1.0]:
+		var handle := Kit.torus(n, 0.022, 0.005, Vector3(0.05 * s, 0.118, 0), gold, 10, 5)
+		handle.rotation.x = PI / 2.0
+	Kit.ball(n, 0.012, Vector3(0, 0.158, 0), gold, 8)
+	out.size = Vector3(0.15, 0.17, 0.09)
+
+
+static func _teddy(n: Node3D, out: Dictionary) -> void:
+	var fur := Color("b9804a")
+	var b := Kit.node(n)
+	var belly := Kit.ball(b, 0.075, Vector3(0, 0.085, 0), fur, 10)
+	belly.scale = Vector3(1.0, 1.1, 0.9)
+	Kit.ball(b, 0.04, Vector3(0, 0.085, 0.045), fur.lightened(0.3), 8)
+	Kit.ball(b, 0.058, Vector3(0, 0.2, 0), fur, 10)
+	Kit.ball(b, 0.026, Vector3(0, 0.185, 0.045), fur.lightened(0.3), 8)
+	Kit.ball(b, 0.009, Vector3(0, 0.192, 0.068), Color("2f2c3e"), 5)
+	for s in [-1.0, 1.0]:
+		Kit.ball(b, 0.022, Vector3(0.045 * s, 0.25, 0), fur, 8)
+		Kit.ball(b, 0.007, Vector3(0.022 * s, 0.215, 0.05), Color("2f2c3e"), 5)
+		Kit.capsule(b, 0.024, 0.09, Vector3(0.085 * s, 0.11, 0.01), fur, 8).rotation.z = 0.7 * s
+		Kit.capsule(b, 0.028, 0.08, Vector3(0.045 * s, 0.025, 0.045), fur, 8).rotation.x = PI / 2.0
+	out.body = b
+	out.size = Vector3(0.22, 0.28, 0.16)
+
+
+static func _snow_globe(n: Node3D, out: Dictionary) -> void:
+	Kit.cyl(n, 0.05, 0.03, Vector3(0, 0.015, 0), CHOC, 12, 0.042)
+	Kit.box(n, Vector3(0.03, 0.035, 0.03), Vector3(0, 0.05, 0), Color("9aa6ba"))
+	Kit.wedge(n, Vector3(0.04, 0.03, 0.02), Vector3(0, 0.074, 0), TOMATO).rotation.x = 0.0
+	for i in 6:
+		Kit.ball(n, 0.004, Vector3(_jit(i, 40.0) * 0.03, 0.05 + absf(_jit(i, 41.0)) * 0.05, _jit(i, 42.0) * 0.03), PAPER, 4)
+	Kit.ball(n, 0.05, Vector3(0, 0.07, 0), Color(0.75, 0.9, 1.0, 0.35), 14)
+	out.size = Vector3(0.1, 0.125, 0.1)
+
+
+static func _traffic_cone(n: Node3D, out: Dictionary) -> void:
+	Kit.box(n, Vector3(0.3, 0.03, 0.3), Vector3(0, 0.015, 0), Color("ff7a1a"))
+	Kit.cyl(n, 0.11, 0.42, Vector3(0, 0.24, 0), Color("ff7a1a"), 12, 0.025)
+	Kit.cyl(n, 0.086, 0.07, Vector3(0, 0.2, 0), PAPER, 12, 0.07)
+	Kit.cyl(n, 0.056, 0.06, Vector3(0, 0.33, 0), PAPER, 12, 0.043)
+	out.size = Vector3(0.3, 0.46, 0.3)
+
+
+static func _flowers(n: Node3D, out: Dictionary) -> void:
+	var wrap := Kit.cone(n, 0.06, 0.2, Vector3(0, 0.1, 0), Color("f6e3a1"), 8)
+	wrap.rotation.x = PI
+	Kit.torus(n, 0.02, 0.006, Vector3(0, 0.07, 0), STRAW, 8, 4)
+	for i in 6:
+		var p := _ring(6, 0.035, i)
+		Kit.cyl(n, 0.004, 0.08, Vector3(p.x * 0.6, 0.2, p.z * 0.6), LETTUCE.darkened(0.2), 4)
+		Kit.ball(n, 0.022, Vector3(p.x, 0.245 + absf(_jit(i, 43.0)) * 0.02, p.z), SPRINKLES[i % 4], 7)
+		Kit.ball(n, 0.008, Vector3(p.x, 0.262 + absf(_jit(i, 43.0)) * 0.02, p.z), MUSTARD, 5)
+	Kit.ball(n, 0.026, Vector3(0, 0.27, 0), Color("ff7eb6"), 7)
+	out.size = Vector3(0.14, 0.3, 0.14)
+
+
+static func _newspaper(n: Node3D, out: Dictionary) -> void:
+	Kit.box(n, Vector3(0.2, 0.02, 0.28), Vector3(0, 0.01, 0), Color("ece6d6"))
+	Kit.box(n, Vector3(0.17, 0.002, 0.04), Vector3(0, 0.021, -0.1), Color("2f2c3e"))
+	Kit.box(n, Vector3(0.08, 0.002, 0.07), Vector3(-0.045, 0.021, -0.03), Color("9aa6ba"))
+	for i in 5:
+		Kit.box(n, Vector3(0.075 if i < 3 else 0.17, 0.002, 0.008), Vector3(0.045 if i < 3 else 0.0, 0.021, -0.055 + i * 0.03 + (0.02 if i >= 3 else 0.0)), Color("8a8494"))
+	out.size = Vector3(0.2, 0.024, 0.28)
+
+
+static func _scratch_card(n: Node3D, out: Dictionary) -> void:
+	Kit.box(n, Vector3(0.07, 0.003, 0.11), Vector3(0, 0.0015, 0), MUSTARD)
+	Kit.box(n, Vector3(0.06, 0.004, 0.03), Vector3(0, 0.002, -0.032), TOMATO)
+	for i in 3:
+		Kit.cyl(n, 0.009, 0.005, Vector3(-0.02 + i * 0.02, 0.002, 0.02), FOIL, 8)
+	out.size = Vector3(0.07, 0.006, 0.11)

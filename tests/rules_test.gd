@@ -30,6 +30,7 @@ func _ready() -> void:
 	_colleague_favours()
 	_colleague_calls()
 	_junk_food()
+	_town()
 	_economy()
 	_save_load()
 	_day_flow()
@@ -1555,7 +1556,7 @@ func _junk_food() -> void:
 			food_n += 1
 			t.check(str(it.spot) in Home.MORNING_SPOTS and not spots.has(str(it.spot)), "'%s' has a spot to itself (%s)" % [h.item_name(it), str(it.spot)])
 			spots[str(it.spot)] = true
-	t.check(food_n == Home.MORNING_ITEMS and toys == Home.TOYS.size(), "Monday starts with %d things to eat and %d to fidget with (%d, %d)" % [Home.MORNING_ITEMS, Home.TOYS.size(), food_n, toys])
+	t.check(food_n == Home.MORNING_ITEMS and toys == Home.TOYS.size() + Home.TOWN_SPOTS.size(), "Monday starts with %d things to eat and %d other objects (%d, %d)" % [Home.MORNING_ITEMS, Home.TOYS.size() + Home.TOWN_SPOTS.size(), food_n, toys])
 	# Eating.
 	var it := h.add_item("burger", "desk")
 	t.check(h.item_name(it) == "Cheeseburger" and h.item_model(it) == "burger" and int(it.bites) == 4, "a burger is four bites")
@@ -1720,6 +1721,203 @@ func _junk_food() -> void:
 	t.check(h.items.size() == int(snap.n) and not back.is_empty() and int(back.bites) == 3 and h.held == str(snap.id), "items, bites and what you were holding are restored")
 	t.near(h.fullness(), float(snap.full), "and so is your stomach")
 	t.check(typeof(back.bites) == TYPE_INT and (back.at as Array).size() == 7, "item data keeps its types")
+	Game.saves.delete("slot3")
+	Game.saves.enabled = false
+
+
+# ---------------------------------------------------------------------------
+# The town: pockets, shops, objects, being seen
+# ---------------------------------------------------------------------------
+
+func _town() -> void:
+	t.section("town: pockets, shops and people")
+	var h := Game.home
+	var s := Game.social
+	var n := Game.npcs
+	for id in Home.PROPS:
+		var p: Dictionary = Home.PROPS[id]
+		t.check(FoodKit.has(str(id)) and str(id) in FoodKit.TOYS, "object '%s' has a 3D model" % str(id))
+		t.check(str(p.name) != "" and str(p.blurb) != "", "object '%s' has a name and a line" % str(id))
+		t.check(str(p.use) in ["", "squeeze", "squeak", "shake", "read", "scratch"], "object '%s' has a known use" % str(id))
+	for shop in Home.SHOPS:
+		var d: Dictionary = Home.SHOPS[shop]
+		t.check(Home.THINGS.has(str(shop)), "shop '%s' is a place in town" % str(shop))
+		t.check(str(d.lines) == "" or not Db.lines(str(d.lines)).is_empty(), "shop '%s' has somebody to talk to" % str(shop))
+		for extra in d.extra:
+			t.check(h.price_of(str(extra)) > 0, "shop '%s' sells '%s' for money" % [str(shop), str(extra)])
+	for spot in Home.TOWN_SPOTS:
+		t.check(Home.PROPS.has(str(Home.TOWN_SPOTS[spot])), "the thing lying at '%s' exists" % str(spot))
+	for def in Town.PEOPLE:
+		t.check(str(def.get("npc", "")) == "" or Db.npcs.has(str(def.npc)), "'%s' in town is somebody we know" % str(def.id))
+		t.check(def.has("at") or (def.get("path", []) as Array).size() >= 2, "'%s' has somewhere to be" % str(def.id))
+		t.check(str(def.get("lines", "")) == "" or not Db.lines(str(def.lines)).is_empty(), "'%s' has something to say" % str(def.id))
+		t.check(str(def.get("shop", "")) == "" or Home.SHOPS.has(str(def.shop)), "'%s' works somewhere real" % str(def.id))
+	var colleagues_out := 0
+	for def in Town.PEOPLE:
+		if s.is_colleague(str(def.get("npc", ""))):
+			colleagues_out += 1
+			t.check(not s.lines_for(str(def.npc), "town_" + str(def.npc)).is_empty(), "%s has something to say in the street" % str(def.npc))
+	t.check(colleagues_out >= 3 and Town.PEOPLE.size() >= 10, "the street has people in it (%d, %d of them colleagues)" % [Town.PEOPLE.size(), colleagues_out])
+	# Pockets.
+	t.run("survivor", 501)
+	t.at_work(600)
+	t.check(h.pockets.is_empty() and h.carried().is_empty(), "you start with empty pockets")
+	var a := h.add_item("donut", "")
+	var b := h.add_item("soda_can", "")
+	h.hold(str(a.id))
+	t.check(h.hold(str(b.id)) and h.held == str(b.id) and h.pockets == [str(a.id)], "picking up a second thing pockets the first")
+	t.check(h.carried().size() == 2, "both are on you")
+	t.check(h.stow(str(b.id)) and h.held == "" and h.pockets.size() == 2, "R puts away what is in your hand")
+	t.check(h.draw_slot(0) and h.held == str(a.id) and h.pockets == [str(b.id)], "a number key takes it back out")
+	t.check(h.cycle(1) and h.held == str(b.id) and h.pockets == [str(a.id)], "the wheel swaps hand and pocket")
+	var cone := h.add_item("traffic_cone", "")
+	t.check(h.fits_pocket(cone) != "" and not h.stow(str(cone.id)), "a traffic cone does not fit in a pocket")
+	h.hold(str(cone.id))
+	t.check(not h.hold(str(a.id)) and h.held == str(cone.id), "so your hand stays full until you put it down")
+	h.release()
+	for i in Home.POCKETS + 3:
+		h.stow(str(h.add_item("cookie", "").id))
+	t.check(h.pockets.size() == Home.POCKETS, "pockets hold %d things" % Home.POCKETS)
+	var eaten := str(h.pockets[0])
+	h.draw(eaten)
+	for bite in 3:
+		h.things.fullness = 0.0
+		h.eat(eaten)
+	t.check(not eaten in h.pockets and h.held == "", "eating something takes it off you")
+	for i in 60:
+		h.add_item("cookie", "", true)
+	var kept := true
+	for pid in h.pockets:
+		if h.item(str(pid)).is_empty():
+			kept = false
+	t.check(kept and not h.item(str(cone.id)).is_empty(), "clutter never eats what is in your pockets, or an ornament")
+	# Shops.
+	t.run("survivor", 502)
+	t.at_work(700)
+	for shop in Home.SHOPS:
+		var stock := h.shop_stock(str(shop))
+		t.check(stock.size() >= 3 and stock.size() <= int(Home.SHOPS[shop].shelf), "'%s' has things on the shelf (%d)" % [str(shop), stock.size()])
+		t.check(stock == h.shop_stock(str(shop)), "'%s' sells the same things all day" % str(shop))
+		for what in stock:
+			t.check(h.price_of(str(what)) > 0 and (Db.foods.has(str(what)) or Home.PROPS.has(str(what))), "'%s' sells a real, priced '%s'" % [str(shop), str(what)])
+		t.check(not h.options(str(shop)).is_empty(), "'%s' can be used at the till" % str(shop))
+	var monday := h.shop_stock("mart")
+	Game.time.day = 1
+	t.check(h.shop_stock("mart") != monday, "tomorrow's shelf is different")
+	Game.time.day = 0
+	Game.economy.money = 20
+	var what0 := str(h.shop_stock("diner")[0])
+	var cost := h.price_of(what0)
+	var got := h.buy("diner", what0)
+	t.check(not got.is_empty() and h.held == str(got.id) and Game.economy.money == 20 - cost, "buying costs money and puts it in your hand")
+	var second := h.buy("diner", what0)
+	t.check(not second.is_empty() and h.held == str(second.id) and str(got.id) in h.pockets, "buying again pockets the first one")
+	Game.economy.money = 0
+	t.check(h.buy("diner", what0).is_empty(), "no money, no burger")
+	Game.economy.money = 50
+	t.check(h.buy("diner", "gnome").is_empty(), "a shop only sells what is on its shelf")
+	t.at_work(200)
+	t.check(not h.shop_open("diner") and h.buy("diner", what0).is_empty() and h.shop_open("vending"), "shops keep hours; the vending machine does not")
+	t.at_work(700)
+	var lost := 0
+	for i in 60:
+		Game.economy.money = 50
+		h.held = ""
+		h.pockets = []
+		if h.buy("vending", "soda_can").is_empty():
+			lost += 1
+	t.check(lost >= 1 and lost <= 22, "the vending machine sometimes keeps your money (%d of 60)" % lost)
+	# What the objects do.
+	t.run("survivor", 503)
+	t.at_work(600)
+	var paper := h.add_item("newspaper", "")
+	t.check(h.fidget(str(paper.id)) and Game.stats.has_buff("inspired"), "reading the paper gives you an idea for an excuse")
+	var book := h.add_item("book", "")
+	h.fidget(str(book.id))
+	t.check(not Game.stats.has_buff("jargon"), "one read a day")
+	var won := 0
+	var spent := 0
+	for i in 200:
+		var card := h.add_item("scratch_card", "")
+		var before := Game.economy.money
+		h.fidget(str(card.id))
+		won += Game.economy.money - before
+		spent += h.price_of("scratch_card")
+		t.check(h.item(str(card.id)).is_empty(), "a scratched card is used up") if i == 0 else null
+	t.check(won > 0 and won < spent, "scratch cards pay out, but less than they cost ($%d back on $%d)" % [won, spent])
+	var gnome := h.add_item("gnome", "")
+	t.check(not h.fidget(str(gnome.id)) and not h.bin(str(gnome.id)), "a gnome just stands there, and cannot be binned")
+	var base := Game.deception.chance(60.0, ["video"], "martin")
+	h.decor = 3
+	t.check(Game.deception.chance(60.0, ["video"], "martin") > base, "ornaments on your desk help on camera")
+	h.decor = 0
+	Game.stats.values.health = 50.0
+	h.hoop()
+	t.check(Game.stats.get_value("health") > 50.0 and int(h.things.hoops) == 1, "a basket is good for you")
+	# Being seen.
+	t.run("survivor", 504)
+	t.at_work(640)
+	n.state.kevin.rel = 10.0
+	var susp := Game.stats.get_value("susp")
+	var told := 0
+	for i in 12:
+		s.used.erase("saw:kevin")
+		s.told = {}
+		Game.stats.values.susp = 20.0
+		if s.spotted("kevin"):
+			told += 1
+	t.check(told >= 8, "a Kevin who dislikes you reports seeing you in town (%d of 12)" % told)
+	Game.stats.values.susp = 20.0
+	s.told = {}
+	t.check(not s.spotted("kevin"), "once a day")
+	n.state.dave.rel = 70.0
+	t.check(not s.spotted("dave") and is_equal_approx(Game.stats.get_value("susp"), 20.0), "a friend never does")
+	t.check(not s.spotted("nana") and not s.spotted("clerk_mart"), "strangers do not know who you are")
+	susp = Game.stats.get_value("susp")
+	t.check(s.spotted("martin") and Game.stats.get_value("susp") > susp + 8.0, "the manager seeing you himself is worse")
+	t.check(not s.spotted("martin"), "also once a day")
+	for excuse in ["lunch", "evening", "cover"]:
+		t.run("survivor", 505)
+		n.state.kevin.rel = 10.0
+		match excuse:
+			"lunch":
+				t.at_work(730)
+			"evening":
+				t.at_work(1100)
+			"cover":
+				t.at_work(640)
+				Game.presence.grant_cover(30, "story")
+		t.check(s.excused_outside() and not s.spotted("kevin") and not s.spotted("martin"), "nobody minds seeing you out: %s" % excuse)
+	# Meeting and giving.
+	t.run("survivor", 506)
+	t.at_work(640)
+	var rel := n.relationship("brenda")
+	t.check(s.meet("brenda") != "" and n.relationship("brenda") > rel, "stopping to talk to a colleague in the street makes friends")
+	rel = n.relationship("brenda")
+	s.meet("brenda")
+	t.near(n.relationship("brenda"), rel, "once a day")
+	var flowers := h.add_item("flowers", "")
+	rel = n.relationship("brenda")
+	t.check(s.give("brenda", str(flowers.id)) and h.item(str(flowers.id)).is_empty() and n.relationship("brenda") > rel + 3.0, "flowers go down well")
+	var rubbish := h.add_item("burger", "", true)
+	t.check(not s.give("brenda", str(rubbish.id)) and not h.item(str(rubbish.id)).is_empty(), "a wrapper does not")
+	t.check(not s.give("martin", str(h.add_item("donut", "").id)), "you cannot bribe the manager with a donut")
+	# Time outside is counted.
+	h.outside = true
+	Game.time.advance(5)
+	t.check(int(Game.week.outside_min) == 5, "minutes out in town are counted")
+	# Saving.
+	Game.saves.enabled = true
+	t.run("survivor", 507)
+	t.at_work(600)
+	var keep1 := h.add_item("trophy", "")
+	var keep2 := h.add_item("donut", "")
+	h.hold(str(keep1.id))
+	h.hold(str(keep2.id))
+	t.check(Game.saves.save("slot3"), "save")
+	t.run("intern", 8)
+	t.check(Game.saves.load_game("slot3"), "load")
+	t.check(h.held == str(keep2.id) and h.pockets == [str(keep1.id)], "your hand and your pockets are restored")
 	Game.saves.delete("slot3")
 	Game.saves.enabled = false
 

@@ -16,3 +16,4 @@ fullness = 150.0
 blurb = "Eight slices of last night. A whole day's strategy."
 trash = "trash_pizza_box"
 trash_name = "Empty Pizza Box"
+price = 0

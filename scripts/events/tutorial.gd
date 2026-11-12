@@ -23,6 +23,7 @@ const DAYS := [
 		{"id": "enable", "title": "Switch it on", "text": "Use the Keyboard & Mouse on your work desk, or the ShadowIT app, to switch it ON. Your status stays green while you roam."},
 		{"id": "roam", "title": "Slack while it covers", "text": "With MouseMover running, go and do something better. Gadgets wear out: service them before they fail."},
 		{"id": "ally", "title": "Make an ally", "text": "Colleagues you leave hanging may tell {boss}. Ones who like you cover for you instead. Pick up when one calls, do one a favour, or open their chat in SynerTeams for small talk."},
+		{"id": "town", "title": "Go out", "text": "The front door is in the living room. There are shops across the road and a park at the end of it. Lunch (12:00 to 12:45) is the safe time: nobody minds seeing you out."},
 	],
 	[
 		{"id": "ledger", "title": "Read your Alibi Ledger", "text": "{boss} is getting suspicious and now checks your stories. Open ShadowIT on the work computer: the ledger lists every claim and what would expose it."},
@@ -49,6 +50,9 @@ const HINTS := {
 	"contradiction": "You were caught contradicting yourself. Whoever heard the story will want an explanation: answer them.",
 	"favor": "Someone owes you a favour. Spend it on a colleague in SynerTeams: a ticket taken off your hands, a meeting skipped, a good word.",
 	"fast": "Time fast-forwards during activities. Press E to stop early if something comes up.",
+	"outside": "You are out. At home your status says Away unless a gadget or a story covers for you, and colleagues about town may recognise you during work hours. Lunch (12:00 to 12:45) and evenings are safe.",
+	"spotted": "A colleague saw you in town during work hours and told your manager. Friends look the other way; lunch (12:00 to 12:45) and evenings are always safe.",
+	"pockets": "That went in a pocket. 1 to 8 or the mouse wheel takes things out again; R puts away what you are holding.",
 	"stuffed": "You are stuffed: you cannot eat any more for a while, and you walk slower until it settles.",
 	"rubbish": "That leaves rubbish. Carry it to the Kitchen Bin, or throw it (Q) at one. A flat full of rubbish costs Health every morning.",
 	"upgrade": "Gadgets can be upgraded at the Gaming PC: more reliable, less Heat, new abilities.",

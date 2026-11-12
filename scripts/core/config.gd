@@ -73,6 +73,7 @@ const KEYS := {
 	"move_down": [KEY_S, KEY_DOWN],
 	"interact": [KEY_E, KEY_F],
 	"throw": [KEY_Q],
+	"stow": [KEY_R],
 	"sprint": [KEY_SHIFT],
 	"phone": [KEY_TAB],
 	"pause": [KEY_ESCAPE],

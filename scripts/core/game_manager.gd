@@ -11,7 +11,7 @@ signal day_started(day: int)
 signal workday_ended(report: Dictionary)
 signal run_ended(result: Dictionary)
 
-const SAVE_VERSION := 4
+const SAVE_VERSION := 5
 
 # --- Systems -----------------------------------------------------------------
 var time: TimeManager
@@ -205,7 +205,7 @@ func _blank_stats() -> Dictionary:
 		"absent_min": 0, "salary": 0, "spent": 0,
 		"calls_taken": 0, "calls_dodged": 0, "colleagues_ignored": 0, "snitched": 0,
 		"favours_called": 0, "small_talk": 0, "gifts": 0, "tipoffs": 0, "tasks_lost": 0,
-		"junk_eaten": 0, "bites": 0, "binned": 0,
+		"junk_eaten": 0, "bites": 0, "binned": 0, "bought": 0, "outside_min": 0, "spotted": 0,
 	}
 
 

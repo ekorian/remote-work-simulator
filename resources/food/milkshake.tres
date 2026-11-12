@@ -16,3 +16,4 @@ fullness = 20.0
 blurb = "Too thick for the straw. You will persevere."
 trash = "trash_cup"
 trash_name = "Empty Cup"
+price = 6

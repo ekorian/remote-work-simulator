@@ -16,3 +16,4 @@ fullness = 12.0
 blurb = "A bucket with a straw."
 trash = "trash_cup"
 trash_name = "Empty Cup"
+price = 4

@@ -13,6 +13,7 @@ In Remote Work Simulator, productivity is the enemy.
 
 | | |
 | --- | --- |
+| ![The street](docs/screenshots/street.png) | ![Buying off the shelf, with pockets](docs/screenshots/shop_shelf.png) |
 | ![Holding a cheeseburger](docs/screenshots/holding.png) | ![The kitchen](docs/screenshots/kitchen.png) |
 | ![Every junk food model](docs/screenshots/junk_food.png) | ![The living room at night](docs/screenshots/night.png) |
 | ![Choosing an excuse](docs/screenshots/excuses.png) | ![The Alibi Ledger and gadgets](docs/screenshots/ledger.png) |
@@ -54,7 +55,9 @@ To open the project in the editor:
 | Left click | Eat, drink or squeeze what you are holding |
 | Right click | Put it down where you are looking |
 | Q | Throw it |
-| 1 to 9 | Pick an option or an answer |
+| R | Pocket what you are holding, or take the next thing out |
+| 1 to 8, mouse wheel | Take something out of a pocket |
+| 1 to 9 | Pick an option or an answer (when a list is open) |
 | Tab | Phone: answer chats and calls from anywhere |
 | Alt (hold) | Free the mouse pointer to click things on screen |
 | Esc | Leave the desk / close / pause |
@@ -85,7 +88,22 @@ has a story told in calls over the week, and each has a voice. From Tuesday,
 so do the unknown numbers: a robocall about your chair's warranty, somebody's
 grandmother, a fax machine.
 
-**Junk food** turns up around the flat every morning: 38 kinds, from a glazed
+**The town** is outside your front door: a street with a corner shop, a
+take-away and a junk shop, a coffee cart, a vending machine and a park with a
+basketball hoop. Goods sit on the shelves with price tags; look at one and buy
+it. Neighbours walk about and will talk. So do some of your colleagues, who are
+not at their desks either: Dave holds his "vendor syncs" on the park bench.
+During work hours a colleague who sees you may tell Martin, and Martin himself
+gets a coffee at half ten. Lunch and evenings are safe.
+
+**Pockets** hold eight things. Picking up a second item pockets the first; R
+puts away what you hold; 1 to 8 or the mouse wheel takes things out. Besides
+food there are objects to buy, find and carry: a garden gnome, a teddy, a
+trophy, a cactus, a snow globe, flowers (give them to a colleague), a
+newspaper, scratch cards, a traffic cone. Ornaments left on your desk make you
+look more employed on camera.
+
+**Junk food** turns up around the flat every morning: 39 kinds, from a glazed
 donut to a bucket of drumsticks. Pick something up, carry it to the sofa or the
 desk, and eat it a bite at a time for Energy without leaving your chair. Your
 stomach has a limit, the microwave makes hot things better, the fridge hands
@@ -131,7 +149,9 @@ What the tests cover:
   colleagues (friendship tiers, telling on you, every favour, every scripted
   and strange call played to the end three ways), junk food (every kind has a
   model of its own, bites, fullness, leftovers, the bin, the fridge, the
-  microwave, pizza), the economy, and a save/load round trip.
+  microwave, pizza), the town (pockets, shop stock and hours, buying, what
+  each object does, being seen and by whom, giving things away), the economy,
+  and a save/load round trip.
 - `tests/run_test`: bots (idle, honest worker, skilled slacker, and a slacker
   who ignores every colleague) play whole weeks with invariants checked every
   simulated minute. It fails if a run softlocks, if standing still can win, if
@@ -141,7 +161,9 @@ What the tests cover:
   object with physics and collisions on; checks that the crosshair finds each
   one, that the flat is closed with open doorways, that every seat puts your
   eyes somewhere sensible, and that items can be picked up, eaten, put down,
-  thrown and binned.
+  thrown and binned. It also walks out of the front door and into every shop,
+  checks the map is closed, finds and buys goods on the shelves, uses the
+  pockets, and talks to people in the street.
 - `tools/shots.sh <scene>` renders scripted screenshots offscreen (needs `xvfb`);
   `tools/shots.sh autoplay` has a bot play a week through the real UI.
   `tests/harness/food_sheet.tscn` renders every junk-food model on one sheet.
@@ -167,6 +189,7 @@ scripts/events/      EventDirector, Dialogue, Tutorial
 scripts/npcs/        NPCManager, Social (colleagues)
 scripts/apartment/   World, Apartment, Interactable, Holdable, Kit, FoodKit
 scripts/player/      Player (first person), Character (the body in the menus)
+scripts/town/        Town (street, shops, park), TownPerson (everybody in it)
 scripts/data/        Resource classes for authored content
 scripts/ui/          HUD, the SynerOS desktop, dialogs and menus
 resources/           all content as Godot Resources: events, dialogue, gadgets,

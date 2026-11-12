@@ -1,0 +1,65 @@
+[gd_resource type="Resource" script_class="TextBankDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/text_bank_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = "town"
+lines = {
+  "town_lines": [
+    "Lovely day to not be in an office.",
+    "You work from home? Must be nice. Is it nice?",
+    "They're digging up the road again. Third time this year.",
+    "My nephew does computers too. He seems tired.",
+    "Have you tried the burgers at Patty's? Don't.",
+    "I've lived here forty years. That vending machine has never worked properly.",
+    "Shouldn't you be at work? ...Not my business.",
+    "The park bench is taken. It's always taken. By the same man.",
+    "Nice weather for it. Whatever it is you do."
+  ],
+  "clerk_mart": [
+    "Everything on the shelf is for sale. Look at it and say so.",
+    "We close at half eleven. The crisps never close.",
+    "Cash only. The card machine is 'thinking'."
+  ],
+  "clerk_diner": [
+    "It's all hot. Most of it was hot today.",
+    "Burger, dog, taco: point at it.",
+    "No refunds on the corn dogs. You know why."
+  ],
+  "clerk_odds": [
+    "Everything in here belonged to somebody. Don't ask who.",
+    "The gnome is not haunted. I'd have charged more.",
+    "You break it, you bought it. You look at it too long, you bought it."
+  ],
+  "clerk_cart": [
+    "One coffee, coming up. It's the only thing I make.",
+    "Oat, soy or regret?",
+    "Your colleague with the big handbag was just here. She said to say hi. And several other things."
+  ],
+  "town_dave": [
+    "Shh. I'm in a vendor sync. Sit down, the vendor's lovely.",
+    "You found the office. Welcome to the office.",
+    "If Martin rings, I'm 'between sessions'."
+  ],
+  "town_kevin": [
+    "Oh! Hey! Just getting my steps in. 14,000 a day. You?",
+    "Fancy seeing you... outside. During... what time is it?",
+    "I'm doing a walking stand-up. With myself."
+  ],
+  "town_brenda": [
+    "Sweetie! You LEAVE the house? I'm telling no one. I'm telling a few people.",
+    "Sit, sit. You will not believe what Denise did.",
+    "You look pale. Is it the job? It's always the job."
+  ],
+  "town_priya": [
+    "Energy drinks. Four. Don't look at me like that.",
+    "I left my desk. It's dark out. That counts as a day off.",
+    "If you see Kevin, I'm not here."
+  ],
+  "town_martin": ["...Shouldn't one of us be at a desk right now?"],
+  "snitch_spotted": [
+    "{who} tells me they saw you out in town. At eleven in the morning. Explain the town to me.",
+    "{who} sent me a photo. You, outside, holding what looks like a corn dog. During core hours."
+  ]
+}

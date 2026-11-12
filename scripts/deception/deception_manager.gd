@@ -178,6 +178,7 @@ func chance(base: float, tags: Array = [], listener: String = "") -> float:
 				c -= 10.0
 		if Game.home.desk_staged():
 			c += 6.0
+		c += minf(float(Game.home.decor), 4.0)          # a desk with a trophy on it looks employed
 	if "favor" in tags:
 		c += float(Game.economy.favors) * 6.0
 	return clampf(c, 5.0, 95.0)

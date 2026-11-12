@@ -23,7 +23,9 @@ const TIERS := [
 	{"name": "Friendly", "at": 62.0, "snitch": 0.0, "gossip": 0.0, "color": Color("5ad1c8")},
 	{"name": "Partner in crime", "at": 80.0, "snitch": 0.0, "gossip": 0.0, "color": Color("5ad17a")},
 ]
-const SNITCH_SUSP := {"message": 5.0, "call": 6.0, "absence": 4.0}
+const SNITCH_SUSP := {"message": 5.0, "call": 6.0, "absence": 4.0, "spotted": 7.0}
+const BOSS_SAW_YOU := 12.0       ## suspicion when the manager himself sees you out in town
+const MEET_REL := 2.5            ## stopping to talk to a colleague in the street
 const SNITCH_PER_DAY := 2        ## one colleague tells on you at most this often per day
 const FOLLOW_UP := 40.0          ## % chance the manager then asks you about it himself
 const WATCH_AFTER := 25          ## unexplained minutes before someone who dislikes you notices
@@ -176,13 +178,15 @@ func _tell_boss(id: String, how: String) -> void:
 		return
 	Game.npcs.irritate(boss, 3.0)
 	var what := "you've been away from your desk" if how == "absence" else ("you didn't pick up" if how == "call" else "you didn't answer")
+	if how == "spotted":
+		what = "they saw you out in town"
 	Bus.toast.emit("%s told %s %s." % [who, Game.npcs.boss_name(), what], "bad")
 	Bus.sfx.emit("bad")
-	Game.tutor.hint("snitch")
-	if how != "absence" and Game.chance(FOLLOW_UP * float(Game.diff().boss_check)):
+	Game.tutor.hint("spotted" if how == "spotted" else "snitch")
+	if how in ["message", "call"] and Game.chance(FOLLOW_UP * float(Game.diff().boss_check)):
 		Game.events.fire_later(Game.rng.randi_range(2, 5), "snitch_followup", {"who": id, "urgent": true})
 	else:
-		var line := line_for(id, "snitch_absence" if how == "absence" else "snitch")
+		var line := line_for(id, ("snitch_" + how) if how in ["absence", "spotted"] else "snitch")
 		if line != "":
 			Game.comms.say(boss, line)
 	snitched.emit(id, how)
@@ -437,6 +441,69 @@ func leverage(from: String) -> Dictionary:
 		if str(c.get("on", "")) == from:
 			return c
 	return {}
+
+
+# --- Out in town ----------------------------------------------------------------
+
+func excused_outside() -> bool:
+	## Nobody minds seeing you in the street at lunch, after hours, or while
+	## you are officially somewhere else.
+	return not Game.time.in_work_hours() or Game.presence.status == "lunch" or Game.presence.covered()
+
+
+func spotted(id: String) -> bool:
+	## A colleague saw you out in town. Returns true if the manager hears of it.
+	if not Game.time.running() or excused_outside():
+		return false
+	if id == Game.npcs.boss_id():
+		if int(used.get("saw:" + id, -1)) == Game.time.day:
+			return false
+		used["saw:" + id] = Game.time.day
+		Game.bump("spotted")
+		Game.stats.add("susp", BOSS_SAW_YOU, "%s saw you in town" % Game.npcs.boss_name())
+		if Game.time.running():
+			Game.npcs.irritate(id, 8.0)
+			Game.comms.say(id, "Was that you? Outside the coffee cart? At this hour? We will talk about this.")
+			Bus.toast.emit("%s saw you. In town. During work hours." % Game.npcs.boss_name(), "bad")
+			Bus.sfx.emit("alarm")
+		return true
+	if not is_colleague(id) or int(used.get("saw:" + id, -1)) == Game.time.day:
+		return false
+	used["saw:" + id] = Game.time.day
+	if int(told.get(id, 0)) >= SNITCH_PER_DAY or not Game.chance(snitch_chance(id)):
+		return false
+	Game.bump("spotted")
+	_tell_boss(id, "spotted")
+	return true
+
+
+func meet(id: String) -> String:
+	## Stop and talk to a colleague in the street. Returns what they say.
+	if not is_colleague(id):
+		return ""
+	if int(used.get("met:" + id, -1)) != Game.time.day:
+		used["met:" + id] = Game.time.day
+		Game.npcs.adjust(id, MEET_REL)
+	var line := line_for(id, "town_" + id)
+	return line if line != "" else line_for(id, "small_talk")
+
+
+func give(id: String, item_id: String) -> bool:
+	## Hand a colleague what you are holding. They like most things.
+	var it := Game.home.item(item_id)
+	if not is_colleague(id) or it.is_empty() or bool(it.get("trash", false)):
+		return false
+	var worth := float(Game.home.price_of(str(it.food))) * float(Game.home.prop(it).get("gift", 1.0))
+	var first := int(used.get("gave:" + id, -1)) != Game.time.day
+	used["gave:" + id] = Game.time.day
+	var label := Game.home.item_name(it)
+	Game.home.remove_item(item_id)
+	Game.npcs.adjust(id, clampf(worth * 0.45, 1.5, 9.0) if first else 1.0)
+	Game.npcs.irritate(id, -3.0)
+	Game.bump("gifts")
+	Bus.sfx.emit("good")
+	Bus.toast.emit("You gave %s the %s." % [Game.npcs.first_name(id), label.to_lower()], "good")
+	return true
 
 
 # --- Being nice on purpose ----------------------------------------------------

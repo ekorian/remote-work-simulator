@@ -35,6 +35,12 @@ var focused: Interactable          ## the object under the crosshair
 var focused_item: Holdable         ## the loose item under the crosshair
 var held: Holdable                 ## what is in your hand
 var bodies: Dictionary = {}        ## item id -> Holdable
+var people: Array = []             ## TownPerson: everybody out in the street
+var wares: Array = []              ## Area3D on the shop shelves: look at one to buy it
+var focused_person: TownPerson
+var focused_ware: Dictionary = {}  ## {shop, what} under the crosshair
+var _door := 0.0                   ## how far open the front door is (0..1)
+var _tick := 0.0
 var interactive := true            ## false in menus / while a UI overlay owns input
 var demo := false                  ## main-menu backdrop
 var demo_minute := 600.0
@@ -60,6 +66,12 @@ func _ready() -> void:
 		_ceiling_base.append((l as OmniLight3D).light_energy)
 	for area in apartment.bins:
 		(area as Area3D).body_entered.connect(_on_binned)
+	(apartment.parts["hoop_ring"] as Area3D).body_entered.connect(_on_hoop)
+	for i in Town.PEOPLE.size():
+		var person := TownPerson.new()
+		add_child(person)
+		person.setup(Town.PEOPLE[i], i)
+		people.append(person)
 	player.apartment = apartment
 	stage = Camera3D.new()
 	stage.fov = 46.0
@@ -109,6 +121,10 @@ func _environment() -> void:
 	# window side and casts no shadows (the ceiling lamps do that).
 	sun = DirectionalLight3D.new()
 	sun.shadow_enabled = false
+	sun.directional_shadow_max_distance = 60.0
+	sun.shadow_blur = 1.4
+	sun.shadow_bias = 0.05
+	sun.shadow_normal_bias = 1.4
 	add_child(sun)
 
 
@@ -232,6 +248,7 @@ func sync_from_state() -> void:
 	else:
 		place_player(Vector3(3.0, 0, -3.6), PI * 0.5)
 	_sync_items(true)
+	_stock_shelves()
 	if Game.activities.busy():
 		_on_activity_started(Game.activities.current)
 	elif Game.presence.at_desk:
@@ -260,6 +277,7 @@ func _on_day_started(_day: int) -> void:
 	if not Game.active:
 		return
 	player.body.set_look(Game.player, str(Game.home.outfit))
+	_stock_shelves()
 	if int(Game.time.day) > 0:
 		# Wake up next to the bed.
 		_using = null
@@ -284,6 +302,8 @@ func _sync_items(reset: bool = false) -> void:
 	var seen := {}
 	for it in Game.home.items:
 		var id := str(it.id)
+		if id in Game.home.pockets:
+			continue                    # in a pocket: nothing to see
 		seen[id] = true
 		var b: Holdable = bodies.get(id)
 		if b == null:
@@ -354,14 +374,109 @@ func _release_body(b: Holdable, velocity: Vector3, spin: Vector3 = Vector3.ZERO)
 
 
 func pick_up(b: Holdable) -> bool:
+	## Take a loose item. What you were holding goes in a pocket, or on the floor.
 	if b == null or not Game.active or b.carried:
 		return false
-	if held != null:
+	if held != null and Game.home.fits_pocket(Game.home.item(held.item_id)) != "":
 		put_down()
 	if not Game.home.hold(b.item_id):
 		return false
 	Bus.sfx.emit("pickup")
 	return true
+
+
+func stow_held() -> void:
+	## R: put what you are holding away, or take the next thing out.
+	if held != null:
+		Game.home.stow(held.item_id)
+	else:
+		Game.home.cycle(1)
+
+
+func _on_hoop(body: Node) -> void:
+	var b := body as Holdable
+	if b != null and not b.carried and b.model == "basketball" and b.linear_velocity.y < 0.0 and Game.active:
+		Game.home.hoop()
+
+
+func _stock_shelves() -> void:
+	## Put today's goods on the shop shelves. Each one can be bought by looking at it.
+	for w in wares:
+		(w as Node).queue_free()
+	wares.clear()
+	if not Game.active:
+		return
+	for shop in Home.SHOPS:
+		var slots: Array = apartment.parts.get("slots_" + str(shop), [])
+		var stock := Game.home.shop_stock(str(shop))
+		for i in mini(slots.size(), stock.size()):
+			var what := str(stock[i])
+			var slot: Dictionary = slots[i]
+			var holder := Kit.node(self, slot.pos)
+			holder.rotation_degrees.y = float(slot.yaw)
+			var tint: Color = Db.foods[what].tint if Db.foods.has(what) else Color("5ad1c8")
+			var model := str(Db.foods[what].model) if Db.foods.has(what) else what
+			var built := FoodKit.build(model, holder, tint)
+			var size: Vector3 = built.size
+			var fit := clampf(0.34 / maxf(maxf(size.x, size.z), size.y), 0.9, 2.2)
+			(built.root as Node3D).scale = Vector3.ONE * fit
+			var tag := Label3D.new()
+			tag.text = "$%d" % Game.home.price_of(what)
+			tag.font_size = 48
+			tag.pixel_size = 0.0026
+			tag.outline_size = 10
+			tag.modulate = Color("fff6e0")
+			tag.outline_modulate = Color("2f2c3e")
+			tag.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+			tag.no_depth_test = false
+			tag.position = Vector3(0, size.y * fit + 0.09, 0)
+			holder.add_child(tag)
+			var area := Area3D.new()
+			area.collision_layer = Interactable.PICK_LAYER
+			area.collision_mask = 0
+			area.monitoring = false
+			area.set_meta("ware", {"shop": str(shop), "what": what, "node": holder, "stand": slot.stand})
+			var cs := CollisionShape3D.new()
+			var shape := BoxShape3D.new()
+			shape.size = Vector3(0.5, 0.42, 0.5)
+			cs.shape = shape
+			cs.position = Vector3(0, 0.18, 0)
+			area.add_child(cs)
+			holder.add_child(area)
+			wares.append(holder)
+
+
+func talk_to(person: TownPerson) -> void:
+	## E on somebody: give them what you are holding if they would want it, else chat.
+	if person == null or not Game.active:
+		return
+	person.turn_to(player.global_position)
+	if held != null and person.npc != "" and Game.social.is_colleague(person.npc):
+		var it := Game.home.item(held.item_id)
+		if not bool(it.get("trash", false)) and Game.social.give(person.npc, held.item_id):
+			person.speak()
+			Bus.toast.emit("%s: \"For me? You shouldn't have. You should do it again.\"" % Game.npcs.first_name(person.npc), "good")
+			return
+	var line := person.speak()
+	var voice := Game.npcs.voice(person.npc) if person.npc != "" else ""
+	if voice != "":
+		Sfx.voice(voice)
+	else:
+		Bus.sfx.emit("talk")
+	Bus.toast.emit("%s: \"%s\"" % [person.title.get_slice(" ", 0) if person.npc != "" else person.title, Game.comms.fmt(line)], "info")
+
+
+func buy_ware(ware: Dictionary) -> bool:
+	if ware.is_empty() or not Game.active:
+		return false
+	var shop := str(ware.shop)
+	if not Game.home.shop_open(shop):
+		Bus.toast.emit("%s is closed." % str(Home.SHOPS[shop].name), "warn")
+		return false
+	if not Game.economy.can_afford(Game.home.price_of(str(ware.what))):
+		Bus.toast.emit("You can't afford that.", "warn")
+		return false
+	return not Game.home.buy(shop, str(ware.what)).is_empty()
 
 
 func _drop_point() -> Dictionary:
@@ -417,7 +532,7 @@ func use_held() -> void:
 	var it := Game.home.item(held.item_id)
 	if it.is_empty():
 		return
-	if Game.home.is_toy(it):
+	if Game.home.is_prop(it):
 		if Game.home.fidget(held.item_id):
 			player.bite()
 		return
@@ -458,7 +573,7 @@ func _on_binned(body: Node) -> void:
 func _look_hits() -> Dictionary:
 	## What the crosshair is on: {thing, item}. Loose items win over the
 	## furniture they are lying on; nothing is reachable through a wall.
-	var out := {"thing": null, "item": null}
+	var out := {"thing": null, "item": null, "person": null, "ware": {}}
 	var from := player.eye_position()
 	var to := from + player.aim() * REACH
 	var space := get_world_3d().direct_space_state
@@ -485,6 +600,14 @@ func _look_hits() -> Dictionary:
 			if is_instance_valid(b) and not b.carried:
 				out.item = b
 				break
+		elif area.has_meta("person") and out.person == null and out.thing == null:
+			var who: TownPerson = area.get_meta("person")
+			if who.visible:
+				out.person = who
+				break
+		elif area.has_meta("ware") and out.thing == null:
+			out.ware = area.get_meta("ware")
+			break
 		elif area.has_meta("thing") and out.thing == null:
 			out.thing = area.get_meta("thing")
 	return out
@@ -512,6 +635,10 @@ func press_use() -> void:
 		Game.activities.stop()
 	elif focused_item != null:
 		pick_up(focused_item)
+	elif focused_person != null:
+		talk_to(focused_person)
+	elif not focused_ware.is_empty():
+		buy_ware(focused_ware)
 	elif focused != null:
 		use_thing(focused)
 
@@ -660,6 +787,12 @@ func _unhandled_input(e: InputEvent) -> void:
 	elif e.is_action_pressed("throw"):
 		throw_held()
 		get_viewport().set_input_as_handled()
+	elif e.is_action_pressed("stow"):
+		stow_held()
+		get_viewport().set_input_as_handled()
+	elif e is InputEventKey and e.pressed and not e.echo and int(e.physical_keycode) >= KEY_1 and int(e.physical_keycode) <= KEY_8:
+		if Game.home.draw_slot(int(e.physical_keycode) - KEY_1):
+			get_viewport().set_input_as_handled()
 	elif e is InputEventMouseButton and e.pressed:
 		if Input.mouse_mode != Input.MOUSE_MODE_CAPTURED:
 			return                      # the click that takes the mouse back does nothing else
@@ -674,6 +807,9 @@ func _unhandled_input(e: InputEvent) -> void:
 		elif e.button_index == MOUSE_BUTTON_RIGHT:
 			put_down()
 			get_viewport().set_input_as_handled()
+		elif e.button_index == MOUSE_BUTTON_WHEEL_DOWN or e.button_index == MOUSE_BUTTON_WHEEL_UP:
+			Game.home.cycle(1 if e.button_index == MOUSE_BUTTON_WHEEL_DOWN else -1)
+			get_viewport().set_input_as_handled()
 
 
 func _process(delta: float) -> void:
@@ -683,6 +819,7 @@ func _process(delta: float) -> void:
 	_update_focus(live)
 	_update_sky(delta)
 	_update_props(delta, live)
+	_update_town(delta, live)
 	if view != "play":
 		# The menu camera drifts a little, so the room feels lived in.
 		var drift := Vector3(sin(_t * 0.23) * 0.12, sin(_t * 0.31) * 0.04, cos(_t * 0.19) * 0.1) if view == "menu" else Vector3.ZERO
@@ -702,6 +839,11 @@ func _update_focus(live: bool) -> void:
 			var hits := _look_hits()
 			want_item = hits.item
 			want = hits.thing if want_item == null else null
+	var hits_now: Dictionary = _look_hits() if (want != null or want_item != null or (live and interactive and not Game.paused and not Game.activities.busy() and not _at_desktop and not player.seated)) else {}
+	focused_person = hits_now.get("person") if want_item == null else null
+	focused_ware = hits_now.get("ware", {}) if want_item == null and focused_person == null else {}
+	if focused_person != null or not focused_ware.is_empty():
+		want = null
 	if want_item != focused_item:
 		if focused_item != null and is_instance_valid(focused_item):
 			focused_item.set_highlight(false)
@@ -715,6 +857,49 @@ func _update_focus(live: bool) -> void:
 		focus_changed.emit(focused)
 		if focused != null:
 			focused.set_highlight(true)
+
+
+func _update_town(delta: float, live: bool) -> void:
+	## The front door, who is about, and who has seen you.
+	var p := player.global_position
+	var near_door := absf(p.x - Apartment.DOOR_X) < 1.3 and absf(p.z - Apartment.Z1) < 2.0 and view == "play"
+	_door = move_toward(_door, 1.0 if near_door else 0.0, delta * 3.0)
+	(apartment.parts["front_door"] as Node3D).rotation.y = -_door * 1.75
+	(apartment.parts["front_door_shape"] as CollisionShape3D).disabled = _door > 0.25
+	var minute := Game.time.clock() if live else demo_minute
+	for person in people:
+		var who: TownPerson = person
+		var here := who.at_this_hour(minute) and (who.shop == "" or Game.home.shop_open(who.shop) or not Game.active)
+		who.around = here
+		who.visible = here
+	_tick += delta
+	if not live or _tick < 0.5:
+		return
+	_tick = 0.0
+	var outside := apartment.in_town(p)
+	Game.home.outside = outside
+	# Ornaments standing on the desk make you look employed on camera.
+	var desk: Vector3 = apartment.spots["desk"]
+	var n := 0
+	for id in bodies:
+		var b: Holdable = bodies[id]
+		if not b.carried and bool(Game.home.prop(Game.home.item(str(id))).get("decor", false)) and absf(b.global_position.z - desk.z) < 0.6 and absf(b.global_position.x - desk.x) < 2.2 and b.global_position.y > 0.6:
+			n += 1
+	Game.home.decor = n
+	if not outside or Game.paused:
+		return
+	for person in people:
+		var who: TownPerson = person
+		if who.npc == "" or not who.sees(p):
+			continue
+		# Sitting with a friend is a meeting, as far as anyone can prove.
+		if Game.social.is_colleague(who.npc) and Game.social.tier(who.npc) >= Social.Tier.FRIENDLY:
+			if who.sit and p.distance_to(who.global_position) < 4.0 and Game.time.in_work_hours():
+				Game.presence.grant_cover(3, "colleague")
+			continue
+		if Game.social.spotted(who.npc):
+			who.turn_to(p)
+			who.body.anim = "wave"
 
 
 func _sky_at(minute: float) -> Array:
@@ -739,10 +924,13 @@ func _update_sky(delta: float) -> void:
 	if Game.active and not demo:
 		minute = Game.time.clock()
 	var k: Array = _sky_at(minute)
+	# Indoors the sun is soft fill with no shadows. Out in the street it is the sun.
+	var outdoors := view == "play" and apartment.in_town(player.global_position)
 	sun.light_color = k[0]
-	sun.light_energy = float(k[1]) * 0.42
+	sun.shadow_enabled = outdoors
+	sun.light_energy = float(k[1]) * (1.0 if outdoors else 0.42)
 	env.ambient_light_color = k[2]
-	env.ambient_light_energy = float(k[3]) * 0.95
+	env.ambient_light_energy = float(k[3]) * (1.05 if outdoors else 0.95)
 	env.background_color = k[4]
 	var day_f := clampf((fposmod(minute, 1440.0) - 360.0) / 840.0, 0.0, 1.0)
 	var azimuth := lerpf(deg_to_rad(-70.0), deg_to_rad(110.0), day_f)

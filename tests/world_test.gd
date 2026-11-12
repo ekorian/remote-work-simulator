@@ -28,6 +28,7 @@ func _ready() -> void:
 	world.interactive = false
 	var apt := world.apartment
 	var ids: Array = apt.things.keys()
+	var home_ids: Array = ids.filter(func(i): return str(Home.THINGS[i].room) != "Town")
 	check(ids.size() == Home.THINGS.size(), "every object in Home.THINGS exists in the apartment (%d/%d)" % [ids.size(), Home.THINGS.size()])
 	for id in Home.THINGS:
 		check(apt.things.has(id), "'%s' is placed in the apartment" % id)
@@ -80,6 +81,8 @@ func _ready() -> void:
 		var t: Interactable = apt.things[id]
 		world.place_player(t.use_point(), 0.0)
 		world.player.face((t.get_child(0) as Node3D).global_position, true)
+		for person in world.people:
+			(person as TownPerson).visible = false          # nobody standing in the way
 		await get_tree().physics_frame
 		await get_tree().physics_frame
 		var hits := world._look_hits()
@@ -87,7 +90,7 @@ func _ready() -> void:
 	print("== the flat is closed")
 	check(not apt.ceiling_lights.is_empty(), "there are ceiling lights")
 	var space := world.get_world_3d().direct_space_state
-	for from in [Vector3(-4.0, 1.5, -3.0), Vector3(3.5, 1.5, -3.0), Vector3(-3.5, 1.5, 3.0), Vector3(4.0, 1.5, 3.0)]:
+	for from in [Vector3(-4.0, 1.5, -3.0), Vector3(3.5, 1.5, -3.0), Vector3(0.5, 1.5, 3.0), Vector3(4.0, 1.5, 3.0)]:
 		for dir in [Vector3.UP, Vector3.LEFT, Vector3.RIGHT, Vector3.FORWARD, Vector3.BACK]:
 			var q := PhysicsRayQueryParameters3D.create(from, from + dir * 30.0)
 			q.collision_mask = 1
@@ -100,15 +103,112 @@ func _ready() -> void:
 		var top := PhysicsRayQueryParameters3D.create((door[0] as Vector3) + Vector3(0, 2.4, 0), (door[1] as Vector3) + Vector3(0, 2.4, 0))
 		top.collision_mask = 1
 		check(not space.intersect_ray(top).is_empty(), "and closed above head height")
+	print("== the town")
+	check(apt.room_at(Vector3(0, 0, 12)) == "Town" and apt.room_at(Vector3(-3, 0, 3)) == "Living room", "the street is the town; the flat is the flat")
+	# Out of the front door on foot, across the road, into each shop, and home again.
+	Engine.time_scale = 6.0
+	world.place_player(Vector3(-4.5, 0, 3.5), 0.0)
+	for goal_id in ["vending", "cart", "bench", "odds", "diner", "mart", "news_box", "workstation"]:
+		var goal: Vector3 = (apt.things[goal_id] as Interactable).use_point()
+		var st := {"done": false}
+		var okp := world.player.go_to(goal, func(): st.done = true)
+		var fr := 0
+		while okp and not st.done and fr < 4000 and world.player.walking_to_target():
+			fr += 1
+			await get_tree().physics_frame
+		check(world.player.global_position.distance_to(goal) < 0.7, "walked to '%s' (ended %.2f m away)" % [goal_id, world.player.global_position.distance_to(goal)])
+	Engine.time_scale = 1.0
+	# The map is closed: nothing to walk off.
+	for from in [Vector3(-10, 1.2, 12.5), Vector3(5, 1.2, 12.5), Vector3(18, 1.2, 12.5), Vector3(16, 1.2, 21)]:
+		for dir in [Vector3.LEFT, Vector3.RIGHT, Vector3.FORWARD, Vector3.BACK]:
+			var q := PhysicsRayQueryParameters3D.create(from, from + dir * 60.0)
+			q.collision_mask = 1
+			var hit := space.intersect_ray(q)
+			check(not hit.is_empty() and (hit.position as Vector3).x > Apartment.TX0 - 1.0 and (hit.position as Vector3).x < Apartment.TX1 + 1.0 and (hit.position as Vector3).z < Apartment.TZ1 + 1.0, "the street ends %s of %s" % [str(dir), str(from)])
+	# The front door opens when you walk up to it.
+	world.place_player(Vector3(-4.5, 0, 4.6), 0.0)
+	Game.paused = false
+	for f in 50:
+		await get_tree().process_frame
+	check(bool((apt.parts["front_door_shape"] as CollisionShape3D).disabled), "the front door opens as you reach it")
+	world.place_player(Vector3(3.0, 0, -3.0), 0.0)
+	for f in 60:
+		await get_tree().process_frame
+	check(not bool((apt.parts["front_door_shape"] as CollisionShape3D).disabled), "and closes behind you")
+	# Shelves: everything on them can be found and bought.
+	check(world.wares.size() >= 20, "the shops have goods on their shelves (%d)" % world.wares.size())
+	Game.economy.money = 500
+	Game.time.minute = 700.0
+	var found := 0
+	var first_meta: Dictionary = {}
+	for ware in world.wares:
+		var area := (ware as Node3D).get_child((ware as Node3D).get_child_count() - 1) as Area3D
+		var meta: Dictionary = area.get_meta("ware")
+		world.place_player(meta.stand, 0.0)
+		world.player.face(area.global_position + Vector3(0, 0.18, 0), true)
+		await get_tree().physics_frame
+		await get_tree().physics_frame
+		var seen_w: Dictionary = world._look_hits().ware
+		if not seen_w.is_empty() and str(seen_w.what) == str(meta.what):
+			found += 1
+		else:
+			print("  not under the crosshair: %s in %s" % [str(meta.what), str(meta.shop)])
+		if first_meta.is_empty():
+			first_meta = meta
+	check(found == world.wares.size(), "every item on a shelf is under the crosshair from in front of it (%d/%d)" % [found, world.wares.size()])
+	var money := Game.economy.money
+	check(world.buy_ware(first_meta) and Game.economy.money < money and Game.home.held != "", "buying off the shelf puts it in your hand")
+	await get_tree().process_frame
+	check(world.held != null and world.held.item_id == Game.home.held, "and there it is")
+	world.stow_held()
+	await get_tree().process_frame
+	check(world.held == null and Game.home.pockets.size() == 1 and not world.bodies.has(str(Game.home.pockets[0])), "R pockets it: nothing in your hand, nothing in the world")
+	Game.home.draw_slot(0)
+	await get_tree().process_frame
+	check(world.held != null, "and a number key brings it back")
+	world.put_down()
+	await get_tree().process_frame
+	# People.
+	check(world.people.size() == Town.PEOPLE.size(), "everybody is in the street (%d)" % world.people.size())
+	var walker: TownPerson = null
+	var dave: TownPerson = null
+	for person in world.people:
+		if (person as TownPerson).id == "walker_1":
+			walker = person
+		if (person as TownPerson).id == "dave":
+			dave = person
+	var was := walker.global_position
+	for f in 120:
+		await get_tree().process_frame
+	check(walker.global_position.distance_to(was) > 0.3, "the neighbours walk about")
+	Game.time.minute = 700.0
+	await get_tree().process_frame
+	check(dave.visible and dave.around, "Dave is on the park bench during work hours")
+	world.place_player(dave.global_position + Vector3(0, 0, -1.4), 0.0)
+	world.player.face(dave.global_position + Vector3(0, 0.8, 0), true)
+	await get_tree().physics_frame
+	await get_tree().physics_frame
+	check(world._look_hits().person == dave, "you can look at him")
+	var rel_d := Game.npcs.relationship("dave")
+	world.talk_to(dave)
+	check(Game.npcs.relationship("dave") > rel_d, "and stop for a chat")
+	Game.time.minute = 1200.0
+	await get_tree().process_frame
+	await get_tree().process_frame
+	check(not dave.visible, "he goes home in the evening")
+	Game.time.minute = 600.0
+	Game.paused = true
+	world.place_player(Vector3(3.0, 0, -3.0), 0.0)
+	await get_tree().process_frame
 	print("== loose items")
 	Game.paused = false
 	world.interactive = true
 	Game.time.hold = true
-	for spot in Home.MORNING_SPOTS + ["desk_left", "desk_right", "doormat"]:
-		check(apt.spots.has(spot), "the flat has a place called '%s'" % spot)
+	for spot in Home.MORNING_SPOTS + ["desk_left", "desk_right", "doormat"] + Home.TOWN_SPOTS.keys():
+		check(apt.spots.has(spot), "there is a place called '%s'" % spot)
 		if apt.spots.has(spot):
 			var p: Vector3 = apt.spots[spot]
-			check(p.x > Apartment.X0 and p.x < Apartment.X1 and p.z > Apartment.Z0 and p.z < Apartment.Z1 and p.y >= 0.0 and p.y < 1.2, "'%s' is inside the flat, at a reachable height" % spot)
+			check(p.x > Apartment.TX0 and p.x < Apartment.TX1 and p.z > Apartment.Z0 and p.z < Apartment.TZ1 and p.y >= 0.0 and p.y < 1.2, "'%s' is on the map, at a reachable height" % spot)
 	check(world.bodies.size() == Game.home.items.size() and world.bodies.size() >= Home.MORNING_ITEMS, "every item has a body in the flat (%d)" % world.bodies.size())
 	check(apt.bins.size() >= 2, "there are bins to throw things at (%d)" % apt.bins.size())
 	var duck: Holdable = null

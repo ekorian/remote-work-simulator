@@ -29,6 +29,15 @@ const THINGS := {
 	"wardrobe": {"name": "Wardrobe", "room": "Bedroom"},
 	"charger": {"name": "Phone Charger", "room": "Bedroom"},
 	"bin": {"name": "Kitchen Bin", "room": "Kitchen"},
+	# --- out in town ---
+	"mart": {"name": "QuickStop", "room": "Town"},
+	"diner": {"name": "Patty's Take-Away", "room": "Town"},
+	"odds": {"name": "Odds & Ends", "room": "Town"},
+	"cart": {"name": "Coffee Cart", "room": "Town"},
+	"vending": {"name": "Vending Machine", "room": "Town"},
+	"news_box": {"name": "Newspaper Box", "room": "Town"},
+	"bench": {"name": "Park Bench", "room": "Town"},
+	"hoop": {"name": "Basketball Hoop", "room": "Town"},
 }
 
 ## Timed activities. `per` is applied every game minute while it runs.
@@ -47,6 +56,7 @@ const TIMED := {
 	"power_nap": {"thing": "bed", "label": "Power nap", "mins": 25, "speed": 8.0, "anim": "sleep", "per": {"energy": 0.72, "health": 0.3}},
 	"forge": {"thing": "printer", "label": "Forge a doctor's note", "mins": 6, "speed": 2.5, "anim": "use", "per": {}},
 	"heat": {"thing": "microwave", "label": "Heat it up", "mins": 2, "speed": 1.5, "anim": "use", "per": {}},
+	"bench": {"thing": "bench", "label": "Sit in the park", "mins": 25, "speed": 6.0, "anim": "lounge", "per": {"health": 0.5, "energy": 0.2}},
 }
 
 ## Junk food. Where it turns up every morning (the apartment knows where
@@ -63,9 +73,40 @@ const PIZZA_PRICE := 18
 const PIZZA_MINUTES := 20
 const MESS_MAX := 5.0             ## most health a filthy flat costs you in the morning
 const TIDY_MAX := 4               ## bin this many a day for a point of health each
-const MAX_ITEMS := 28
-const TOYS := {"stress_ball": "Stress Ball", "rubber_duck": "Rubber Duck"}
+const MAX_ITEMS := 44
 const SQUEEZES := 6               ## squeezes of the stress ball a day that still help
+const POCKETS := 8                ## how many things fit in your pockets
+const TOYS := {"stress_ball": "Stress Ball", "rubber_duck": "Rubber Duck"}     ## on your desk on Monday
+
+## Things that are not food. `use`: what a click does with it in your hand.
+## `big`: does not fit in a pocket. `decor`: looks good on a desk on camera.
+const PROPS := {
+	"stress_ball": {"name": "Stress Ball", "use": "squeeze", "price": 4, "blurb": "It has seen things."},
+	"rubber_duck": {"name": "Rubber Duck", "use": "squeak", "price": 5, "decor": true, "blurb": "It listens. It does not judge. It squeaks."},
+	"paper_ball": {"name": "Ball of Paper", "use": "", "price": 0, "blurb": "A first draft."},
+	"basketball": {"name": "Basketball", "use": "", "price": 12, "big": true, "blurb": "There is a hoop in the park."},
+	"book": {"name": "Airport Business Book", "use": "read", "price": 9, "decor": true, "blurb": "'Synergise or Die'. You will read the back."},
+	"gnome": {"name": "Garden Gnome", "use": "", "price": 14, "big": true, "decor": true, "blurb": "He guards the lawn. He is not good at it."},
+	"cactus": {"name": "Small Cactus", "use": "", "price": 7, "decor": true, "blurb": "The only thing in the flat that thrives on neglect. Apart from you."},
+	"trophy": {"name": "Employee of the Month Trophy", "use": "", "price": 15, "decor": true, "blurb": "March 2019. Somebody else's name. Nobody checks."},
+	"teddy": {"name": "Teddy Bear", "use": "squeeze", "price": 10, "decor": true, "blurb": "Emotional support, ages 3 and up."},
+	"snow_globe": {"name": "Snow Globe", "use": "shake", "price": 8, "decor": true, "blurb": "A tiny office in a blizzard. Relatable."},
+	"traffic_cone": {"name": "Traffic Cone", "use": "", "price": 0, "big": true, "blurb": "Property of the council. Was."},
+	"flowers": {"name": "Bunch of Flowers", "use": "", "price": 9, "decor": true, "gift": 2.0, "blurb": "Somebody would love these."},
+	"newspaper": {"name": "Newspaper", "use": "read", "price": 2, "blurb": "Yesterday's news, today's excuse."},
+	"scratch_card": {"name": "Scratch Card", "use": "scratch", "price": 3, "blurb": "Statistically, a donation."},
+}
+
+## Where things are sold in town. `sells`: food groups, or item ids outright.
+const SHOPS := {
+	"mart": {"name": "QuickStop", "open": 420, "close": 1410, "groups": ["sweet", "crunchy", "drink", "frozen"], "extra": ["scratch_card", "newspaper"], "shelf": 7, "lines": "clerk_mart"},
+	"diner": {"name": "Patty's Take-Away", "open": 630, "close": 1320, "groups": ["hot"], "extra": [], "shelf": 7, "lines": "clerk_diner"},
+	"odds": {"name": "Odds & Ends", "open": 600, "close": 1140, "groups": [], "extra": ["gnome", "cactus", "trophy", "teddy", "snow_globe", "basketball", "book", "flowers", "rubber_duck"], "shelf": 9, "lines": "clerk_odds"},
+	"cart": {"name": "Coffee Cart", "open": 450, "close": 990, "groups": [], "extra": ["coffee_cup", "donut", "pretzel"], "shelf": 3, "lines": "clerk_cart"},
+	"vending": {"name": "Vending Machine", "open": 0, "close": 1440, "groups": [], "extra": ["soda_can", "energy_can", "candy_bar", "chips"], "shelf": 4, "lines": ""},
+}
+const VENDING_EATS := 12.0        ## % chance the machine keeps your money
+const TOWN_SPOTS := {"garden": "gnome", "roadworks": "traffic_cone", "park": "basketball", "bench": "teddy"}
 
 const OUTFITS := {
 	"casual": {"label": "Hoodie and jeans", "hint": "Neutral on camera."},
@@ -78,6 +119,9 @@ var things: Dictionary = {}      ## state of the objects in the flat
 var outfit := "casual"
 var items: Array = []            ## loose things you can pick up: [{id, food, bites, hot, trash, spot, at}]
 var held := ""                   ## id of the item in your hand ("" = empty-handed)
+var pockets: Array = []          ## ids of the items in your pockets, in order
+var outside := false             ## out in town (set by the 3D world)
+var decor := 0                   ## ornaments standing on your desk (set by the 3D world)
 
 
 func _ready() -> void:
@@ -86,7 +130,7 @@ func _ready() -> void:
 
 
 func save_state() -> Dictionary:
-	return {"things": things, "outfit": outfit, "items": items, "held": held}
+	return {"things": things, "outfit": outfit, "items": items, "held": held, "pockets": pockets}
 
 
 func load_state(d: Dictionary) -> void:
@@ -98,6 +142,10 @@ func load_state(d: Dictionary) -> void:
 	held = str(d.get("held", ""))
 	if item(held).is_empty():
 		held = ""
+	pockets = []
+	for pid in d.get("pockets", []):
+		if not item(str(pid)).is_empty():
+			pockets.append(str(pid))
 	Bus.items_changed.emit()
 
 
@@ -111,12 +159,17 @@ func setup_run() -> void:
 		"mug": 1, "coffees": 0, "mug_wedges": 0,
 		"snacks": FRIDGE_STOCK, "burritos": 2, "lunch": false,
 		"staged_until": -1, "wiggle_at": -99, "outage_until": -1,
-		"fullness": 0.0, "pizza_at": -1, "pizza_today": false, "tidied": 0, "squeezes": 0,
+		"fullness": 0.0, "pizza_at": -1, "pizza_today": false, "tidied": 0, "squeezes": 0, "read": false, "hoops": 0,
 	}
 	items = []
 	held = ""
+	pockets = []
+	outside = false
+	decor = 0
 	add_item("stress_ball", "desk_left")
 	add_item("rubber_duck", "desk_right")
+	for spot in TOWN_SPOTS:
+		add_item(str(TOWN_SPOTS[spot]), str(spot))
 	_restock()
 
 
@@ -133,6 +186,8 @@ func new_day() -> void:
 	th.pizza_today = false
 	th.tidied = 0
 	th.squeezes = 0
+	th.read = false
+	th.hoops = 0
 	th.fullness = float(th.get("fullness", 0.0)) * 0.3
 	_morning_mess()
 	_restock()
@@ -305,6 +360,18 @@ func options(thing: String) -> Array:
 				out.append(_opt("dock", "Put the phone on the charger", "use", "Charges fast, but you can't answer from the phone. Battery %d%%." % int(th.phone_bat)))
 			else:
 				out.append(_opt("take", "Take the phone", "use", "Answer chats and calls from anywhere. Battery %d%%." % int(th.phone_bat)))
+		"bench":
+			out.append(_timed("bench", "Fresh air. You are not at your desk, and it shows."))
+		"hoop":
+			out.append(_opt("look", "Look at the hoop", "use", "Throw a basketball through it (Q)."))
+		"news_box":
+			out.append(_buy_opt("news_box", "newspaper"))
+		"mart", "diner", "odds", "cart", "vending":
+			if not shop_open(thing):
+				out.append(_opt("closed", "%s is closed" % str(SHOPS[thing].name), "use", "", false, "Open %s to %s." % [Cfg.fmt_time(float(SHOPS[thing].open)), Cfg.fmt_time(float(SHOPS[thing].close))]))
+			else:
+				for what in shop_stock(thing):
+					out.append(_buy_opt(thing, str(what)))
 		"bin":
 			var junk := item(held)
 			if junk.is_empty():
@@ -414,8 +481,12 @@ func use(thing: String, opt_id: String) -> bool:
 			Bus.toast.emit("Pizza ordered. It will be at the front door in %d minutes." % PIZZA_MINUTES, "good")
 		"bin":
 			bin(held)
+		"look", "closed":
+			pass
 		_:
-			if opt_id.begins_with("flip_"):
+			if opt_id.begins_with("buy_"):
+				buy(thing, opt_id.trim_prefix("buy_"))
+			elif opt_id.begins_with("flip_"):
 				Game.automation.flip(opt_id.trim_prefix("flip_"))
 			elif opt_id.begins_with("wear_"):
 				outfit = opt_id.trim_prefix("wear_")
@@ -501,6 +572,10 @@ func _on_minute() -> void:
 	if not Game.time.running():
 		return
 	th.fullness = maxf(0.0, float(th.get("fullness", 0.0)) - DIGEST)
+	if outside:
+		Game.bump("outside_min")
+		Game.tutor.hint("outside")
+		Game.tutor.tick("town")
 	if float(th.fullness) >= STUFFED_AT:
 		Game.stats.add_buff("stuffed", 3)
 	if int(th.get("pizza_at", -1)) >= 0 and Game.time.now() >= int(th.pizza_at):
@@ -530,7 +605,7 @@ func food(it: Dictionary) -> Dictionary:
 func item_name(it: Dictionary) -> String:
 	var def := food(it)
 	if def.is_empty():
-		return str(TOYS.get(str(it.get("food", "")), "Thing"))
+		return str(PROPS.get(str(it.get("food", "")), {}).get("name", "Thing"))
 	if bool(it.get("trash", false)):
 		return str(def.trash_name) if str(def.trash_name) != "" else "Rubbish"
 	return str(def.display_name)
@@ -558,14 +633,20 @@ func add_item(food_id: String, spot: String = "", trash: bool = false) -> Dictio
 	}
 	items.append(it)
 	while items.size() > MAX_ITEMS:
-		# Too much stuff: the oldest rubbish goes first, then the oldest anything.
+		# Too much stuff: the oldest rubbish goes first, then the oldest food.
+		# Never what you are carrying, and never an ornament.
 		var drop: Dictionary = {}
-		for old in items:
-			if bool(old.trash) and str(old.id) != held:
-				drop = old
+		for pass_n in 2:
+			for old in items:
+				if str(old.id) == held or str(old.id) in pockets or old == it or is_prop(old):
+					continue
+				if bool(old.trash) or pass_n == 1:
+					drop = old
+					break
+			if not drop.is_empty():
 				break
 		if drop.is_empty():
-			drop = items[0] if str(items[0].id) != held else items[1]
+			break
 		items.erase(drop)
 	Bus.items_changed.emit()
 	return it
@@ -578,16 +659,164 @@ func remove_item(id: String) -> void:
 	items.erase(it)
 	if held == id:
 		held = ""
+	pockets.erase(id)
 	Bus.items_changed.emit()
 
 
 func hold(id: String) -> bool:
+	## Take something in your hand. What was there goes in a pocket if it fits.
 	if item(id).is_empty():
 		return false
+	if held != "" and held != id:
+		if not stow(held):
+			return false
+	pockets.erase(id)
 	held = id
 	item(id).spot = ""
 	Bus.items_changed.emit()
 	return true
+
+
+# --- Pockets ---------------------------------------------------------------------
+
+func fits_pocket(it: Dictionary) -> String:
+	## "" if this would go in a pocket, otherwise why not.
+	if it.is_empty():
+		return "Nothing to put away"
+	if bool(PROPS.get(str(it.food), {}).get("big", false)) or item_model(it) in ["pizza_box", "trash_pizza_box", "drumsticks", "popcorn"]:
+		return "%s does not fit in a pocket" % item_name(it)
+	if pockets.size() >= POCKETS:
+		return "Your pockets are full"
+	return ""
+
+
+func stow(id: String) -> bool:
+	## Put an item (in your hand, or lying in front of you) in your pockets.
+	var it := item(id)
+	if str(id) in pockets:
+		return true
+	var why := fits_pocket(it)
+	if why != "":
+		Bus.toast.emit(why + ".", "warn")
+		return false
+	pockets.append(id)
+	it.spot = ""
+	if held == id:
+		held = ""
+	Game.tutor.hint("pockets")
+	Bus.sfx.emit("pickup")
+	Bus.items_changed.emit()
+	return true
+
+
+func draw(id: String) -> bool:
+	## Take something out of a pocket.
+	return str(id) in pockets and hold(id)
+
+
+func draw_slot(i: int) -> bool:
+	return i >= 0 and i < pockets.size() and draw(str(pockets[i]))
+
+
+func cycle(dir: int) -> bool:
+	## Swap what is in your hand for the next thing in your pockets.
+	if pockets.is_empty():
+		return false
+	return draw(str(pockets[0] if dir > 0 else pockets[pockets.size() - 1]))
+
+
+func carried() -> Array:
+	## Everything on you: the hand first, then the pockets.
+	var out: Array = []
+	if held != "":
+		out.append(item(held))
+	for pid in pockets:
+		out.append(item(str(pid)))
+	return out
+
+
+# --- Shops -------------------------------------------------------------------------
+
+func shop_open(shop: String) -> bool:
+	var s: Dictionary = SHOPS.get(shop, {})
+	if s.is_empty():
+		return true
+	var m := fposmod(Game.time.minute, 1440.0)
+	return m >= float(s.open) and m < float(s.close)
+
+
+func price_of(what: String) -> int:
+	if Db.foods.has(what):
+		return int(Db.foods[what].price)
+	return int(PROPS.get(what, {}).get("price", 0))
+
+
+func name_of(what: String) -> String:
+	if Db.foods.has(what):
+		return str(Db.foods[what].display_name)
+	return str(PROPS.get(what, {}).get("name", what))
+
+
+func shop_stock(shop: String) -> Array:
+	## What a shop has on the shelf today: the same all day, different tomorrow.
+	var s: Dictionary = SHOPS.get(shop, {})
+	var pool: Array = []
+	for fid in Db.foods:
+		if str(Db.foods[fid].group) in s.get("groups", []) and int(Db.foods[fid].price) > 0 and not fid in s.get("extra", []):
+			pool.append(fid)
+	pool.sort()
+	var dice := RandomNumberGenerator.new()
+	dice.seed = hash([Game.rng.seed, Game.time.day, shop])
+	var out: Array = []
+	var extras: Array = s.get("extra", [])
+	var room: int = int(s.get("shelf", 8)) - extras.size()
+	if s.get("groups", []).is_empty():
+		room = 0
+		pool = []
+	while out.size() < room and not pool.is_empty():
+		var pick: String = pool[dice.randi() % pool.size()]
+		pool.erase(pick)
+		out.append(pick)
+	out.sort()
+	if s.get("groups", []).is_empty():
+		var extra: Array = s.get("extra", []).duplicate()
+		while extra.size() > int(s.get("shelf", 8)):
+			extra.remove_at(dice.randi() % extra.size())
+		return extra
+	return out + s.get("extra", [])
+
+
+func _buy_opt(shop: String, what: String) -> Dictionary:
+	var cost := price_of(what)
+	var hint := str(Db.foods[what].blurb) if Db.foods.has(what) else str(PROPS.get(what, {}).get("blurb", ""))
+	if Db.foods.has(what):
+		hint = "+%d Energy. %s" % [int(Db.foods[what].energy), hint]
+	var room: bool = held == "" or fits_pocket(item(held)) == ""
+	var ok: bool = Game.economy.can_afford(cost) and room
+	var why := "You can't afford it." if not Game.economy.can_afford(cost) else "Your hands and pockets are full."
+	return _opt("buy_" + what, "%s  -  $%d" % [name_of(what), cost], "use", hint, ok, why)
+
+
+func buy(shop: String, what: String) -> Dictionary:
+	## Pay for something and walk away with it in your hand. Returns the item ({} if not).
+	var cost := price_of(what)
+	if not shop_open(shop) or not (what in shop_stock(shop) or shop == "news_box") or not Game.economy.can_afford(cost):
+		return {}
+	if held != "" and not stow(held):
+		return {}
+	Game.economy.add_money(-cost, name_of(what))
+	Game.bump("bought")
+	if shop == "vending" and Game.chance(VENDING_EATS):
+		Bus.sfx.emit("bad")
+		Bus.toast.emit("The machine took your $%d and gave you a noise." % cost, "bad")
+		return {}
+	var it := add_item(what, "hand")
+	hold(str(it.id))
+	Bus.sfx.emit("coin")
+	var lines := Db.lines(str(SHOPS.get(shop, {}).get("lines", "")))
+	if not lines.is_empty() and Game.chance(45.0):
+		Bus.toast.emit("\"%s\"" % str(Game.pick(lines)), "info")
+	return it
 
 
 func release() -> void:
@@ -656,7 +885,7 @@ func bin(id: String) -> bool:
 	var it := item(id)
 	if it.is_empty():
 		return false
-	if is_toy(it):
+	if is_prop(it) and str(it.food) != "paper_ball":
 		Bus.toast.emit("You would miss it by Thursday.", "info")
 		return false
 	var was_trash := bool(it.trash)
@@ -672,26 +901,74 @@ func bin(id: String) -> bool:
 	return true
 
 
+func is_prop(it: Dictionary) -> bool:
+	return PROPS.has(str(it.get("food", "")))
+
+
 func is_toy(it: Dictionary) -> bool:
-	return TOYS.has(str(it.get("food", "")))
+	return is_prop(it)
+
+
+func prop(it: Dictionary) -> Dictionary:
+	return PROPS.get(str(it.get("food", "")), {})
+
+
+func prop_verb(it: Dictionary) -> String:
+	return str(prop(it).get("use", ""))
 
 
 func fidget(id: String) -> bool:
-	## Play with a desk toy. The stress ball helps, a little, for a while.
+	## The thing you do with an object that is not food. False if there is nothing to do.
 	var it := item(id)
-	if not is_toy(it) or not Game.time.running():
+	if not is_prop(it) or not Game.time.running():
 		return false
-	match str(it.food):
-		"stress_ball":
+	match prop_verb(it):
+		"squeeze":
 			things.squeezes = int(things.get("squeezes", 0)) + 1
 			if int(things.squeezes) <= SQUEEZES:
-				Game.stats.add("health", 0.5, "Stress ball")
+				Game.stats.add("health", 0.5, item_name(it))
 			elif int(things.squeezes) == SQUEEZES + 1:
-				Bus.toast.emit("The stress ball has given all it can today.", "info")
+				Bus.toast.emit("That is all the comfort there is in it today.", "info")
 			Bus.sfx.emit("pop")
-		"rubber_duck":
+		"squeak":
 			Bus.sfx.emit("squeak")
+		"shake":
+			Bus.sfx.emit("whoosh")
+			Bus.toast.emit("It snows on the tiny office. Nobody in there looks up.", "info")
+		"read":
+			if bool(things.get("read", false)):
+				Bus.toast.emit("You have read enough for one day.", "info")
+			else:
+				things.read = true
+				if str(it.food) == "newspaper":
+					Game.stats.add_buff("inspired", 240)
+					Bus.toast.emit("Page four: a burst water main. That is an excuse waiting to happen.", "good")
+				else:
+					Game.stats.add_buff("jargon", 90)
+					Bus.toast.emit("You read the back cover. You can now say 'paradigm' out loud.", "good")
+		"scratch":
+			var roll := Game.rng.randf() * 100.0
+			var won := 60 if roll < 1.0 else (12 if roll < 8.0 else (3 if roll < 28.0 else 0))
+			remove_item(id)
+			if won > 0:
+				Game.economy.add_money(won, "Scratch card")
+				Bus.sfx.emit("payday" if won >= 12 else "coin")
+				Bus.toast.emit("Three cherries. You won $%d." % won, "money")
+			else:
+				Bus.sfx.emit("bad")
+				Bus.toast.emit("Two cherries and a lemon. Nothing.", "info")
+		_:
+			return false
 	return true
+
+
+func hoop() -> void:
+	## A basketball went through the hoop in the park.
+	things.hoops = int(things.get("hoops", 0)) + 1
+	Bus.sfx.emit("good")
+	if int(things.hoops) <= 5:
+		Game.stats.add("health", 2.0, "Nothing but net")
+	Bus.toast.emit("Swish. That is %d today." % int(things.hoops), "good")
 
 
 func rubbish() -> int:

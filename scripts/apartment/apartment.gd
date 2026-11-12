@@ -11,6 +11,13 @@ const X0 := -7.0
 const X1 := 7.0
 const Z0 := -5.5
 const Z1 := 5.5
+## The town outside the front door, and the area the autopilot can cross.
+const TX0 := -16.0
+const TX1 := 22.0
+const TZ0 := 5.7
+const TZ1 := 25.0
+const DOOR_X := -4.5
+const DOOR_W := 1.1
 const WALL_H := 2.7
 const DOOR_H := 2.08
 const WALL_T := 0.2
@@ -46,6 +53,7 @@ func _ready() -> void:
 	_bedroom()
 	_living()
 	_kitchen()
+	Town.build(self)
 	for id in things:
 		(things[id] as Interactable).collect_meshes()
 	_build_nav()
@@ -106,6 +114,21 @@ func _walls() -> void:
 		var a: Vector3 = d.a
 		var b: Vector3 = d.b
 		var normal: Vector3 = d.normal
+		if side == "s":
+			# The front wall has a real doorway in it.
+			var front := Kit.node(self, Vector3.ZERO, "Wall_s_tall")
+			var zc := Z1 + WALL_T / 2.0
+			var left_w := (DOOR_X - DOOR_W / 2.0) - (X0 - WALL_T)
+			var right_w := (X1 + WALL_T) - (DOOR_X + DOOR_W / 2.0)
+			for piece in [[X0 - WALL_T + left_w / 2.0, left_w], [DOOR_X + DOOR_W / 2.0 + right_w / 2.0, right_w]]:
+				Kit.box(front, Vector3(float(piece[1]), WALL_H, WALL_T), Vector3(float(piece[0]), WALL_H / 2.0, zc), C_WALL)
+				Kit.box(front, Vector3(float(piece[1]), 0.12, 0.04), Vector3(float(piece[0]), 0.06, Z1 - 0.02), C_TRIM)
+				Kit.solid(self, Vector3(float(piece[1]), WALL_H, WALL_T), Vector3(float(piece[0]), WALL_H / 2.0, zc))
+			var over := WALL_H - DOOR_H
+			Kit.box(front, Vector3(DOOR_W, over, WALL_T), Vector3(DOOR_X, DOOR_H + over / 2.0, zc), C_WALL)
+			Kit.solid(self, Vector3(DOOR_W, over, WALL_T), Vector3(DOOR_X, DOOR_H + over / 2.0, zc))
+			outer[side] = {"tall": front, "normal": normal}
+			continue
 		var mid: Vector3 = (a + b) / 2.0 + normal * (WALL_T / 2.0)
 		var along_x := absf(b.x - a.x) > 0.1
 		var length := (b - a).length() + WALL_T * 2.0
@@ -126,7 +149,7 @@ func _walls() -> void:
 	_whiteboard(outer.n.tall, Vector3(-1.4, 1.7, Z0 + 0.03))
 	_poster(outer.n.tall, Vector3(2.6, 1.75, Z0 + 0.03), Color("ff8c5a"), Color("ffd166"))
 	_poster(outer.w.tall, Vector3(X0 + 0.03, 1.8, -1.5), Color("6c5ce7"), Color("5ad1c8"), true)
-	_door(outer.s.tall, Vector3(-4.5, 0, Z1 - 0.02))
+	_door(outer.s.tall, Vector3(DOOR_X, 0, Z1 + WALL_T / 2.0))
 	_window(outer.e.tall, Vector3(X1, 1.7, 2.6), true, 1.6)
 	_window(outer.s.tall, Vector3(4.2, 1.7, Z1), false, 1.6)
 	_window(outer.e.tall, Vector3(X1, 1.75, -2.8), true, 1.4)
@@ -273,17 +296,34 @@ func _clock(pos: Vector3, yaw_deg: float) -> void:
 
 
 func _door(parent: Node3D, pos: Vector3) -> void:
+	## The front door: a frame, and a leaf on a hinge that swings into the hall.
 	var n := Kit.node(parent, pos)
-	Kit.box(n, Vector3(1.1, 2.15, 0.06), Vector3(0, 1.07, 0), C_TRIM)
-	Kit.box(n, Vector3(0.94, 2.0, 0.08), Vector3(0, 1.0, -0.01), Color("6c5ce7"))
-	for panel in [Vector3(0, 1.5, -0.055), Vector3(0, 0.52, -0.055)]:
-		Kit.box(n, Vector3(0.66, 0.72 if panel.y > 1.0 else 0.66, 0.02), panel, Color("7d6ff0"))
-	Kit.ball(n, 0.05, Vector3(0.36, 1.0, -0.07), Color("ffd166"), 8)
-	Kit.box(n, Vector3(0.3, 0.035, 0.02), Vector3(0, 1.05, -0.06), Color("ffd166"))               # letterbox
-	var peep := Kit.cyl(n, 0.022, 0.02, Vector3(0, 1.6, -0.06), C_DARK, 8)
-	peep.rotation.x = PI / 2.0
-	Kit.box(self, Vector3(1.0, 0.02, 0.6), Vector3(pos.x, 0.02, pos.z - 0.4), Color("8a5a36"), 1.0)   # doormat
-	spots["doormat"] = Vector3(pos.x, 0.035, pos.z - 0.42)
+	for sx in [-1.0, 1.0]:
+		Kit.box(n, Vector3(0.08, DOOR_H, WALL_T + 0.08), Vector3((DOOR_W / 2.0 - 0.04) * sx, DOOR_H / 2.0, 0), C_TRIM)
+	Kit.box(n, Vector3(DOOR_W, 0.08, WALL_T + 0.08), Vector3(0, DOOR_H - 0.04, 0), C_TRIM)
+	var hinge := Kit.node(n, Vector3(-DOOR_W / 2.0 + 0.08, 0, -0.06), "FrontDoor")
+	var w := DOOR_W - 0.16
+	Kit.box(hinge, Vector3(w, DOOR_H - 0.1, 0.06), Vector3(w / 2.0, (DOOR_H - 0.1) / 2.0, 0), Color("6c5ce7"))
+	for panel_y in [1.48, 0.52]:
+		for face in [-1.0, 1.0]:
+			Kit.box(hinge, Vector3(w - 0.26, 0.7, 0.02), Vector3(w / 2.0, panel_y, 0.035 * face), Color("7d6ff0"))
+	for face in [-1.0, 1.0]:
+		Kit.ball(hinge, 0.045, Vector3(w - 0.1, 1.0, 0.06 * face), Color("ffd166"), 8)
+	Kit.box(hinge, Vector3(0.3, 0.035, 0.07), Vector3(w / 2.0, 1.05, 0), Color("ffd166"))          # letterbox
+	var leaf := StaticBody3D.new()
+	leaf.collision_layer = 1
+	leaf.collision_mask = 0
+	var cs := CollisionShape3D.new()
+	var shape := BoxShape3D.new()
+	shape.size = Vector3(w, DOOR_H - 0.1, 0.08)
+	cs.shape = shape
+	cs.position = Vector3(w / 2.0, (DOOR_H - 0.1) / 2.0, 0)
+	leaf.add_child(cs)
+	hinge.add_child(leaf)
+	parts["front_door"] = hinge
+	parts["front_door_shape"] = cs
+	Kit.box(self, Vector3(1.0, 0.02, 0.6), Vector3(pos.x, 0.02, Z1 - 0.5), Color("8a5a36"), 1.0)   # doormat
+	spots["doormat"] = Vector3(pos.x, 0.035, Z1 - 0.5)
 
 
 # ---------------------------------------------------------------------------
@@ -799,19 +839,22 @@ func _kitchen() -> void:
 # ---------------------------------------------------------------------------
 
 func _build_nav() -> void:
-	var cols := int((X1 - X0) / CELL)
-	var rows := int((Z1 - Z0) / CELL)
+	var cols := int((TX1 - TX0) / CELL)
+	var rows := int((TZ1 - Z0) / CELL)
 	nav.region = Rect2i(0, 0, cols, rows)
 	nav.cell_size = Vector2(CELL, CELL)
 	nav.diagonal_mode = AStarGrid2D.DIAGONAL_MODE_ONLY_IF_NO_OBSTACLES
 	nav.default_compute_heuristic = AStarGrid2D.HEURISTIC_OCTILE
 	nav.default_estimate_heuristic = AStarGrid2D.HEURISTIC_OCTILE
 	nav.update()
-	var pad := 0.3            # body radius (0.22) plus a little air
+	var pad := 0.3            # body radius plus a little air
+	var flat := Rect2(X0 + pad, Z0 + pad, X1 - X0 - pad * 2.0, Z1 - Z0 - pad * 2.0)
+	var town := Rect2(TX0 + pad, TZ0 + pad, TX1 - TX0 - pad * 2.0, TZ1 - TZ0 - pad * 2.0)
+	var doorway := Rect2(DOOR_X - 0.22, Z1 - pad - 0.1, 0.44, WALL_T + pad * 2.0 + 0.2)
 	for ix in cols:
 		for iz in rows:
-			var p := Vector2(X0 + (ix + 0.5) * CELL, Z0 + (iz + 0.5) * CELL)
-			var solid := p.x < X0 + pad or p.x > X1 - pad or p.y < Z0 + pad or p.y > Z1 - pad
+			var p := Vector2(TX0 + (ix + 0.5) * CELL, Z0 + (iz + 0.5) * CELL)
+			var solid := not (flat.has_point(p) or town.has_point(p) or doorway.has_point(p))
 			if not solid:
 				for r in _blocked:
 					if (r as Rect2).grow(pad).has_point(p):
@@ -823,12 +866,12 @@ func _build_nav() -> void:
 
 func cell_of(p: Vector3) -> Vector2i:
 	return Vector2i(
-		clampi(int(floor((p.x - X0) / CELL)), 0, nav.region.size.x - 1),
+		clampi(int(floor((p.x - TX0) / CELL)), 0, nav.region.size.x - 1),
 		clampi(int(floor((p.z - Z0) / CELL)), 0, nav.region.size.y - 1))
 
 
 func point_of(c: Vector2i) -> Vector3:
-	return Vector3(X0 + (c.x + 0.5) * CELL, 0.0, Z0 + (c.y + 0.5) * CELL)
+	return Vector3(TX0 + (c.x + 0.5) * CELL, 0.0, Z0 + (c.y + 0.5) * CELL)
 
 
 func nearest_free(c: Vector2i) -> Vector2i:
@@ -852,7 +895,7 @@ func nearest_free(c: Vector2i) -> Vector2i:
 
 
 func walkable(p: Vector3) -> bool:
-	if p.x < X0 or p.x > X1 or p.z < Z0 or p.z > Z1:
+	if p.x < TX0 or p.x > TX1 or p.z < Z0 or p.z > TZ1:
 		return false
 	return not nav.is_point_solid(cell_of(p))
 
@@ -895,7 +938,13 @@ func find_path(from: Vector3, to: Vector3) -> PackedVector3Array:
 	return out
 
 
+func in_town(p: Vector3) -> bool:
+	return p.z > Z1 + WALL_T * 0.5
+
+
 func room_at(p: Vector3) -> String:
+	if in_town(p):
+		return "Town"
 	if p.z < 0.0:
 		return "Home office" if p.x < 0.0 else "Bedroom"
 	return "Living room" if p.x < 1.0 else "Kitchen"

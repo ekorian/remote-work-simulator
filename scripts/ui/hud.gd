@@ -53,6 +53,9 @@ var _held: PanelContainer
 var _held_title: Label
 var _held_hint: Label
 var _held_keys: Label
+var _pockets: HBoxContainer
+var _icons: ItemIcons
+var _pocket_sig := ""
 var _act: PanelContainer
 var _act_label: Label
 var _act_bar: StatBar
@@ -282,6 +285,12 @@ func _build_bottom() -> void:
 	hv.add_child(_held_hint)
 	_held_keys = UI.label("", 12, UI.ACCENT, true)
 	hv.add_child(_held_keys)
+	# Pockets: one square per thing you are carrying.
+	_icons = ItemIcons.new()
+	add_child(_icons)
+	_pockets = UI.hbox(5)
+	_pockets.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(_pockets)
 	# Interaction prompt
 	_prompt = _card()
 	_prompt.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -603,11 +612,29 @@ func _update_world_widgets() -> void:
 	var aiming := show_world and not busy and not _menu.visible and world.view == "play"
 	var f: Interactable = world.focused if aiming else null
 	var fi: Holdable = world.focused_item if aiming else null
+	var fp: TownPerson = world.focused_person if aiming else null
+	var fw: Dictionary = world.focused_ware if aiming else {}
 	_cross.visible = aiming
-	_cross.set_meta("on", f != null or fi != null)
+	_cross.set_meta("on", f != null or fi != null or fp != null or not fw.is_empty())
 	_cross.queue_redraw()
-	_prompt.visible = f != null or fi != null
-	if fi != null:
+	_prompt.visible = f != null or fi != null or fp != null or not fw.is_empty()
+	if fp != null:
+		_prompt_title.text = fp.title
+		var giving: bool = world.held != null and fp.npc != "" and Game.social.is_colleague(fp.npc) and not bool(Game.home.item(world.held.item_id).get("trash", false))
+		_prompt_hint.text = ("Give them the %s" % world.held.title.to_lower()) if giving else "Talk"
+		if fp.npc != "" and Game.social.is_colleague(fp.npc):
+			_prompt_hint.text += "  -  %s" % Game.social.tier_name(fp.npc)
+	elif not fw.is_empty():
+		var what := str(fw.what)
+		var cost := Game.home.price_of(what)
+		_prompt_title.text = "%s  -  $%d" % [Game.home.name_of(what), cost]
+		if not Game.home.shop_open(str(fw.shop)):
+			_prompt_hint.text = "Closed"
+		elif not Game.economy.can_afford(cost):
+			_prompt_hint.text = "You can't afford it"
+		else:
+			_prompt_hint.text = "Buy" + (("  -  +%d Energy" % int(Db.foods[what].energy)) if Db.foods.has(what) else "")
+	elif fi != null:
 		var it := Game.home.item(fi.item_id)
 		_prompt_title.text = fi.title
 		_prompt_hint.text = "Pick up" if world.held == null else "Swap for what you are holding"
@@ -629,10 +656,12 @@ func _update_world_widgets() -> void:
 	if _held.visible:
 		var it := Game.home.item(hb.item_id)
 		_held_title.text = hb.title
-		var keys := "RMB put down    Q throw"
-		if Game.home.is_toy(it):
-			_held_hint.text = "Something to do with your hands."
-			keys = "LMB squeeze    " + keys
+		var keys := "RMB put down    Q throw    R pocket"
+		if Game.home.is_prop(it):
+			_held_hint.text = str(Game.home.prop(it).get("blurb", ""))
+			var verb := Game.home.prop_verb(it)
+			if verb != "":
+				keys = "LMB %s    %s" % [verb, keys]
 		elif bool(it.get("trash", false)):
 			_held_hint.text = "Rubbish. It belongs in a bin."
 		else:
@@ -649,7 +678,54 @@ func _update_world_widgets() -> void:
 			keys = "LMB %s    %s" % [str(view.verb).to_lower(), keys]
 		_held_keys.text = keys
 		_held.reset_size()
-		_held.position = Vector2((size.x - _held.size.x) / 2.0, size.y - _held.size.y - 26.0)
+		_held.position = Vector2((size.x - _held.size.x) / 2.0, size.y - _held.size.y - 92.0)
+	_update_pockets(show_world and world.view == "play" and not _menu.visible)
+
+
+func _update_pockets(show: bool) -> void:
+	var ids: Array = Game.home.pockets
+	_pockets.visible = show and not ids.is_empty()
+	if not _pockets.visible:
+		return
+	var sig := ",".join(ids) + "|" + str(Game.home.items.size())
+	var ready := true
+	if sig != _pocket_sig:
+		_pocket_sig = sig
+		UI.clear(_pockets)
+		for i in ids.size():
+			var it := Game.home.item(str(ids[i]))
+			var slot := PanelContainer.new()
+			slot.add_theme_stylebox_override("panel", UI.sb(Color(UI.PANEL, 0.92), 12, 1, UI.LINE, 4, 4))
+			slot.custom_minimum_size = Vector2(62, 62)
+			slot.mouse_filter = Control.MOUSE_FILTER_IGNORE
+			slot.tooltip_text = Game.home.item_name(it)
+			var tint: Color = Game.home.food(it).get("tint", Color("5ad1c8"))
+			var tex := _icons.icon(Game.home.item_model(it), tint)
+			if tex != null:
+				var pic := TextureRect.new()
+				pic.texture = tex
+				pic.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+				pic.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+				pic.custom_minimum_size = Vector2(54, 54)
+				pic.mouse_filter = Control.MOUSE_FILTER_IGNORE
+				slot.add_child(pic)
+			else:
+				ready = false
+				var name_l := UI.label(Game.home.item_name(it), 10, UI.TEXT, true)
+				name_l.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+				name_l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+				name_l.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+				name_l.custom_minimum_size = Vector2(54, 54)
+				slot.add_child(name_l)
+			var key := UI.label(str(i + 1), 11, UI.ACCENT, true)
+			key.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
+			key.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
+			slot.add_child(key)
+			_pockets.add_child(slot)
+		if not ready:
+			_pocket_sig = ""            # pictures still rendering: build again next frame
+	_pockets.reset_size()
+	_pockets.position = Vector2((size.x - _pockets.size.x) / 2.0, size.y - _pockets.size.y - 18.0)
 
 
 func _draw_cross() -> void:

@@ -1,0 +1,20 @@
+[gd_resource type="Resource" script_class="FoodDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/food_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = "coffee_cup"
+display_name = "Take-away Coffee"
+group = "drink"
+model = "coffee_cup"
+tint = Color(0.36, 0.22, 0.14, 1)
+bites = 3
+energy = 16.0
+health = 0.0
+fullness = 6.0
+caffeine = true
+trash = "trash_cup"
+trash_name = "Empty Cup"
+blurb = "Somebody else made it. That is the whole appeal."
+price = 4

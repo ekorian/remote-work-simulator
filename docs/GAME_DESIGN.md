@@ -120,7 +120,7 @@ Rules that apply to all of them:
 Every morning there is junk food lying about the flat: on the desk, the coffee
 table, the kitchen counter, the nightstand. Nobody remembers buying it.
 
-- **38 kinds** in five groups: sweet (donut, cookie, chocolate bar, cupcake,
+- **39 kinds** in five groups: sweet (donut, cookie, chocolate bar, cupcake,
   cake, pretzel...), frozen (cone, tub, ice lolly, pudding), crunchy (crisps,
   popcorn, nachos, dry cereal, onion rings), hot (pizza, burger, hot dog,
   fries, nuggets, taco, burrito, toastie, drumsticks, corn dog, noodles,
@@ -149,7 +149,47 @@ table, the kitchen counter, the nightstand. Nobody remembers buying it.
   is still there, so the flat never offers more than five new things a day.
 
 Two toys live on the desk: a stress ball (squeezing it helps, a little, a few
-times a day) and a rubber duck (it squeaks).
+times a day) and a rubber duck (it squeaks). More objects are in "The town".
+
+## The town
+
+The front door (in the living room) opens as you walk up to it, onto a street.
+There is no loading screen: the flat and the street are one place.
+
+| Place | What it is for |
+| --- | --- |
+| QuickStop | Sweets, crisps, drinks, ice cream, scratch cards, the paper. Open 07:00 to 23:30 |
+| Patty's Take-Away | Hot food. Open 10:30 to 22:00 |
+| Odds & Ends | Objects: gnome, cactus, trophy, teddy, snow globe, basketball, a business book, flowers, a rubber duck. Open 10:00 to 19:00 |
+| Coffee cart | Take-away coffee (counts as a coffee), donuts, pretzels. Open 07:30 to 16:30 |
+| Vending machine | Cola, energy drinks, crisps, nougat. Always open. Sometimes keeps your money |
+| Newspaper box | The paper: read it for an idea for an excuse |
+| Park | A bench (fresh air: Health and a little Energy), a basketball hoop (each basket is good for you, a few times a day) |
+
+- **Buying.** Each shop puts a different selection on its shelves every day.
+  Look at an item to see its price and what it gives; E buys it into your
+  hand. The till lists the same goods if you would rather read than browse.
+- **Pockets.** Eight slots, shown along the bottom of the screen with a
+  picture of each thing. A second item in the hand pockets the first; R puts
+  away what you hold; 1 to 8 or the wheel takes things out. A traffic cone, a
+  gnome, a basketball or a pizza box does not fit in a pocket.
+- **Objects.** Besides food there are things that only exist to be owned.
+  Some do something in your hand (read the paper or the book, scratch a card,
+  squeeze the teddy, shake the snow globe). Ornaments left standing on your
+  desk add to how believable you are on camera. Anything that is not rubbish
+  can be given to a colleague: flowers go down best.
+- **People.** Shopkeepers, a barista and five neighbours, all of whom will
+  say something. Colleagues turn up at set times: Brenda at the coffee cart
+  in the morning and mid-afternoon, Kevin getting his steps in, Dave on the
+  park bench from ten to four, Priya at the corner shop after work, and
+  Martin at the coffee cart at 10:30.
+- **Being seen.** At home your absence shows only as a status dot. In the
+  street it has a face on it. During work hours a colleague who sees you (you
+  are in front of them, within about eight metres) may tell Martin, by the
+  same odds as when you ignore them: Kevin nearly always, a friend never.
+  Martin seeing you himself is the worst of all. Nobody minds at lunch
+  (12:00 to 12:45), in the evening, or while a story covers your absence.
+  Sitting with a friend in the park counts as being in a meeting with them.
 
 ## Tickets
 
@@ -367,5 +407,6 @@ an A and 14 hours an S; any real work caps the grade at B. This is what stops
 Multiple weeks or a campaign, promotions and raises, more apartments, more
 bosses, the full AI-clone storyline, Steam features, localisation, gamepad
 support, jumping and crouching, cooking, carrying furniture, a view out of the
-windows, and accessibility options beyond volume, sensitivity, field of view
+windows, traffic, more than one street, going into the neighbours' houses,
+and accessibility options beyond volume, sensitivity, field of view
 and head bob.

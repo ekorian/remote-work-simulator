@@ -92,6 +92,68 @@ func _scene_world() -> void:
 	Game.paused = false
 
 
+func _scene_town() -> void:
+	## The street, the shops, the park, the people, and what is in your pockets.
+	var w: World = main.world
+	await _start()
+	Game.time.timers.clear()
+	Game.comms.meetings.clear()
+	Game.comms.prompts.clear()
+	Game.time.manual = true
+	Game.time.minute = 640.0
+	Game.economy.money = 80
+	await wait(2.4)
+	main.hud.visible = false
+	_stand(Vector3(-4.5, 0, 3.2), Vector3(-4.5, 1.3, 9.0))
+	await wait(0.9)
+	await snap("town_doorway")
+	_stand(Vector3(-4.5, 0, 9.2), Vector3(3.0, 1.6, 17.0))
+	await wait(0.6)
+	await snap("town_street")
+	_stand(Vector3(-4.5, 0, 16.2), Vector3(-4.5, 1.4, 5.5))
+	await wait(0.5)
+	await snap("town_house")
+	_stand(Vector3(8.0, 0, 9.0), Vector3(16.0, 1.2, 9.2))
+	await wait(0.5)
+	await snap("town_cart")
+	_stand(Vector3(13.0, 0, 16.3), Vector3(18.5, 1.0, 22.0))
+	await wait(0.5)
+	await snap("town_park")
+	main.hud.visible = true
+	for shop in ["mart", "diner", "odds"]:
+		var d: Array = Town.SHOPS[shop]
+		var cx := (float(d[0]) + float(d[1])) / 2.0
+		_stand(Vector3(cx + 1.2, 0, 18.4), Vector3(float(d[0]) + 0.6, 1.0, 21.2))
+		await wait(0.6)
+		await snap("town_shop_" + str(shop))
+	# Buy a few things off the shelf and look at what you are carrying.
+	var bought := 0
+	for ware in w.wares:
+		var meta: Dictionary = ((ware as Node3D).get_child((ware as Node3D).get_child_count() - 1) as Area3D).get_meta("ware")
+		if str(meta.shop) == "mart" and bought < 4 and w.buy_ware(meta):
+			bought += 1
+	await wait(1.2)
+	var slot: Dictionary = w.apartment.parts["slots_mart"][2]
+	_stand(slot.stand, (slot.pos as Vector3) + Vector3(0, 0.15, 0))
+	await wait(0.8)
+	await snap("town_pockets")
+	var dave: TownPerson = null
+	for person in w.people:
+		if (person as TownPerson).id == "dave":
+			dave = person
+	_stand(dave.global_position + Vector3(-0.3, 0, -1.7), dave.global_position + Vector3(0, 1.0, 0))
+	await wait(0.6)
+	await snap("town_dave")
+	Game.time.minute = 1290.0
+	Game.time.phase = "evening"
+	main.hud.visible = false
+	_stand(Vector3(-4.5, 0, 9.2), Vector3(3.0, 1.6, 17.0))
+	await wait(1.6)
+	await snap("town_night")
+	main.hud.visible = true
+	Game.time.manual = false
+
+
 func _scene_items() -> void:
 	## Picking things up, holding them, eating, what is left, the bin.
 	var w: World = main.world

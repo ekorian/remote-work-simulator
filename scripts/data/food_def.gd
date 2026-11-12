@@ -12,6 +12,7 @@ extends DataDef
 @export var health := 0.0             ## total: comfort food comforts
 @export var fullness := 15.0          ## total stomach it takes up (0..100 scale)
 @export var caffeine := false         ## counts as a coffee (jitters apply)
+@export var price := 0                ## what a shop asks for it (0 = not for sale)
 @export var trash := ""               ## FoodKit model left behind ("" = nothing)
 @export var trash_name := ""          ## what the leftover is called
 @export_multiline var blurb := ""
