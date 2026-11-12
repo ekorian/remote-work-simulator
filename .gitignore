@@ -1,0 +1,14 @@
+# Godot 4
+.godot/
+*.translation
+# Local toolchain (Godot binary is downloaded by tools/setup_godot.sh)
+.tools/
+# Builds
+build/
+*.pck
+*.x86_64
+*.exe
+# Misc
+*.tmp
+__pycache__/
+.DS_Store
