@@ -47,8 +47,12 @@ var _inbox_rows: Array = []
 var _prompt: PanelContainer
 var _prompt_title: Label
 var _prompt_hint: Label
-var _tag: PanelContainer
-var _tag_label: Label
+var _key: Label
+var _cross: Control
+var _held: PanelContainer
+var _held_title: Label
+var _held_hint: Label
+var _held_keys: Label
 var _act: PanelContainer
 var _act_label: Label
 var _act_bar: StatBar
@@ -259,21 +263,33 @@ func _build_column() -> void:
 
 
 func _build_bottom() -> void:
-	# Name tag floating over the focused object.
-	_tag = PanelContainer.new()
-	_tag.add_theme_stylebox_override("panel", UI.sb(Color(UI.INK, 0.86), 20, 0, Color.TRANSPARENT, 10, 4))
-	_tag.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_tag_label = UI.title("", 15)
-	_tag.add_child(_tag_label)
-	_tag.visible = false
-	add_child(_tag)
+	# Crosshair: a dot that opens into a ring over something you can use.
+	_cross = Control.new()
+	_cross.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_cross.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	_cross.draw.connect(_draw_cross)
+	add_child(_cross)
+	# What is in your hand, and what you can do with it.
+	_held = _card()
+	_held.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_held.visible = false
+	add_child(_held)
+	var hv := UI.vbox(2)
+	_held.add_child(hv)
+	_held_title = UI.title("", 18)
+	hv.add_child(_held_title)
+	_held_hint = UI.label("", 13, UI.DIM)
+	hv.add_child(_held_hint)
+	_held_keys = UI.label("", 12, UI.ACCENT, true)
+	hv.add_child(_held_keys)
 	# Interaction prompt
 	_prompt = _card()
 	_prompt.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(_prompt)
 	var h := UI.hbox(12)
 	_prompt.add_child(h)
-	var key := UI.pill("F", UI.ACCENT, 18, true)
+	var key := UI.pill("E", UI.ACCENT, 18, true)
+	_key = key.get_child(0)
 	h.add_child(key)
 	var v := UI.vbox(1)
 	h.add_child(v)
@@ -294,7 +310,7 @@ func _build_bottom() -> void:
 	_act_label = UI.title("", 18)
 	_act_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	ah.add_child(_act_label)
-	ah.add_child(UI.pill("F  stop", UI.ACCENT, 12, true))
+	ah.add_child(UI.pill("E  stop", UI.ACCENT, 12, true))
 	_act_bar = StatBar.new()
 	_act_bar.color = UI.TEAL
 	_act_bar.custom_minimum_size = Vector2(380, 10)
@@ -464,7 +480,7 @@ func open_menu(thing: Interactable) -> void:
 
 func _place_menu() -> void:
 	_menu.reset_size()
-	_menu.position = Vector2((size.x - _menu.size.x) / 2.0, size.y - _menu.size.y - 30.0)
+	_menu.position = Vector2((size.x - _menu.size.x) / 2.0, maxf(20.0, (size.y - _menu.size.y) / 2.0 + 40.0))
 
 
 func menu_open() -> bool:
@@ -584,24 +600,65 @@ func _update_world_widgets() -> void:
 		_act.reset_size()
 		var span := size.x - (COL_W + 28.0) if desk_mode else size.x
 		_act.position = Vector2((span - _act.size.x) / 2.0, size.y - _act.size.y - 28.0)
-	var f: Interactable = world.focused if show_world and not busy and not _menu.visible else null
-	_prompt.visible = f != null
-	_tag.visible = f != null
-	if f != null:
+	var aiming := show_world and not busy and not _menu.visible and world.view == "play"
+	var f: Interactable = world.focused if aiming else null
+	var fi: Holdable = world.focused_item if aiming else null
+	_cross.visible = aiming
+	_cross.set_meta("on", f != null or fi != null)
+	_cross.queue_redraw()
+	_prompt.visible = f != null or fi != null
+	if fi != null:
+		var it := Game.home.item(fi.item_id)
+		_prompt_title.text = fi.title
+		_prompt_hint.text = "Pick up" if world.held == null else "Swap for what you are holding"
+		if not it.is_empty() and bool(it.get("hot", false)):
+			_prompt_hint.text += "  -  hot"
+	elif f != null:
 		var opts := Game.home.options(f.thing_id)
 		_prompt_title.text = f.title
 		if opts.size() == 1:
 			_prompt_hint.text = str(opts[0].label) if bool(opts[0].ok) else str(opts[0].why)
 		else:
 			_prompt_hint.text = "%d options" % opts.size()
+	if _prompt.visible:
 		_prompt.reset_size()
-		_prompt.position = Vector2((size.x - _prompt.size.x) / 2.0, size.y - _prompt.size.y - 28.0)
-		_tag_label.text = f.title
-		_tag.reset_size()
-		var sp := world.rig.cam.unproject_position(f.focus_point())
-		_tag.position = (sp - Vector2(_tag.size.x / 2.0, _tag.size.y + 6.0)).round()
-	if _menu.visible and (world == null or not world.interactive and false):
-		close_menu()
+		_prompt.position = Vector2((size.x - _prompt.size.x) / 2.0, size.y * 0.5 + 54.0)
+	# The thing in your hand.
+	var hb: Holdable = world.held if show_world and world.view == "play" and not _menu.visible else null
+	_held.visible = hb != null and not busy
+	if _held.visible:
+		var it := Game.home.item(hb.item_id)
+		_held_title.text = hb.title
+		var keys := "RMB put down    Q throw"
+		if Game.home.is_toy(it):
+			_held_hint.text = "Something to do with your hands."
+			keys = "LMB squeeze    " + keys
+		elif bool(it.get("trash", false)):
+			_held_hint.text = "Rubbish. It belongs in a bin."
+		else:
+			var view := Game.home.bite_view(it)
+			var total := int(Game.home.food(it).get("bites", 1))
+			var parts: Array = ["%d of %d left" % [int(it.bites), total]]
+			if float(view.energy) >= 0.5:
+				parts.append("+%d Energy a bite" % int(round(float(view.energy))))
+			if absf(float(view.health)) >= 0.5:
+				parts.append("%+d Health" % int(round(float(view.health))))
+			if bool(it.get("hot", false)):
+				parts.append("hot")
+			_held_hint.text = "  -  ".join(parts) if bool(view.ok) else str(view.why)
+			keys = "LMB %s    %s" % [str(view.verb).to_lower(), keys]
+		_held_keys.text = keys
+		_held.reset_size()
+		_held.position = Vector2((size.x - _held.size.x) / 2.0, size.y - _held.size.y - 26.0)
+
+
+func _draw_cross() -> void:
+	var c := size / 2.0
+	if bool(_cross.get_meta("on", false)):
+		_cross.draw_arc(c, 11.0, 0.0, TAU, 28, Color(UI.INK, 0.55), 5.0, true)
+		_cross.draw_arc(c, 11.0, 0.0, TAU, 28, UI.ACCENT, 2.5, true)
+	_cross.draw_circle(c, 3.6, Color(UI.INK, 0.55))
+	_cross.draw_circle(c, 2.2, Color.WHITE)
 
 
 func _rebuild_lists() -> void:

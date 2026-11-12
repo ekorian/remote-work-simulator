@@ -28,6 +28,7 @@ const THINGS := {
 	"bed": {"name": "Bed", "room": "Bedroom"},
 	"wardrobe": {"name": "Wardrobe", "room": "Bedroom"},
 	"charger": {"name": "Phone Charger", "room": "Bedroom"},
+	"bin": {"name": "Kitchen Bin", "room": "Kitchen"},
 }
 
 ## Timed activities. `per` is applied every game minute while it runs.
@@ -45,7 +46,26 @@ const TIMED := {
 	"nap": {"thing": "bed", "label": "Take a long nap", "mins": 60, "speed": 10.0, "anim": "sleep", "per": {"energy": 0.67, "health": 0.3}},
 	"power_nap": {"thing": "bed", "label": "Power nap", "mins": 25, "speed": 8.0, "anim": "sleep", "per": {"energy": 0.72, "health": 0.3}},
 	"forge": {"thing": "printer", "label": "Forge a doctor's note", "mins": 6, "speed": 2.5, "anim": "use", "per": {}},
+	"heat": {"thing": "microwave", "label": "Heat it up", "mins": 2, "speed": 1.5, "anim": "use", "per": {}},
 }
+
+## Junk food. Where it turns up every morning (the apartment knows where
+## each named spot is), and what the fridge hands out.
+const MORNING_SPOTS := ["desk", "coffee_table", "counter_a", "counter_b", "kitchen_table", "nightstand", "sofa", "tv_stand"]
+const MORNING_ITEMS := 5
+const FRIDGE_GROUPS := ["drink", "frozen"]
+const FRIDGE_STOCK := 3
+const HOT_BONUS := 1.4            ## a heated item does this much more per bite
+const FULL := 100.0               ## you cannot eat past this
+const STUFFED_AT := 85.0          ## above this you waddle
+const DIGEST := 0.45              ## fullness lost per game minute
+const PIZZA_PRICE := 18
+const PIZZA_MINUTES := 20
+const MESS_MAX := 5.0             ## most health a filthy flat costs you in the morning
+const TIDY_MAX := 4               ## bin this many a day for a point of health each
+const MAX_ITEMS := 28
+const TOYS := {"stress_ball": "Stress Ball", "rubber_duck": "Rubber Duck"}
+const SQUEEZES := 6               ## squeezes of the stress ball a day that still help
 
 const OUTFITS := {
 	"casual": {"label": "Hoodie and jeans", "hint": "Neutral on camera."},
@@ -56,6 +76,8 @@ const OUTFITS := {
 
 var things: Dictionary = {}      ## state of the objects in the flat
 var outfit := "casual"
+var items: Array = []            ## loose things you can pick up: [{id, food, bites, hot, trash, spot, at}]
+var held := ""                   ## id of the item in your hand ("" = empty-handed)
 
 
 func _ready() -> void:
@@ -64,7 +86,7 @@ func _ready() -> void:
 
 
 func save_state() -> Dictionary:
-	return {"things": things, "outfit": outfit}
+	return {"things": things, "outfit": outfit, "items": items, "held": held}
 
 
 func load_state(d: Dictionary) -> void:
@@ -72,6 +94,11 @@ func load_state(d: Dictionary) -> void:
 	for k in d.get("things", {}):
 		things[k] = d.things[k]
 	outfit = str(d.get("outfit", "casual"))
+	items = d.get("items", [])
+	held = str(d.get("held", ""))
+	if item(held).is_empty():
+		held = ""
+	Bus.items_changed.emit()
 
 
 func setup_run() -> void:
@@ -82,9 +109,15 @@ func setup_run() -> void:
 		"phone_bat": 85.0, "phone_docked": false,
 		"notes": 0, "ink": 3, "jam": false,
 		"mug": 1, "coffees": 0, "mug_wedges": 0,
-		"snacks": 3, "burritos": 2, "lunch": false,
+		"snacks": FRIDGE_STOCK, "burritos": 2, "lunch": false,
 		"staged_until": -1, "wiggle_at": -99, "outage_until": -1,
+		"fullness": 0.0, "pizza_at": -1, "pizza_today": false, "tidied": 0, "squeezes": 0,
 	}
+	items = []
+	held = ""
+	add_item("stress_ball", "desk_left")
+	add_item("rubber_duck", "desk_right")
+	_restock()
 
 
 func new_day() -> void:
@@ -95,8 +128,14 @@ func new_day() -> void:
 	th.laptop_updates = 0
 	th.coffees = 0
 	th.mug_wedges = 0
-	th.snacks = 3
+	th.snacks = FRIDGE_STOCK
 	th.burritos = 2
+	th.pizza_today = false
+	th.tidied = 0
+	th.squeezes = 0
+	th.fullness = float(th.get("fullness", 0.0)) * 0.3
+	_morning_mess()
+	_restock()
 	th.lunch = false
 	th.staged_until = -1
 	th.outage_until = -1
@@ -214,6 +253,10 @@ func options(thing: String) -> Array:
 			out.append(_timed("desk_nap", "You stay near the keyboard."))
 		"gaming_pc":
 			out.append(_opt("shop", "Browse ShadyDeals.biz", "use", "Buy gadgets and automation with your salary."))
+			var price := Game.economy.price(PIZZA_PRICE)
+			var waiting := int(th.get("pizza_at", -1)) >= 0
+			var why := "It's on its way." if waiting else ("One pizza a day. Have some dignity." if bool(th.get("pizza_today", false)) else "You can't afford a pizza. That is a low point.")
+			out.append(_opt("pizza", "Order a pizza ($%d)" % price, "use", "Eight slices at your door in %d minutes." % PIZZA_MINUTES, not waiting and not bool(th.get("pizza_today", false)) and Game.economy.can_afford(price), why))
 		"printer":
 			if bool(th.jam):
 				out.append(_opt("fix", "Clear the paper jam", "fix_printer", "PC LOAD LETTER. Costs energy."))
@@ -236,10 +279,14 @@ func options(thing: String) -> Array:
 			out.append(_timed("workout", "Clears coffee jitters. Energy costs -40% for 2.5h."))
 		"fridge":
 			out.append(_timed("snack", "%d left today." % int(th.snacks), int(th.snacks) > 0, "The fridge is empty until tomorrow."))
+			out.append(_opt("take", "Take something for later", "use", "A cold drink or a dessert, in your hand. %d left today." % int(th.snacks), int(th.snacks) > 0 and held == "", "Your hands are full." if held != "" else "The fridge is empty until tomorrow."))
 		"coffee":
 			out.append(_timed("brew", "Refills your desk mug. Too many cause jitters."))
 		"microwave":
 			out.append(_timed("burrito", "No passive energy drain for 2h. %d left." % int(th.burritos), int(th.burritos) > 0, "No burritos left today."))
+			var mine := item(held)
+			if not mine.is_empty() and not bool(mine.trash) and str(food(mine).get("group", "")) == "hot":
+				out.append(_timed("heat", "Your %s gives %d%% more per bite." % [item_name(mine).to_lower(), int(round((HOT_BONUS - 1.0) * 100.0))], not bool(mine.hot), "It is already hot."))
 		"table":
 			out.append(_timed("lunch", "Well Fed for 3h. Once a day.", not bool(th.lunch), "You already had lunch today."))
 		"bed":
@@ -258,6 +305,12 @@ func options(thing: String) -> Array:
 				out.append(_opt("dock", "Put the phone on the charger", "use", "Charges fast, but you can't answer from the phone. Battery %d%%." % int(th.phone_bat)))
 			else:
 				out.append(_opt("take", "Take the phone", "use", "Answer chats and calls from anywhere. Battery %d%%." % int(th.phone_bat)))
+		"bin":
+			var junk := item(held)
+			if junk.is_empty():
+				out.append(_opt("bin", "Bin something", "use", "", false, "Nothing in your hand. Pick up some rubbish first."))
+			else:
+				out.append(_opt("bin", "Bin the %s" % item_name(junk).to_lower(), "use", "A tidy flat is good for you." if bool(junk.trash) else "It is still good. Mostly."))
 	return out
 
 
@@ -341,8 +394,26 @@ func use(thing: String, opt_id: String) -> bool:
 			th.phone_docked = true
 			Bus.toast.emit("Phone on the charger.", "info")
 		"take":
-			th.phone_docked = false
-			Bus.toast.emit("Phone in your pocket.", "info")
+			if thing == "fridge":
+				th.snacks = int(th.snacks) - 1
+				var options: Array = []
+				for fid in Db.foods:
+					if str(Db.foods[fid].group) in FRIDGE_GROUPS:
+						options.append(fid)
+				var got := add_item(str(Game.pick(options)), "hand")
+				hold(str(got.id))
+				Bus.toast.emit("You took: %s." % item_name(got), "info")
+			else:
+				th.phone_docked = false
+				Bus.toast.emit("Phone in your pocket.", "info")
+		"pizza":
+			Game.economy.add_money(-Game.economy.price(PIZZA_PRICE), "Pizza")
+			th.pizza_today = true
+			th.pizza_at = Game.time.now() + PIZZA_MINUTES
+			Bus.sfx.emit("buy")
+			Bus.toast.emit("Pizza ordered. It will be at the front door in %d minutes." % PIZZA_MINUTES, "good")
+		"bin":
+			bin(held)
 		_:
 			if opt_id.begins_with("flip_"):
 				Game.automation.flip(opt_id.trim_prefix("flip_"))
@@ -371,6 +442,9 @@ func _start_timed(key: String) -> void:
 			th.lunch = true
 		"forge":
 			th.ink = int(th.ink) - 1
+		"heat":
+			a["item"] = held
+			a.erase("stat")
 	Game.activities.start(a)
 	Bus.thing_changed.emit(str(a.thing))
 
@@ -382,13 +456,14 @@ func _on_activity_ended(a: Dictionary, completed: bool) -> void:
 	match str(a.get("id", "")):
 		"brew":
 			th.mug = 3
-			th.coffees = int(th.coffees) + 1
-			if int(th.coffees) >= 3:
-				Game.stats.remove_buff("jitter")
-				Game.stats.add_buff("wired", 90)
-				Bus.toast.emit("Third coffee. You can hear colours.", "warn")
-			elif int(th.coffees) == 2:
-				Game.stats.add_buff("jitter", 75)
+			_caffeine()
+		"heat":
+			var warmed := item(str(a.get("item", "")))
+			if not warmed.is_empty():
+				warmed.hot = true
+				Bus.sfx.emit("good")
+				Bus.toast.emit("Your %s is now dangerously hot in the middle and cold at the edges." % item_name(warmed).to_lower(), "good")
+				Bus.items_changed.emit()
 		"burrito":
 			Game.stats.add_buff("fed", 120)
 		"lunch":
@@ -422,3 +497,256 @@ func _on_minute() -> void:
 		th.phone_bat = minf(100.0, float(th.phone_bat) + 1.6)
 	else:
 		th.phone_bat = maxf(0.0, float(th.phone_bat) - 0.03)
+	# Digestion, and the pizza you ordered.
+	if not Game.time.running():
+		return
+	th.fullness = maxf(0.0, float(th.get("fullness", 0.0)) - DIGEST)
+	if float(th.fullness) >= STUFFED_AT:
+		Game.stats.add_buff("stuffed", 3)
+	if int(th.get("pizza_at", -1)) >= 0 and Game.time.now() >= int(th.pizza_at):
+		th.pizza_at = -1
+		add_item("pizza_box", "doormat")
+		Bus.sfx.emit("ring")
+		Bus.toast.emit("Knock knock. Your pizza is on the doormat.", "good")
+
+
+# ---------------------------------------------------------------------------
+# Loose items: junk food, what is left of it, and things to fidget with
+# ---------------------------------------------------------------------------
+
+func item(id: String) -> Dictionary:
+	if id == "":
+		return {}
+	for it in items:
+		if str(it.id) == id:
+			return it
+	return {}
+
+
+func food(it: Dictionary) -> Dictionary:
+	return Db.foods.get(str(it.get("food", "")), {})
+
+
+func item_name(it: Dictionary) -> String:
+	var def := food(it)
+	if def.is_empty():
+		return str(TOYS.get(str(it.get("food", "")), "Thing"))
+	if bool(it.get("trash", false)):
+		return str(def.trash_name) if str(def.trash_name) != "" else "Rubbish"
+	return str(def.display_name)
+
+
+func item_model(it: Dictionary) -> String:
+	## Which FoodKit model shows this item right now.
+	var def := food(it)
+	if def.is_empty():
+		return str(it.get("food", ""))          # a toy: the id is the model
+	return str(def.trash) if bool(it.get("trash", false)) else str(def.model)
+
+
+func fullness() -> float:
+	return float(things.get("fullness", 0.0))
+
+
+func add_item(food_id: String, spot: String = "", trash: bool = false) -> Dictionary:
+	## Put something in the flat. `spot` names a place the apartment knows
+	## ("desk", "doormat", "hand"...); the 3D world moves it from there.
+	var def: Dictionary = Db.foods.get(food_id, {})
+	var it := {
+		"id": Game.next_id("i"), "food": food_id, "bites": int(def.get("bites", 0)),
+		"hot": false, "trash": trash, "spot": spot, "at": [],
+	}
+	items.append(it)
+	while items.size() > MAX_ITEMS:
+		# Too much stuff: the oldest rubbish goes first, then the oldest anything.
+		var drop: Dictionary = {}
+		for old in items:
+			if bool(old.trash) and str(old.id) != held:
+				drop = old
+				break
+		if drop.is_empty():
+			drop = items[0] if str(items[0].id) != held else items[1]
+		items.erase(drop)
+	Bus.items_changed.emit()
+	return it
+
+
+func remove_item(id: String) -> void:
+	var it := item(id)
+	if it.is_empty():
+		return
+	items.erase(it)
+	if held == id:
+		held = ""
+	Bus.items_changed.emit()
+
+
+func hold(id: String) -> bool:
+	if item(id).is_empty():
+		return false
+	held = id
+	item(id).spot = ""
+	Bus.items_changed.emit()
+	return true
+
+
+func release() -> void:
+	if held != "":
+		held = ""
+		Bus.items_changed.emit()
+
+
+func bite_view(it: Dictionary) -> Dictionary:
+	## What the next bite would do: {ok, why, energy, health, verb}.
+	var def := food(it)
+	var v := {"ok": false, "why": "", "energy": 0.0, "health": 0.0, "verb": "Eat"}
+	if def.is_empty() or bool(it.get("trash", false)) or int(it.get("bites", 0)) <= 0:
+		v.why = "Not food"
+		return v
+	var n := float(maxi(1, int(def.bites)))
+	var k := HOT_BONUS if bool(it.get("hot", false)) else 1.0
+	v.verb = "Drink" if str(def.group) == "drink" else "Eat"
+	v.energy = float(def.energy) / n * k
+	v.health = float(def.health) / n * (k if float(def.health) > 0.0 else 1.0)
+	if fullness() + float(def.fullness) / n > FULL:
+		v.why = "You are stuffed. Give it a while."
+		Game.tutor.hint("stuffed")
+		return v
+	v.ok = true
+	return v
+
+
+func eat(id: String) -> Dictionary:
+	## One bite (or gulp). Returns {ok, done, why}: `done` when that was the last of it.
+	var it := item(id)
+	var view := bite_view(it)
+	if not bool(view.ok):
+		if str(view.why) != "":
+			Bus.toast.emit(str(view.why), "warn")
+		return {"ok": false, "done": false, "why": str(view.why)}
+	var def := food(it)
+	var label := item_name(it)
+	if not Game.work.perform("eat", {"label": label}):
+		return {"ok": false, "done": false, "why": ""}
+	it.bites = int(it.bites) - 1
+	things.fullness = fullness() + float(def.fullness) / float(maxi(1, int(def.bites)))
+	Game.stats.add("energy", float(view.energy), label)
+	Game.stats.add("health", float(view.health), label)
+	Game.bump("bites")
+	if not Game.time.running():
+		return {"ok": true, "done": false, "why": ""}
+	Bus.item_bitten.emit(it, int(it.bites))
+	var done := int(it.bites) <= 0
+	if done:
+		Game.bump("junk_eaten")
+		if bool(def.caffeine):
+			_caffeine()
+		if str(def.trash) != "":
+			it.trash = true
+			it.hot = false
+			Game.tutor.hint("rubbish")
+		else:
+			remove_item(id)
+	Bus.items_changed.emit()
+	return {"ok": true, "done": done, "why": ""}
+
+
+func bin(id: String) -> bool:
+	## Throw an item away. Rubbish in the bin is good for the soul, up to a point.
+	var it := item(id)
+	if it.is_empty():
+		return false
+	if is_toy(it):
+		Bus.toast.emit("You would miss it by Thursday.", "info")
+		return false
+	var was_trash := bool(it.trash)
+	var label := item_name(it)
+	remove_item(id)
+	Game.bump("binned")
+	Bus.sfx.emit("pop")
+	if was_trash and int(things.get("tidied", 0)) < TIDY_MAX:
+		things.tidied = int(things.get("tidied", 0)) + 1
+		Game.stats.add("health", 1.0, "Tidied up")
+	elif not was_trash:
+		Bus.toast.emit("You threw away a perfectly good %s." % label.to_lower(), "info")
+	return true
+
+
+func is_toy(it: Dictionary) -> bool:
+	return TOYS.has(str(it.get("food", "")))
+
+
+func fidget(id: String) -> bool:
+	## Play with a desk toy. The stress ball helps, a little, for a while.
+	var it := item(id)
+	if not is_toy(it) or not Game.time.running():
+		return false
+	match str(it.food):
+		"stress_ball":
+			things.squeezes = int(things.get("squeezes", 0)) + 1
+			if int(things.squeezes) <= SQUEEZES:
+				Game.stats.add("health", 0.5, "Stress ball")
+			elif int(things.squeezes) == SQUEEZES + 1:
+				Bus.toast.emit("The stress ball has given all it can today.", "info")
+			Bus.sfx.emit("pop")
+		"rubber_duck":
+			Bus.sfx.emit("squeak")
+	return true
+
+
+func rubbish() -> int:
+	var n := 0
+	for it in items:
+		if bool(it.trash):
+			n += 1
+	return n
+
+
+func _caffeine() -> void:
+	var th: Dictionary = things
+	th.coffees = int(th.coffees) + 1
+	if int(th.coffees) >= 3:
+		Game.stats.remove_buff("jitter")
+		Game.stats.add_buff("wired", 90)
+		Bus.toast.emit("That is a lot of caffeine. You can hear colours.", "warn")
+	elif int(th.coffees) == 2:
+		Game.stats.add_buff("jitter", 75)
+
+
+func _morning_mess() -> void:
+	## Yesterday's rubbish is still there when you wake up, and it shows.
+	var n := rubbish()
+	if n > 0:
+		Game.stats.add("health", -minf(MESS_MAX, float(n)), "Woke up in a landfill")
+		Bus.toast.emit("You woke up among %d piece%s of yesterday's rubbish. Bin it in the kitchen." % [n, "" if n == 1 else "s"], "warn")
+
+
+func _restock() -> void:
+	## Every morning there is junk food lying about. Nobody remembers buying it.
+	if Db.foods.is_empty():
+		return
+	var taken := {}
+	for it in items:
+		if str(it.spot) in MORNING_SPOTS:
+			taken[str(it.spot)] = true
+	var spots: Array = []
+	for s in MORNING_SPOTS:
+		if not taken.has(s):
+			spots.append(s)
+	var pool: Array = []
+	for fid in Db.foods:
+		if fid != "pizza_box":
+			pool.append(fid)
+	# Its own dice, seeded from the run and the day: what is lying about
+	# never changes what else happens in the week.
+	var dice := RandomNumberGenerator.new()
+	dice.seed = hash([Game.rng.seed, Game.time.day, "junk"])
+	# What nobody touched yesterday is still where it was: top up around it.
+	for i in maxi(0, MORNING_ITEMS - taken.size()):
+		if spots.is_empty() or pool.is_empty():
+			break
+		var spot: String = spots[dice.randi() % spots.size()]
+		spots.erase(spot)
+		var fid: String = pool[dice.randi() % pool.size()]
+		pool.erase(fid)
+		add_item(fid, spot)

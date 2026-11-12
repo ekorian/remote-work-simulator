@@ -22,6 +22,7 @@ const BUFFS := {
 	"endorphins": {"name": "Endorphins", "desc": "Energy costs reduced by 40%.", "good": true},
 	"fed": {"name": "Well Fed", "desc": "No passive energy drain.", "good": true},
 	"inspired": {"name": "Daytime-TV Inspired", "desc": "+10% on your next excuse.", "good": true},
+	"stuffed": {"name": "Stuffed", "desc": "You ate too much. You walk slower until it settles.", "good": false},
 }
 
 var values := {"health": 100.0, "energy": 90.0, "susp": 8.0, "ill": 45.0}

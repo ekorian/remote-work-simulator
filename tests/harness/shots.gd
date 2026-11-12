@@ -1,6 +1,6 @@
 extends Node
 ## Dev-only: scripted screenshot capture for visual checks.
-##   tools/shots.sh <scene> [out_dir]      scenes: world menu play desk overlays ends night
+##   tools/shots.sh <scene> [out_dir]      scenes: world items menu play desk overlays colleagues ends night poses
 
 var main: Node
 var out_dir := ""
@@ -58,23 +58,103 @@ func _skip(minutes: int) -> void:
 	Game.time.manual = false
 
 
-func _scene_world() -> void:
+func _stand(pos: Vector3, at: Vector3) -> void:
+	## Put the player somewhere, looking at a point.
 	var w: World = main.world
+	w.place_player(pos, 0.0)
+	w.player.face(at, true)
+
+
+## Where to stand and what to look at for a picture of each room, twice.
+const VIEWS := {
+	"office": [Vector3(-1.3, 0, -1.0), Vector3(-5.2, 0.9, -4.6)],
+	"office_desk": [Vector3(-4.3, 0, -2.6), Vector3(-4.2, 0.95, -5.0)],
+	"office_back": [Vector3(-6.0, 0, -4.6), Vector3(-1.5, 1.0, -1.6)],
+	"bedroom": [Vector3(1.0, 0, -1.0), Vector3(4.8, 0.7, -4.4)],
+	"bedroom_back": [Vector3(6.2, 0, -4.6), Vector3(1.6, 1.0, -1.2)],
+	"living": [Vector3(-0.2, 0, 1.2), Vector3(-5.4, 0.7, 3.2)],
+	"living_back": [Vector3(-6.2, 0, 4.9), Vector3(-1.8, 1.0, 1.4)],
+	"kitchen": [Vector3(6.2, 0, 4.8), Vector3(2.8, 0.9, 0.9)],
+	"kitchen_table": [Vector3(2.0, 0, 1.6), Vector3(5.0, 0.8, 3.9)],
+}
+
+
+func _scene_world() -> void:
 	await _start()
 	main.hud.visible = false
 	Game.paused = true
-	w.rig.zoom = 19.0
-	w.rig.target = null
-	w.rig.snap_to(Vector3(0, 0.9, 0))
+	await wait(2.4)                   # let the day card fade
+	for id in VIEWS:
+		_stand(VIEWS[id][0], VIEWS[id][1])
+		await wait(0.45)
+		await snap("room_" + str(id))
+	main.hud.visible = true
+	Game.paused = false
+
+
+func _scene_items() -> void:
+	## Picking things up, holding them, eating, what is left, the bin.
+	var w: World = main.world
+	await _start()
+	Game.time.timers.clear()
+	Game.comms.meetings.clear()
+	Game.comms.prompts.clear()
+	Game.time.hold = true
+	await wait(2.4)
+	# The desk: toys and whatever turned up this morning.
+	_stand(Vector3(-4.3, 0, -3.5), Vector3(-4.6, 0.85, -4.85))
 	await wait(0.6)
-	await snap("world_overview")
-	w.rig.target = w.player
-	w.rig.zoom = 9.0
-	for spot in [["office", Vector3(-4.2, 0, -2.6)], ["bedroom", Vector3(3.2, 0, -2.6)], ["living", Vector3(-3.6, 0, 3.4)], ["kitchen", Vector3(4.0, 0, 2.2)]]:
-		w.place_player(spot[1], 0.6)
-		w.rig.snap_to(spot[1] + Vector3(0, 0.9, 0))
-		await wait(0.5)
-		await snap("room_" + str(spot[0]))
+	await snap("items_desk")
+	# A table laid with one of everything hot.
+	var foods := ["burger", "fries", "pizza_slice", "hot_dog", "taco", "nuggets", "donut", "cupcake", "soda_can", "milkshake", "cone", "chips"]
+	var t: Vector3 = w.apartment.spots["kitchen_table"]
+	for i in foods.size():
+		var it := Game.home.add_item(str(foods[i]), "")
+		var b: Holdable = w.bodies[str(it.id)]
+		b.global_position = t + Vector3(0.3 - 0.21 * float(i % 4) + 0.32, 0.02, -0.28 + 0.26 * float(int(i / 4.0)))
+		b.rotation.y = 0.4 * float(i)
+		b.freeze = true
+	_stand(Vector3(4.25, 0, 2.35), t + Vector3(0.3, -0.05, -0.02))
+	await wait(0.6)
+	await snap("items_table")
+	# Aim at one, pick it up, eat it.
+	var burger: Holdable = null
+	for id in w.bodies:
+		if (w.bodies[id] as Holdable).model == "burger":
+			burger = w.bodies[id]
+	w.player.face(burger.global_position + Vector3(0, 0.04, 0), true)
+	await wait(0.4)
+	await snap("items_aim")
+	w.press_use()
+	_stand(Vector3(3.2, 0, 1.9), Vector3(5.6, 1.1, 4.4))
+	await wait(0.6)
+	await snap("items_held")
+	w.use_held()
+	await wait(0.16)
+	await snap("items_bite")
+	await wait(0.5)
+	w.use_held()
+	await wait(0.6)
+	await snap("items_half_eaten")
+	while w.held != null and not bool(Game.home.item(w.held.item_id).get("trash", true)):
+		Game.home.things.fullness = 0.0
+		w.use_held()
+		await wait(0.35)
+	await wait(0.4)
+	await snap("items_wrapper")
+	# The bin.
+	_stand(Vector3(5.5, 0, 1.5), Vector3(6.45, 0.45, 0.62))
+	await wait(0.5)
+	await snap("items_bin")
+	w.throw_held()
+	await wait(1.2)
+	await snap("items_binned")
+	# The pizza on the doormat.
+	Game.home.add_item("pizza_box", "doormat")
+	_stand(Vector3(-1.4, 0, 3.6), Vector3(-1.4, 0.1, 5.05))
+	await wait(0.6)
+	await snap("items_pizza")
+	Game.time.hold = false
 
 
 func _scene_menu() -> void:
@@ -93,39 +173,28 @@ func _scene_menu() -> void:
 func _scene_play() -> void:
 	var w: World = main.world
 	await _start("survivor", true)
-	await wait(0.6)
+	await wait(2.6)
 	await snap("play_start_tutorial")
 	Game.tutor.skip()
 	Game.time.hold = false
-	# Walk to the kitchen and look at the fridge.
-	w.place_player(w.apartment.things["fridge"].use_point(), 0.0)
-	w.rig.snap_to(w.player.global_position + Vector3(0, 0.9, 0))
+	# Stand in the kitchen and look at the fridge.
+	var fridge: Interactable = w.apartment.things["fridge"]
+	_stand(fridge.use_point() + Vector3(0.2, 0, 0.5), fridge.focus_point() - Vector3(0, 0.7, 0))
 	_skip(45)
 	await wait(0.5)
 	await snap("play_focus_fridge")
-	w.place_player(w.apartment.things["mug"].use_point() + Vector3(0, 0, 0.0), 0.0)
-	w.rig.snap_to(w.player.global_position + Vector3(0, 0.9, 0))
-	await wait(0.4)
-	main.hud.open_menu(w.apartment.things["mug"])
+	w.press_use()
 	main._refresh()
 	await wait(0.3)
 	await snap("play_object_menu")
 	main.hud.close_menu()
 	# An activity in progress.
-	w.interact(w.apartment.things["console"])
-	await wait(0.2)
-	w.place_player(w.apartment.things["console"].use_point(), 0.0)
-	w.interact(w.apartment.things["console"])
+	Game.home.use("console", "console")
 	await wait(1.2)
-	w.rig.snap_to(w.player.global_position + Vector3(0, 0.9, 0))
-	await wait(0.4)
 	await snap("play_activity_console")
 	Game.activities.stop()
-	w.place_player(w.apartment.things["bed"].use_point(), 0.0)
 	Game.home.use("bed", "power_nap")
-	await wait(0.8)
-	w.rig.snap_to(w.player.global_position + Vector3(0, 0.9, 0))
-	await wait(0.3)
+	await wait(1.1)
 	await snap("play_activity_nap")
 	Game.activities.stop()
 
@@ -372,24 +441,23 @@ func _scene_ends() -> void:
 
 
 func _scene_poses() -> void:
-	## Close-ups of every seated / lying pose, to check facings by eye.
+	## What you see from every seat, to check eye positions and facings.
 	var w: World = main.world
 	await _start("survivor", false)
 	main.hud.visible = false
 	Game.paused = true
-	w.rig.zoom = 5.2
 	for pose in [["workstation", "type"], ["gaming_pc", "game"], ["sofa", "lounge"], ["console", "game"], ["bed", "sleep"], ["table", "sit_eat"], ["exercise", "workout"], ["chair", "sit_sleep"]]:
 		w.sit_at(str(pose[0]), str(pose[1]))
-		w.rig.snap_to(w.player.global_position + Vector3(0, 0.7, 0))
 		await wait(0.7)
 		await snap("pose_%s" % str(pose[0]))
 		w.leave_seat()
 	Game.paused = false
+	main.hud.visible = true
 
 
 func _scene_stretch() -> void:
-	## Run at a window size other than the base resolution to verify that 3D
-	## picking and the floating name tag still line up (canvas_items stretch).
+	## Run at a window size other than the base resolution to verify that the
+	## crosshair still finds every object (canvas_items stretch).
 	var w: World = main.world
 	await _start("survivor", false)
 	Game.paused = true
@@ -399,19 +467,16 @@ func _scene_stretch() -> void:
 	for id in w.apartment.things:
 		var t: Interactable = w.apartment.things[id]
 		w.place_player(t.use_point(), 0.0)
-		w.rig.snap_to(w.player.global_position + Vector3(0, 0.9, 0))
+		var centre: Vector3 = (t.get_child(0) as Node3D).global_position
+		w.player.face(centre, true)
 		await get_tree().process_frame
 		await get_tree().physics_frame
-		# Aim at the middle of the object's pick volume, as the mouse would.
-		var centre: Vector3 = (t.get_child(0) as Node3D).global_position
-		var sp := w.rig.cam.unproject_position(centre)
-		var hit := w._thing_under(sp)
-		if hit == null:
+		if w._look_hits().thing != t:
 			bad += 1
-			print("  MISS: %s at %s" % [id, str(sp.round())])
-	print("STRETCH picking: %d/%d objects hit through their projected centre" % [w.apartment.things.size() - bad, w.apartment.things.size()])
-	w.place_player(w.apartment.things["fridge"].use_point(), 0.0)
-	w.rig.snap_to(w.player.global_position + Vector3(0, 0.9, 0))
+			print("  MISS: %s" % id)
+	print("STRETCH picking: %d/%d objects found by the crosshair" % [w.apartment.things.size() - bad, w.apartment.things.size()])
+	var fridge: Interactable = w.apartment.things["fridge"]
+	_stand(fridge.use_point() + Vector3(0.2, 0, 0.5), fridge.focus_point() - Vector3(0, 0.7, 0))
 	Game.paused = false
 	await wait(0.6)
 	await snap("stretch_tag")
@@ -454,23 +519,20 @@ func _scene_saveload() -> void:
 
 
 func _scene_night() -> void:
-	var w: World = main.world
 	await _start("survivor", false)
 	Game.time.manual = true
 	Game.time.phase = "evening"
 	Game.time.minute = 1290.0
 	main.hud.visible = false
-	w.rig.zoom = 18.0
-	w.rig.target = null
-	w.rig.snap_to(Vector3(0, 0.9, 0))
-	await wait(1.6)
-	await snap("night_overview")
+	for id in ["living", "bedroom", "office_desk"]:
+		_stand(VIEWS[id][0], VIEWS[id][1])
+		await wait(1.5)
+		await snap("night_" + str(id))
 	Game.time.minute = 1085.0
-	await wait(1.0)
-	await snap("dusk_overview")
-	w.rig.yaw_step = 2
-	await wait(1.4)
-	await snap("rotated_overview")
+	_stand(VIEWS["kitchen"][0], VIEWS["kitchen"][1])
+	await wait(1.2)
+	await snap("dusk_kitchen")
+	main.hud.visible = true
 
 
 # ---------------------------------------------------------------------------
@@ -690,6 +752,18 @@ func _auto_step(w: World) -> void:
 	if now < _auto_walk:
 		return
 	_auto_walk = now + 0.4
+	# Hands: grab whatever is lying about, eat it, throw what is left.
+	if w.held != null:
+		var hr := randf()
+		if hr < 0.5:
+			w.use_held()
+		elif hr < 0.62:
+			w.throw_held()
+		elif hr < 0.68:
+			w.put_down()
+	elif randf() < 0.12 and not w.bodies.is_empty():
+		var some: Array = w.bodies.values()
+		w.pick_up(some[randi() % some.size()])
 	var roll := randf()
 	if not Game.automation.has("presence") and Game.automation.unlocked("mousemover") and Game.economy.can_afford(Game.automation.price("mousemover")) and roll < 0.3:
 		w.interact(w.apartment.things["gaming_pc"])
@@ -700,7 +774,7 @@ func _auto_step(w: World) -> void:
 	elif roll < 0.5:
 		_auto_goto_desk(w)
 	elif roll < 0.6:
-		w.rig.rotate_step(1 if randf() < 0.5 else -1)
+		w.player.look(Vector2(randf_range(-400, 400), randf_range(-120, 120)))
 	elif roll < 0.65:
 		main.open_pause()
 	elif roll < 0.7:
@@ -730,6 +804,8 @@ func _auto_evening(w: World) -> void:
 		var t: Interactable = main.hud._menu_thing
 		if t.thing_id == "bed":
 			main.hud._menu_pick("sleep")
+		elif t.thing_id == "gaming_pc":
+			main.hud._menu_pick("shop")
 		else:
 			main.hud.close_menu()
 		return

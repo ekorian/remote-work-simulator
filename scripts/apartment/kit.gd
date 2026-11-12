@@ -125,6 +125,50 @@ static func dome(parent: Node3D, radius: float, pos: Vector3, color: Color, segs
 	return _inst(_ball_mesh(radius, segs, true), mat(color), pos, parent)
 
 
+static func torus(parent: Node3D, ring: float, tube: float, pos: Vector3, color: Color, segs: int = 14, tube_segs: int = 8) -> MeshInstance3D:
+	## A ring lying flat (axis up). `ring` is the radius to the centre of the tube.
+	var key := "t%.3f,%.3f,%d,%d" % [ring, tube, segs, tube_segs]
+	if not _meshes.has(key):
+		var m := TorusMesh.new()
+		m.inner_radius = maxf(0.001, ring - tube)
+		m.outer_radius = ring + tube
+		m.rings = segs
+		m.ring_segments = tube_segs
+		_meshes[key] = m
+	return _inst(_meshes[key], mat(color), pos, parent)
+
+
+static func wedge(parent: Node3D, size: Vector3, pos: Vector3, color: Color) -> MeshInstance3D:
+	## A triangular slab lying flat: `size.x` wide at the back (-Z), coming to
+	## a point at +Z, `size.z` long and `size.y` thick. Pizza, cake, toasties.
+	var key := "w%.3f,%.3f,%.3f" % [size.x, size.y, size.z]
+	if not _meshes.has(key):
+		var m := PrismMesh.new()
+		m.size = Vector3(size.x, size.z, size.y)
+		_meshes[key] = m
+	var mi := _inst(_meshes[key], mat(color), pos, parent)
+	mi.rotation.x = PI / 2.0
+	return mi
+
+
+static func capsule(parent: Node3D, radius: float, length: float, pos: Vector3, color: Color, segs: int = 10) -> MeshInstance3D:
+	## A pill standing upright; `length` includes the round ends.
+	var key := "p%.3f,%.3f,%d" % [radius, length, segs]
+	if not _meshes.has(key):
+		var m := CapsuleMesh.new()
+		m.radius = radius
+		m.height = maxf(length, radius * 2.0)
+		m.radial_segments = segs
+		m.rings = 4
+		_meshes[key] = m
+	return _inst(_meshes[key], mat(color), pos, parent)
+
+
+static func cone(parent: Node3D, radius: float, height: float, pos: Vector3, color: Color, segs: int = 10) -> MeshInstance3D:
+	## Point up. Rotate it for an ice-cream cone.
+	return _inst(_cyl_mesh(radius, 0.001, height, segs), mat(color), pos, parent)
+
+
 static func node(parent: Node3D, pos: Vector3 = Vector3.ZERO, node_name: String = "") -> Node3D:
 	var n := Node3D.new()
 	n.position = pos

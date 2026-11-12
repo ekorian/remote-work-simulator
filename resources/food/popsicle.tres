@@ -1,0 +1,18 @@
+[gd_resource type="Resource" script_class="FoodDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/food_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = "popsicle"
+display_name = "Ice Lolly"
+group = "frozen"
+model = "popsicle"
+tint = Color(1, 0.549, 0.3529, 1)
+bites = 3
+energy = 5.0
+health = 2.0
+fullness = 6.0
+blurb = "Orange flavour. Orange colour. No orange."
+trash = "trash_stick"
+trash_name = "Lolly Stick"

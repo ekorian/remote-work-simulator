@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="FoodDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/food_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = "cereal"
+display_name = "Dry Cereal"
+group = "crunchy"
+model = "cereal"
+tint = Color(0.3098, 0.702, 1, 1)
+bites = 4
+energy = 8.0
+health = 0.0
+fullness = 16.0
+blurb = "Straight from the box, standing up, at 3pm."

@@ -2,17 +2,19 @@
 
 **Get paid. Do nothing. Don't get caught.**
 
-A comedy stealth/management sim for PC. You are a remote employee of SynerCorp, a
+A first-person comedy stealth/management sim for PC. You are a remote employee of SynerCorp, a
 dysfunctional software company. You are paid to work from home. Your goal is to
 survive one working week, Monday to Friday, without doing any actual work, while
 convincing your manager Martin that you are the most productive person on the team.
 
 In Remote Work Simulator, productivity is the enemy.
 
-![The apartment](docs/screenshots/apartment.png)
+![The home office](docs/screenshots/apartment.png)
 
 | | |
 | --- | --- |
+| ![Holding a cheeseburger](docs/screenshots/holding.png) | ![The kitchen](docs/screenshots/kitchen.png) |
+| ![Every junk food model](docs/screenshots/junk_food.png) | ![The living room at night](docs/screenshots/night.png) |
 | ![Choosing an excuse](docs/screenshots/excuses.png) | ![The Alibi Ledger and gadgets](docs/screenshots/ledger.png) |
 | ![A meeting](docs/screenshots/meeting.png) | ![The gadget shop](docs/screenshots/shop.png) |
 | ![A colleague's page: friendship and favours](docs/screenshots/colleague.png) | ![A call from sub-basement 3](docs/screenshots/call.png) |
@@ -22,6 +24,8 @@ difficulties, 20 to 40 minutes per run.
 
 - Engine: Godot 4.7 (Forward+), typed GDScript only
 - Platforms: Linux and Windows
+- First person, in a flat seen from the inside: cartoon colours, chunky low-poly
+  furniture and an ink outline on everything
 - No imported art or audio: every mesh, icon and sound is generated in code
 
 ## Run it
@@ -44,14 +48,18 @@ To open the project in the editor:
 
 | Key | Action |
 | --- | --- |
-| W A S D / arrows | Walk |
-| Left click | Walk to a spot, or walk to an object and use it |
-| F or Space | Use the highlighted object / stop the current activity |
+| Mouse | Look around |
+| W A S D / arrows | Walk (Shift to hurry) |
+| E or left click | Use what the crosshair is on / pick it up / stop the current activity |
+| Left click | Eat, drink or squeeze what you are holding |
+| Right click | Put it down where you are looking |
+| Q | Throw it |
 | 1 to 9 | Pick an option or an answer |
 | Tab | Phone: answer chats and calls from anywhere |
-| Q / E | Rotate the camera 90 degrees |
-| Mouse wheel | Zoom |
+| Alt (hold) | Free the mouse pointer to click things on screen |
 | Esc | Leave the desk / close / pause |
+
+Mouse sensitivity, field of view, head bob and the ink outlines are in Settings.
 
 The workday runs 09:00 to 17:00. Four resources decide whether you make it:
 
@@ -76,6 +84,13 @@ your tickets, cover your absences and warn you before he checks on you. Each
 has a story told in calls over the week, and each has a voice. From Tuesday,
 so do the unknown numbers: a robocall about your chair's warranty, somebody's
 grandmother, a fax machine.
+
+**Junk food** turns up around the flat every morning: 38 kinds, from a glazed
+donut to a bucket of drumsticks. Pick something up, carry it to the sofa or the
+desk, and eat it a bite at a time for Energy without leaving your chair. Your
+stomach has a limit, the microwave makes hot things better, the fridge hands
+out cold ones, and what is left (wrappers, cans, boxes) has to go in a bin or
+you wake up in it. A pizza can be ordered from the Gaming PC.
 
 **Gadgets** keep you looking present while you are not: MouseMover.exe, the
 Keyboard Duck, Chatbot Team, the Meeting Assistant and the AI Doppelganger, each
@@ -114,17 +129,22 @@ What the tests cover:
   contradiction for all ten categories, gadget activation, upgrades, failures
   and combinations, event preconditions, pacing and modal conflicts, NPC state,
   colleagues (friendship tiers, telling on you, every favour, every scripted
-  and strange call played to the end three ways), the economy, and a
-  save/load round trip.
+  and strange call played to the end three ways), junk food (every kind has a
+  model of its own, bites, fullness, leftovers, the bin, the fridge, the
+  microwave, pizza), the economy, and a save/load round trip.
 - `tests/run_test`: bots (idle, honest worker, skilled slacker, and a slacker
   who ignores every colleague) play whole weeks with invariants checked every
   simulated minute. It fails if a run softlocks, if standing still can win, if
   an honest worker can win Extreme, if skilled avoidance stops being viable,
   or if ignoring colleagues stops costing more than befriending them.
 - `tests/world_test`: builds the real apartment and walks the player to every
-  object with physics and collisions on.
+  object with physics and collisions on; checks that the crosshair finds each
+  one, that the flat is closed with open doorways, that every seat puts your
+  eyes somewhere sensible, and that items can be picked up, eaten, put down,
+  thrown and binned.
 - `tools/shots.sh <scene>` renders scripted screenshots offscreen (needs `xvfb`);
   `tools/shots.sh autoplay` has a bot play a week through the real UI.
+  `tests/harness/food_sheet.tscn` renders every junk-food model on one sheet.
 
 Useful while balancing:
 
@@ -145,9 +165,9 @@ scripts/deception/   DeceptionManager and the Claim model
 scripts/automation/  AutomationManager
 scripts/events/      EventDirector, Dialogue, Tutorial
 scripts/npcs/        NPCManager, Social (colleagues)
+scripts/apartment/   World, Apartment, Interactable, Holdable, Kit, FoodKit
+scripts/player/      Player (first person), Character (the body in the menus)
 scripts/data/        Resource classes for authored content
-scripts/player/      player controller, character, camera
-scripts/apartment/   the 3D flat and its objects
 scripts/ui/          HUD, the SynerOS desktop, dialogs and menus
 resources/           all content as Godot Resources: events, dialogue, gadgets,
                      npcs, deception, tasks, balancing, text

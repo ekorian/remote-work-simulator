@@ -1,0 +1,18 @@
+[gd_resource type="Resource" script_class="FoodDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/food_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = "soda_cup"
+display_name = "Large Soda"
+group = "drink"
+model = "soda_cup"
+tint = Color(0.902, 0.2235, 0.2745, 1)
+bites = 4
+energy = 8.0
+health = 0.0
+fullness = 12.0
+blurb = "A bucket with a straw."
+trash = "trash_cup"
+trash_name = "Empty Cup"

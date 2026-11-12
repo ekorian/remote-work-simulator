@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="FoodDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/food_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = "cone"
+display_name = "Ice Cream Cone"
+group = "frozen"
+model = "cone"
+tint = Color(1, 0.6196, 0.7961, 1)
+bites = 4
+energy = 7.0
+health = 3.0
+fullness = 12.0
+blurb = "Two scoops. Eat it before it becomes one."

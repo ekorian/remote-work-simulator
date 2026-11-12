@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="FoodDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/food_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = "waffle"
+display_name = "Waffle"
+group = "hot"
+model = "waffle"
+tint = Color(1, 1, 1, 1)
+bites = 3
+energy = 9.0
+health = 2.0
+fullness = 18.0
+blurb = "A pancake with a filing system."

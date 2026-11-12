@@ -8,6 +8,7 @@ const ROOT := "res://resources"
 const KINDS := {
 	"npcs": "npcs", "claims": "deception", "gadgets": "gadgets", "combos": "gadgets/combos",
 	"events": "events", "dialogues": "dialogue", "tasks": "tasks", "difficulties": "balancing", "texts": "text",
+	"foods": "food",
 }
 
 static var npcs: Dictionary = {}
@@ -19,6 +20,7 @@ static var dialogues: Dictionary = {}
 static var tasks: Dictionary = {}
 static var difficulties: Dictionary = {}
 static var texts: Dictionary = {}
+static var foods: Dictionary = {}
 static var errors: Array = []
 static var _loaded := false
 
@@ -37,6 +39,7 @@ static func load_all(force: bool = false) -> void:
 	tasks = _load("tasks")
 	difficulties = _load("difficulties")
 	texts = _load("texts")
+	foods = _load("foods")
 
 
 static func _load(kind: String) -> Dictionary:

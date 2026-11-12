@@ -177,12 +177,8 @@ func show_menu() -> void:
 	world.place_player(Vector3(-3.4, 0, 2.75), 0.0)
 	world.player.body.set_look(Character.DEFAULT_LOOK, "pajamas")
 	world.sit_at("sofa", "lounge")
-	world.rig.target = null
-	world.rig.close_up = false
-	world.rig.zoom = 17.5
-	world.rig.orbit = 0.07
-	world.rig.pan = -6.2
-	world.rig._focus = Vector3(0.0, 0.4, 0.0)
+	world.set_view("menu")
+	_mouse()
 	menu.open()
 	_update_audio()
 
@@ -192,14 +188,10 @@ func show_setup() -> void:
 	state = "setup"
 	world.demo = true
 	world.demo_minute = 600.0
-	world.place_player(Vector3(-1.4, 0, 3.0), 0.0)
-	world.player.rotation.y = deg_to_rad(225.0)
+	world.place_player(Vector3(-1.25, 0, 1.0), PI)
 	world.player.body.anim = "wave"
-	world.rig.orbit = 0.0
-	world.rig.pan = 0.0
-	world.rig.yaw_step = 0
-	world.rig.zoom = 4.6
-	world.rig.target = world.player
+	world.set_view("setup")
+	_mouse()
 	new_game.open()
 
 
@@ -231,15 +223,9 @@ func load_run(slot: String) -> void:
 func _enter_play() -> void:
 	state = "play"
 	world.demo = false
-	world.rig.pan = 0.0
-	world.rig.cam.h_offset = 0.0
-	world.rig.orbit = 0.0
-	world.rig.yaw_step = 0
-	world.rig.zoom = 12.5
-	world.rig.close_up = false
-	world.rig.target = world.player
 	world.player.body.anim = "idle"
 	world.leave_seat()
+	world.set_view("play")
 	_ring_seen = ""
 	_pending_report = {}
 
@@ -287,11 +273,23 @@ func _refresh() -> void:
 	if state != "play":
 		return
 	world.interactive = not overlay_open()
+	_mouse()
 	Game.paused = pause.visible or call_view.visible or report.visible or results.visible
 	hud.desk_mode = desktop.visible or shop.visible
 	hud.visible = not results.visible and not report.visible
 	if Game.active and Game.time.phase != "over":
 		Game.presence.set_at_desk(desktop.visible or (Game.activities.busy() and str(Game.activities.current.get("id", "")) in ["desk_nap", "work", "grind"] and bool(Game.presence.at_desk)))
+
+
+func _mouse() -> void:
+	## In the flat the mouse looks around; anywhere there is something to
+	## click (menus, SynerOS, the phone, a call) it is a pointer again.
+	if DisplayServer.get_name() == "headless":
+		return
+	var look: bool = state == "play" and Game.active and not overlay_open() and not phone.visible and Game.time.phase != "over" and not Input.is_key_pressed(KEY_ALT)
+	var want := Input.MOUSE_MODE_CAPTURED if look else Input.MOUSE_MODE_VISIBLE
+	if Input.mouse_mode != want:
+		Input.mouse_mode = want
 
 
 func open_desktop(app: String = "") -> void:
@@ -485,6 +483,7 @@ func _unhandled_input(e: InputEvent) -> void:
 func _process(_delta: float) -> void:
 	if state != "play" or not Game.active:
 		return
+	_mouse()                    # (holding Alt frees the pointer to click the HUD)
 	# Keep the "at desk" flag honest while the desktop is open.
 	if desktop.visible and not bool(Game.presence.at_desk) and Game.time.phase != "over":
 		Game.presence.set_at_desk(true)

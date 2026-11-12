@@ -18,11 +18,15 @@ Both fonts were downloaded from the Google Fonts repository
 
 | What | Where | How it was made |
 | --- | --- | --- |
-| All 3D models | built at runtime by `scripts/apartment/` and `scripts/player/character.gd` | Procedural geometry from primitives |
+| All 3D models, including every junk food | built at runtime by `scripts/apartment/` (`FoodKit` for food) and `scripts/player/character.gd` | Procedural geometry from primitives |
 | All icons | `scripts/ui/icon.gd` | Drawn in code |
 | All sound effects, ambience and music | `assets/audio/*.wav` | Synthesised by `tools/gen_audio.py`; no samples |
 | All voices | `assets/audio/voice_*.wav` | Formant synthesis in `tools/gen_audio.py`: generated gibberish, not recordings of anyone and not derived from any voice model |
 | All writing, names and UI | `resources/`, `scripts/ui/` | Written for this project |
+
+The visual style (first person, cartoon colours, ink outlines, chunky low-poly
+rooms) is this project's own: it does not reproduce the levels, characters or
+assets of any other game. The junk food has no brands on it.
 
 SynerCorp, its staff and its products are fictional. The corporate desktop
 (SynerOS, SynerTeams, SynerTasks, SynerCalendar, SynerMail) is an original

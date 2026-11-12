@@ -8,17 +8,18 @@ extends GameSystem
 
 const DAYS := [
 	[
-		{"id": "move", "title": "Get out of bed", "text": "Walk with WASD or click the floor. Q / E rotate the camera, the mouse wheel zooms. Click any object (or press F next to it) to use it."},
-		{"id": "desk", "title": "Clock in", "text": "Go to the Work Computer in the home office (top-left room) and press F to log in."},
+		{"id": "move", "title": "Get out of bed", "text": "Look around with the mouse and walk with WASD (Shift to hurry). Put the dot on something and press E, or click, to use it."},
+		{"id": "desk", "title": "Clock in", "text": "Leave the bedroom by the door next to the wardrobe. The Work Computer is on the desk in the home office: press E on it to log in."},
 		{"id": "reply", "title": "Answer {boss}", "text": "Open SynerTeams and reply to your manager before his timer runs out. Green tags are safe. RED tags are real work and cost Health."},
 		{"id": "fake", "title": "Fake some progress", "text": "Open SynerTasks, pick a ticket and post a FAKE progress update. It feeds your Productivity Illusion without doing anything."},
 		{"id": "excuse", "title": "Tell your first lie", "text": "Pick 'Make an excuse...' on a message, or 'Excuse...' on a meeting in SynerCalendar. Every lie is remembered: don't do anything that contradicts it."},
 		{"id": "leave", "title": "Walk away", "text": "Press Esc to leave the desk. Within minutes your status turns Away, and unexplained absence raises Suspicion."},
-		{"id": "relax", "title": "Now do nothing", "text": "Sofa, TV, console, coffee, a snack. Leisure restores Health and Energy, and paid slacking is what your grade is made of."},
+		{"id": "relax", "title": "Now do nothing", "text": "Sofa, TV, console, coffee. Leisure restores Health and Energy, and paid slacking is what your grade is made of."},
+		{"id": "snack", "title": "Eat something terrible", "text": "There is junk food lying about the flat. Put the dot on some and press E to pick it up, then left click to eat. Right click puts it down, Q throws it."},
 		{"id": "standup", "title": "Survive the standup", "text": "A meeting will ring. Join it from the computer or your phone (Tab), or find a way out of it. Meetings drain Health; missing them raises Suspicion."},
 	],
 	[
-		{"id": "shop", "title": "Automate your presence", "text": "MouseMover.exe is on sale today. Use the Gaming PC (the dark desk with the RGB strip) and buy it from ShadyDeals.biz."},
+		{"id": "shop", "title": "Automate your presence", "text": "MouseMover.exe is on sale today. Use the Gaming PC (the dark desk with the RGB strip, in the home office) and buy it from ShadyDeals.biz."},
 		{"id": "enable", "title": "Switch it on", "text": "Use the Keyboard & Mouse on your work desk, or the ShadowIT app, to switch it ON. Your status stays green while you roam."},
 		{"id": "roam", "title": "Slack while it covers", "text": "With MouseMover running, go and do something better. Gadgets wear out: service them before they fail."},
 		{"id": "ally", "title": "Make an ally", "text": "Colleagues you leave hanging may tell {boss}. Ones who like you cover for you instead. Pick up when one calls, do one a favour, or open their chat in SynerTeams for small talk."},
@@ -40,14 +41,16 @@ const HINTS := {
 	"away": "Your status is Away. Suspicion climbs until you look busy, or have an accepted excuse.",
 	"low_energy": "Low Energy: you can't lie convincingly when exhausted. Eat, drink coffee, or nap.",
 	"low_health": "Low Health. Console, TV, the sofa and food restore it. Meetings and desk time drain it.",
-	"phone": "Press Tab for your phone: answer chats and calls from anywhere, while it has battery.",
+	"phone": "Press Tab for your phone: answer chats and calls from anywhere, while it has battery. Hold Alt to click things on screen.",
 	"evening": "Work is over. Shop at the Gaming PC, recover, then sleep in the bed to start the next day.",
 	"gadget_broke": "A gadget broke. Service your gadgets at the Keyboard & Mouse (it costs Energy).",
 	"heat": "Running gadgets generate Heat. SynerWatch scans can catch you: switch things off before a scan.",
 	"claim": "Your story is now in the Alibi Ledger. While it is active, some actions would contradict it: the desktop warns you.",
 	"contradiction": "You were caught contradicting yourself. Whoever heard the story will want an explanation: answer them.",
 	"favor": "Someone owes you a favour. Spend it on a colleague in SynerTeams: a ticket taken off your hands, a meeting skipped, a good word.",
-	"fast": "Time fast-forwards during activities. Press F to stop early if something comes up.",
+	"fast": "Time fast-forwards during activities. Press E to stop early if something comes up.",
+	"stuffed": "You are stuffed: you cannot eat any more for a while, and you walk slower until it settles.",
+	"rubbish": "That leaves rubbish. Carry it to the Kitchen Bin, or throw it (Q) at one. A flat full of rubbish costs Health every morning.",
 	"upgrade": "Gadgets can be upgraded at the Gaming PC: more reliable, less Heat, new abilities.",
 	"colleague": "Colleagues remember who answers. Leave one hanging and they may tell your manager; be good to them and they become friends who cover for you.",
 	"snitch": "A colleague you ignored just told your manager. In SynerTeams, each colleague's page shows how likely they are to do that.",
@@ -185,6 +188,8 @@ func _on_action(id: String, _cls: int, _ctx: Dictionary) -> void:
 			tick("service")
 		"small_talk", "gift", "ask_favor", "do_favor":
 			tick("ally")
+		"eat":
+			tick("snack")
 
 
 func _on_claim(c: Claim) -> void:

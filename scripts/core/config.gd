@@ -71,9 +71,9 @@ const KEYS := {
 	"move_right": [KEY_D, KEY_RIGHT],
 	"move_up": [KEY_W, KEY_UP],
 	"move_down": [KEY_S, KEY_DOWN],
-	"interact": [KEY_F, KEY_SPACE, KEY_ENTER],
-	"cam_left": [KEY_Q],
-	"cam_right": [KEY_E],
+	"interact": [KEY_E, KEY_F],
+	"throw": [KEY_Q],
+	"sprint": [KEY_SHIFT],
 	"phone": [KEY_TAB],
 	"pause": [KEY_ESCAPE],
 }

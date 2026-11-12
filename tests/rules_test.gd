@@ -29,6 +29,7 @@ func _ready() -> void:
 	_colleague_rules()
 	_colleague_favours()
 	_colleague_calls()
+	_junk_food()
 	_economy()
 	_save_load()
 	_day_flow()
@@ -1512,6 +1513,217 @@ func _colleague_calls() -> void:
 	Game.saves.enabled = false
 
 
+# ---------------------------------------------------------------------------
+# Junk food and other loose items
+# ---------------------------------------------------------------------------
+
+func _junk_food() -> void:
+	t.section("junk food")
+	var h := Game.home
+	t.check(Db.foods.size() >= 30, "there are many kinds of junk food (%d)" % Db.foods.size())
+	var groups := {}
+	var models := {}
+	for id in Db.foods:
+		var f: Dictionary = Db.foods[id]
+		groups[str(f.group)] = int(groups.get(str(f.group), 0)) + 1
+		t.check(FoodKit.has(str(f.model)) and str(f.model) in FoodKit.MODELS, "food:%s has a 3D model ('%s')" % [id, str(f.model)])
+		t.check(not models.has(str(f.model)), "food:%s has a model of its own" % id)
+		models[str(f.model)] = id
+		t.check(str(f.trash) == "" or str(f.trash) in FoodKit.TRASH, "food:%s leftover '%s' has a model" % [id, str(f.trash)])
+		t.check(str(f.trash) == "" or str(f.trash_name) != "", "food:%s leftover has a name" % id)
+		t.check(int(f.bites) >= 1 and int(f.bites) <= 8 and float(f.energy) > 0.0 and float(f.fullness) > 0.0, "food:%s has sane numbers" % id)
+		t.check(str(f.display_name) != "" and str(f.blurb) != "", "food:%s has a name and a line" % id)
+	for g in ["sweet", "frozen", "crunchy", "hot", "drink"]:
+		t.check(int(groups.get(g, 0)) >= 3, "at least three kinds of '%s' (%d)" % [g, int(groups.get(g, 0))])
+	for toy in Home.TOYS:
+		t.check(str(toy) in FoodKit.TOYS, "toy '%s' has a model" % str(toy))
+	for m in FoodKit.MODELS:
+		t.check(models.has(str(m)), "model '%s' is something you can actually find" % str(m))
+	t.check(WorkSystem.DEFS.has("eat") and not Game.work.is_work("eat"), "eating is not work")
+	for sfx in ["step", "bite", "gulp", "pickup", "putdown", "squeak"]:
+		t.check(ResourceLoader.exists("res://assets/audio/%s.wav" % sfx), "audio cue '%s' exists" % sfx)
+	# A fresh flat.
+	t.run("survivor", 401)
+	t.at_work(600)
+	var food_n := 0
+	var toys := 0
+	var spots := {}
+	for it in h.items:
+		if h.is_toy(it):
+			toys += 1
+		else:
+			food_n += 1
+			t.check(str(it.spot) in Home.MORNING_SPOTS and not spots.has(str(it.spot)), "'%s' has a spot to itself (%s)" % [h.item_name(it), str(it.spot)])
+			spots[str(it.spot)] = true
+	t.check(food_n == Home.MORNING_ITEMS and toys == Home.TOYS.size(), "Monday starts with %d things to eat and %d to fidget with (%d, %d)" % [Home.MORNING_ITEMS, Home.TOYS.size(), food_n, toys])
+	# Eating.
+	var it := h.add_item("burger", "desk")
+	t.check(h.item_name(it) == "Cheeseburger" and h.item_model(it) == "burger" and int(it.bites) == 4, "a burger is four bites")
+	Game.stats.values.energy = 30.0
+	Game.stats.values.health = 60.0
+	var view := h.bite_view(it)
+	t.check(bool(view.ok) and is_equal_approx(float(view.energy), 4.0) and str(view.verb) == "Eat", "each bite is worth a quarter of it")
+	var res := h.eat(str(it.id))
+	t.check(bool(res.ok) and not bool(res.done) and int(it.bites) == 3, "a bite is a bite")
+	t.near(Game.stats.get_value("energy"), 34.0, "it gives energy")
+	t.check(Game.stats.get_value("health") > 60.0, "comfort food comforts")
+	t.near(h.fullness(), 9.0, "and fills you up")
+	t.check(int(Game.week.bites) == 1 and int(Game.week.worked_min) == 0, "bites are counted, and are not work")
+	h.eat(str(it.id))
+	h.eat(str(it.id))
+	res = h.eat(str(it.id))
+	t.check(bool(res.done) and bool(it.trash) and h.item_name(it) == "Wrapper" and h.item_model(it) == "trash_wrapper", "the last bite leaves a wrapper")
+	t.check(int(Game.week.junk_eaten) == 1 and not bool(h.bite_view(it).ok) and not bool(h.eat(str(it.id)).ok), "you cannot eat the wrapper")
+	var n := h.items.size()
+	var donut := h.add_item("donut", "")
+	for i in 3:
+		Game.home.things.fullness = 0.0
+		h.eat(str(donut.id))
+	t.check(h.item(str(donut.id)).is_empty() and h.items.size() == n, "a donut leaves nothing behind")
+	# Being full.
+	t.run("survivor", 402)
+	t.at_work(600)
+	var pizza := h.add_item("pizza_box", "")
+	var eaten := 0
+	for i in 12:
+		if bool(h.eat(str(pizza.id)).ok):
+			eaten += 1
+	t.check(eaten > 0 and eaten < 8 and int(pizza.bites) == 8 - eaten, "you cannot eat a whole pizza in one go (%d slices)" % eaten)
+	t.check(h.fullness() <= Home.FULL and str(h.bite_view(pizza).why) != "", "you are told why")
+	Game.time.advance(1)
+	t.check(Game.stats.has_buff("stuffed"), "and you are stuffed")
+	Game.time.advance(60)
+	t.check(h.fullness() < Home.STUFFED_AT and not Game.stats.has_buff("stuffed"), "it settles in time")
+	t.check(bool(h.eat(str(pizza.id)).ok), "and then there is room for more")
+	# Caffeine.
+	t.run("survivor", 403)
+	t.at_work(600)
+	for i in 2:
+		var can := h.add_item("energy_can", "")
+		for b in 3:
+			h.eat(str(can.id))
+	t.check(int(h.things.coffees) == 2 and Game.stats.has_buff("jitter"), "an energy drink counts as a coffee, jitters included")
+	# Hands, the fridge, the microwave.
+	t.run("survivor", 404)
+	t.at_work(600)
+	t.check(h.held == "" and not h.hold("nope"), "you start empty-handed")
+	var stock := int(h.things.snacks)
+	t.check(h.use("fridge", "take") and h.held != "" and int(h.things.snacks) == stock - 1, "the fridge hands you something to carry")
+	var got := h.item(h.held)
+	t.check(str(h.food(got).group) in Home.FRIDGE_GROUPS, "something cold (%s)" % h.item_name(got))
+	t.check(not h.use("fridge", "take"), "not with your hands full")
+	h.release()
+	t.check(h.held == "" and not h.item(str(got.id)).is_empty(), "putting it down does not make it vanish")
+	var has_heat := func() -> bool:
+		for o in h.options("microwave"):
+			if str(o.id) == "heat":
+				return true
+		return false
+	t.check(not has_heat.call(), "the microwave offers nothing for empty hands")
+	var slice := h.add_item("pizza_slice", "")
+	h.hold(str(slice.id))
+	t.check(has_heat.call(), "holding something hot-able, it offers to heat it")
+	var cold := float(h.bite_view(slice).energy)
+	t.check(h.use("microwave", "heat") and Game.activities.id() == "heat", "heating takes a moment")
+	Game.time.advance(3)
+	t.check(bool(slice.hot) and float(h.bite_view(slice).energy) > cold * 1.2, "a hot slice is worth more per bite")
+	h.release()
+	var cola := h.add_item("soda_can", "")
+	h.hold(str(cola.id))
+	t.check(not has_heat.call(), "you cannot microwave a can of cola")
+	# The bin.
+	t.run("survivor", 405)
+	t.at_work(600)
+	var wrapper := h.add_item("burger", "", true)
+	Game.stats.values.health = 50.0
+	t.check(h.rubbish() == 1, "rubbish is counted")
+	h.hold(str(wrapper.id))
+	t.check(h.use("bin", "bin") and h.item(str(wrapper.id)).is_empty() and h.held == "", "the kitchen bin takes what is in your hand")
+	t.check(Game.stats.get_value("health") > 50.0 and int(Game.week.binned) == 1, "tidying up is good for you")
+	for i in 8:
+		var more := h.add_item("burger", "", true)
+		h.bin(str(more.id))
+	t.near(Game.stats.get_value("health"), 50.0 + float(Home.TIDY_MAX) * float(Game.diff().recover), "up to a point")
+	var duck: Dictionary = {}
+	for x in h.items:
+		if str(x.food) == "rubber_duck":
+			duck = x
+	t.check(not duck.is_empty() and h.item_name(duck) == "Rubber Duck" and not h.bin(str(duck.id)) and not h.item(str(duck.id)).is_empty(), "you cannot bin the rubber duck")
+	t.check(h.fidget(str(duck.id)), "you can squeeze it")
+	# Every object in the flat copes with whatever is in your hand.
+	for carry in [str(duck.id), str(h.add_item("soda_can", "").id), str(h.add_item("burger", "", true).id), str(h.add_item("pizza_slice", "").id), ""]:
+		h.held = carry
+		var listed := 0
+		for thing in Home.THINGS:
+			listed += h.options(str(thing)).size()
+		t.check(listed >= Home.THINGS.size(), "every object offers something while you hold '%s'" % (h.item_name(h.item(carry)) if carry != "" else "nothing"))
+		t.check(not bool(h.bite_view(h.item(carry)).ok) or not h.is_toy(h.item(carry)), "and a toy is never food")
+	h.held = ""
+	# A dirty flat.
+	t.run("survivor", 406)
+	t.at_work(1010)
+	for i in 3:
+		h.add_item("fries", "", true)
+	var moved := 0
+	for x in h.items:
+		if str(x.spot) in Home.MORNING_SPOTS and moved < 2:
+			x.spot = ""                    # you carried two of them off somewhere
+			moved += 1
+	Game.time.advance(15)
+	Game.stats.values.health = 50.0
+	var before_n := h.items.size()
+	Game.sleep()
+	t.check(Game.time.day == 1 and h.rubbish() == 3, "yesterday's rubbish is still there in the morning")
+	t.check(h.items.size() == before_n + 2, "what you took is replaced; what you left is still there (%d new)" % (h.items.size() - before_n))
+	var slept := Game.stats.get_value("health")
+	t.run("survivor", 406)
+	t.at_work(1010)
+	Game.time.advance(15)
+	Game.stats.values.health = 50.0
+	Game.sleep()
+	t.check(Game.stats.get_value("health") > slept, "waking up in a tidy flat is better for you (%.1f vs %.1f)" % [Game.stats.get_value("health"), slept])
+	# Pizza.
+	t.run("survivor", 407)
+	t.at_work(600)
+	Game.economy.money = 100
+	var count := h.items.size()
+	t.check(h.use("gaming_pc", "pizza") and Game.economy.money == 100 - Game.economy.price(Home.PIZZA_PRICE), "a pizza costs money")
+	t.check(h.items.size() == count, "and takes a while")
+	t.check(not h.use("gaming_pc", "pizza"), "one at a time")
+	Game.time.advance(Home.PIZZA_MINUTES + 1)
+	var arrived: Dictionary = h.items.back()
+	t.check(h.items.size() == count + 1 and str(arrived.food) == "pizza_box" and str(arrived.spot) == "doormat", "it arrives on the doormat")
+	t.check(not h.use("gaming_pc", "pizza"), "one pizza a day")
+	# Clutter is capped.
+	for i in 60:
+		h.add_item("cookie", "", i % 2 == 0)
+	t.check(h.items.size() <= Home.MAX_ITEMS, "the flat never holds more than %d loose things (%d)" % [Home.MAX_ITEMS, h.items.size()])
+	# Extreme difficulty: eating never ends the run.
+	t.run("unemployed", 408)
+	t.at_work(600)
+	var safe := h.add_item("burger", "")
+	h.eat(str(safe.id))
+	t.check(Game.time.running() and int(Game.week.worked_min) == 0, "eating is safe on Professional Unemployed")
+	# Save and load.
+	Game.saves.enabled = true
+	t.run("survivor", 409)
+	t.at_work(600)
+	var keep := h.add_item("burger", "")
+	h.eat(str(keep.id))
+	keep.at = [1.0, 0.8, -2.0, 0.0, 0.0, 0.0, 1.0]
+	h.hold(str(keep.id))
+	var snap := {"n": h.items.size(), "full": h.fullness(), "id": str(keep.id)}
+	t.check(Game.saves.save("slot3"), "save")
+	t.run("intern", 7)
+	t.check(Game.saves.load_game("slot3"), "load")
+	var back := h.item(str(snap.id))
+	t.check(h.items.size() == int(snap.n) and not back.is_empty() and int(back.bites) == 3 and h.held == str(snap.id), "items, bites and what you were holding are restored")
+	t.near(h.fullness(), float(snap.full), "and so is your stomach")
+	t.check(typeof(back.bites) == TYPE_INT and (back.at as Array).size() == 7, "item data keeps its types")
+	Game.saves.delete("slot3")
+	Game.saves.enabled = false
+
+
 func _economy() -> void:
 	t.section("economy")
 	var e := Game.economy
@@ -1573,7 +1785,7 @@ func _save_load() -> void:
 	t.check(Game.time.running() and is_equal_approx(Game.time.minute, float(snap.minute) + 30.0), "the simulation continues after loading")
 	# Versioning: an incompatible save is refused, not half-loaded.
 	var bad := Game.save_state()
-	bad.version = 1
+	bad.version = GameManager.SAVE_VERSION - 1
 	t.check(not Game.load_state(bad), "a save from another version is rejected")
 	Game.saves.delete("slot3")
 	t.check(Game.saves.meta("slot3").is_empty(), "a save can be deleted")

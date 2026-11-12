@@ -560,12 +560,46 @@ def voices():
     return count
 
 
+# ---------------------------------------------------------------------------
+# Hands and feet: footsteps, picking things up, eating them
+# ---------------------------------------------------------------------------
+
+def props():
+    r = np.random.default_rng(4242)          # its own stream: nothing else changes
+
+    def hiss(d):
+        return r.uniform(-1, 1, int(SR * d))
+
+    # A sock on a wooden floor.
+    step = mix(band(hiss(0.09), 90, 900, 2) * decay(int(SR * 0.09), 38), 0.5 * tone(82, 0.09, (1,), 46))
+    save("step", step, 0.5)
+    # Three crunches.
+    bite = np.zeros(int(SR * 0.34))
+    for i, start in enumerate([0.0, 0.1, 0.19]):
+        crunch = band(hiss(0.07), 900 + 300 * i, 4800, 2) * decay(int(SR * 0.07), 55)
+        bite += at(crunch * (1.0 - 0.2 * i), start, 0.34)
+    save("bite", bite, 0.5)
+    # Two swallows.
+    gulp = mix(sweep(360, 190, 0.09) * env(int(SR * 0.09), 0.005, 0.04), at(sweep(330, 170, 0.1) * env(int(SR * 0.1), 0.005, 0.05), 0.15, 0.3))
+    save("gulp", lowpass(gulp, 1400), 0.5)
+    save("pickup", sweep(300, 760, 0.07) * env(int(SR * 0.07), 0.004, 0.04), 0.4)
+    putdown = mix(band(hiss(0.06), 80, 700, 2) * decay(int(SR * 0.06), 60), 0.7 * tone(110, 0.08, (1, 0.3), 50))
+    save("putdown", putdown, 0.45)
+    # A rubber duck with opinions.
+    d = 0.26
+    tt = t(d)
+    f = 950 + 700 * np.sin(np.pi * tt / d) ** 0.6 + 40 * np.sin(2 * np.pi * 38 * tt)
+    squeak = np.sin(2 * np.pi * np.cumsum(f) / SR) + 0.35 * np.sin(4 * np.pi * np.cumsum(f) / SR)
+    save("squeak", squeak * env(len(squeak), 0.01, 0.06), 0.42)
+
+
 if __name__ == "__main__":
     os.makedirs(OUT, exist_ok=True)
     ui()
     loops()
     music()
     voices()
+    props()
     files = sorted(f for f in os.listdir(OUT) if f.endswith(".wav"))
     size = sum(os.path.getsize(os.path.join(OUT, f)) for f in files)
     print(f"{len(files)} sounds, {size / 1e6:.1f} MB -> {os.path.normpath(OUT)}")

@@ -3,6 +3,19 @@
 This describes the game as implemented. Numbers live in `scripts/core/config.gd`
 and in the resources under `resources/`.
 
+## How you see it
+
+First person, from inside the flat: four rooms with full-height walls, doorways
+between them, a ceiling, curtains and pictures. You look with the mouse and walk
+with WASD. A dot in the middle of the screen is your reach (about two metres):
+put it on an object and its name and what it does appear; E or a click uses it.
+Sitting and lying move your eyes to where your head would be, and you can
+still look around from the sofa. The work computer, the phone and calls are
+flat screens over the view, and the mouse becomes a pointer while they are up.
+
+The look is a cartoon family home: saturated colours, chunky low-poly
+furniture, soft lighting, and a dark ink line around everything.
+
 ## The loop
 
 A workday is 08:59 to 17:00 at 1.25 game minutes per real second (about 6.5
@@ -101,6 +114,42 @@ Rules that apply to all of them:
 - An accepted story gives **cover**: your absence is explained while it lasts.
 - A story that expires or is verified without incident counts as a successful
   deception. From Wednesday, Martin checks far more of what he is told.
+
+## Junk food
+
+Every morning there is junk food lying about the flat: on the desk, the coffee
+table, the kitchen counter, the nightstand. Nobody remembers buying it.
+
+- **38 kinds** in five groups: sweet (donut, cookie, chocolate bar, cupcake,
+  cake, pretzel...), frozen (cone, tub, ice lolly, pudding), crunchy (crisps,
+  popcorn, nachos, dry cereal, onion rings), hot (pizza, burger, hot dog,
+  fries, nuggets, taco, burrito, toastie, drumsticks, corn dog, noodles,
+  pancakes, waffle) and drinks (cola, energy drink, large soda, milkshake,
+  chocolate milk). Each has its own model.
+- **You hold one thing at a time.** E picks it up, right click sets it down
+  where you are looking, Q throws it. It goes where you go: to the sofa, to
+  the desk, into a meeting.
+- **A click is a bite.** Each bite gives a share of the item's Energy (and for
+  comfort food a little Health), and the model shrinks: fries leave the
+  carton one by one, slices leave the box.
+- **Your stomach has a limit.** Every bite fills you up; past the limit you
+  cannot eat, and near it you are Stuffed and walk slower. It settles with
+  time. A whole pizza is more than one sitting.
+- **The fridge** hands out cold things (three a day, shared with eating at the
+  fridge). **The microwave** heats what you are holding if it is the kind of
+  thing that should be hot: 40% more from every bite. An **energy drink**
+  counts as a coffee, jitters included.
+- **A pizza** can be ordered at the Gaming PC: eight slices on the doormat
+  twenty minutes later, once a day.
+- **What is left** is a wrapper, a can, a box. Carry it to the kitchen bin or
+  throw it at one (there is a recycling bin in the office): a little Health
+  for tidying, and for a long shot. Rubbish still lying about when you wake up
+  costs Health, up to five points.
+- What you carried off is replaced the next morning; what you left untouched
+  is still there, so the flat never offers more than five new things a day.
+
+Two toys live on the desk: a stress ball (squeezing it helps, a little, a few
+times a day) and a rubber duck (it squeaks).
 
 ## Tickets
 
@@ -282,13 +331,14 @@ Every interactive object has a purpose:
 | | Coffee Mug | A sip of Energy; wedge it on the spacebar to fake typing |
 | | Company Laptop | Force an update: 30 excused minutes, and evidence for a crash |
 | | Office Chair | Stage a busy desk; nap near the keyboard |
-| | Gaming PC | The shop |
+| | Gaming PC | The shop; order a pizza |
 | | Printer | Forge a doctor's note (can jam, which is evidence too) |
 | | Router | Create a real outage: evidence, but you go dark |
 | Living room | Sofa, Television, Console | Health and Energy; TV can inspire an excuse |
 | | Bookshelf | Fluent in Buzzword: better jargon |
 | | Exercise Bike | Health, clears jitters, cheaper actions for a while |
-| Kitchen | Refrigerator, Microwave, Table | Food; limited stock per day |
+| Kitchen | Refrigerator, Microwave, Table | Food; limited stock per day. The fridge also hands you something to carry; the microwave heats what you hold |
+| | Kitchen Bin | Rubbish goes here (by hand, or thrown) |
 | | Coffee Machine | Energy; refills the mug; too many cause jitters |
 | Bedroom | Bed | Naps by day; sleep ends the evening |
 | | Wardrobe | Outfit: a shirt helps on video, pajamas help you relax |
@@ -316,4 +366,6 @@ an A and 14 hours an S; any real work caps the grade at B. This is what stops
 
 Multiple weeks or a campaign, promotions and raises, more apartments, more
 bosses, the full AI-clone storyline, Steam features, localisation, gamepad
-support, and accessibility options beyond volume and camera shake.
+support, jumping and crouching, cooking, carrying furniture, a view out of the
+windows, and accessibility options beyond volume, sensitivity, field of view
+and head bob.

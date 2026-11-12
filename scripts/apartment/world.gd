@@ -1,12 +1,15 @@
 class_name World
 extends Node3D
-## World — the 3D scene: apartment, player, camera, day/night lighting, and
-## the glue between apartment objects and the rules in Game.home.
+## World — the flat as you see it: first person, from inside. It owns the
+## lighting, what the crosshair is on, the thing in your hand, and the glue
+## between apartment objects and the rules in Game.home.
 
 signal focus_changed(thing: Interactable)
 signal menu_requested(thing: Interactable)
 
-const REACH := 1.25
+const REACH := 2.1               ## how far the crosshair reaches
+const THROW := 6.5
+const SOLID := 1
 
 ## minute -> [sun colour, sun energy, ambient colour, ambient energy, sky colour, window colour, lamp level]
 const SKY := [
@@ -24,44 +27,60 @@ const SKY := [
 
 var apartment: Apartment
 var player: Player
-var rig: CameraRig
+var stage: Camera3D                ## looks at you from outside, for the menus
 var sun: DirectionalLight3D
 var env: Environment
-var focused: Interactable
-var hovered: Interactable
+var outline: MeshInstance3D
+var focused: Interactable          ## the object under the crosshair
+var focused_item: Holdable         ## the loose item under the crosshair
+var held: Holdable                 ## what is in your hand
+var bodies: Dictionary = {}        ## item id -> Holdable
 var interactive := true            ## false in menus / while a UI overlay owns input
 var demo := false                  ## main-menu backdrop
 var demo_minute := 600.0
+var view := "play"                 ## play | menu | setup
 var _lamp_base: Array = []
+var _ceiling_base: Array = []
 var _t := 0.0
 var _pending_thing: Interactable
 var _using: Interactable
 var _at_desktop := false
 var _ring_flash := 0.0
+var _stage_from := Vector3.ZERO
+var _stage_at := Vector3.ZERO
 
 
 func _ready() -> void:
 	_environment()
 	apartment = $Apartment
 	player = $Player
-	rig = $CameraRig
 	for l in apartment.lamps:
 		_lamp_base.append((l as OmniLight3D).light_energy)
-	# Diorama base.
-	Kit.cyl(self, 12.5, 0.5, Vector3(0, -0.58, 0), Color("3a3260"), 48)
-	Kit.cyl(self, 13.2, 0.3, Vector3(0, -0.95, 0), Color("2b2542"), 48)
+	for l in apartment.ceiling_lights:
+		_ceiling_base.append((l as OmniLight3D).light_energy)
+	for area in apartment.bins:
+		(area as Area3D).body_entered.connect(_on_binned)
 	player.apartment = apartment
-	rig.target = player
+	stage = Camera3D.new()
+	stage.fov = 46.0
+	stage.near = 0.05
+	stage.far = 160.0
+	add_child(stage)
+	_build_outline()
+	apply_prefs()
+	Prefs.changed.connect(apply_prefs)
 	player.blocked.connect(func(): _pending_thing = null)
 	Bus.activity_started.connect(_on_activity_started)
 	Bus.activity_ended.connect(_on_activity_ended)
 	Bus.state_loaded.connect(sync_from_state)
 	Bus.desktop_opened.connect(_on_desktop_opened)
 	Bus.desktop_closed.connect(_on_desktop_closed)
+	Bus.items_changed.connect(_sync_items)
+	Bus.item_bitten.connect(_on_bitten)
 	Game.day_started.connect(_on_day_started)
 	Game.saves.about_to_save.connect(_store_position)
 	place_player(Vector3(3.0, 0, -3.6), PI * 0.5)
-	rig.snap_to(player.global_position + Vector3(0, 0.9, 0))
+	set_view("play")
 
 
 func _environment() -> void:
@@ -74,38 +93,126 @@ func _environment() -> void:
 	env.tonemap_mode = Environment.TONE_MAPPER_FILMIC
 	env.tonemap_white = 1.6
 	env.ssao_enabled = true
-	env.ssao_radius = 0.7
-	env.ssao_intensity = 1.6
+	env.ssao_radius = 0.9
+	env.ssao_intensity = 1.8
 	env.glow_enabled = true
-	env.glow_intensity = 0.5
-	env.glow_bloom = 0.04
-	env.glow_hdr_threshold = 1.1
+	env.glow_intensity = 0.45
+	env.glow_bloom = 0.03
+	env.glow_hdr_threshold = 1.15
 	env.adjustment_enabled = true
-	env.adjustment_saturation = 1.12
-	env.adjustment_contrast = 1.04
+	env.adjustment_saturation = 1.14
+	env.adjustment_contrast = 1.05
 	var we := WorldEnvironment.new()
 	we.environment = env
 	add_child(we)
+	# Indoors the "sun" is the daylight that fills a room: it comes from the
+	# window side and casts no shadows (the ceiling lamps do that).
 	sun = DirectionalLight3D.new()
-	sun.shadow_enabled = true
-	sun.directional_shadow_mode = DirectionalLight3D.SHADOW_ORTHOGONAL
-	sun.directional_shadow_max_distance = 70.0
-	sun.shadow_blur = 1.6
-	sun.shadow_bias = 0.04
-	sun.shadow_normal_bias = 1.2
-	sun.light_angular_distance = 1.5
+	sun.shadow_enabled = false
 	add_child(sun)
 
 
+func _build_outline() -> void:
+	## A dark line around everything, drawn after the scene from its depth and normals.
+	var sh := Shader.new()
+	sh.code = """
+shader_type spatial;
+render_mode unshaded, depth_test_disabled, depth_draw_never, cull_disabled, shadows_disabled, fog_disabled;
+uniform sampler2D depth_tex : hint_depth_texture, filter_nearest, repeat_disable;
+uniform sampler2D normal_tex : hint_normal_roughness_texture, filter_nearest, repeat_disable;
+uniform vec4 line_color : source_color = vec4(0.16, 0.12, 0.27, 1.0);
+uniform float width = 1.4;
+uniform float strength = 0.82;
+
+void vertex() {
+	POSITION = vec4(VERTEX.xy, 1.0, 1.0);
+}
+
+float eye_depth(vec2 uv, mat4 inv_proj) {
+	float d = texture(depth_tex, uv).r;
+	vec4 v = inv_proj * vec4(uv * 2.0 - 1.0, d, 1.0);
+	return -v.z / v.w;
+}
+
+void fragment() {
+	vec2 px = width / VIEWPORT_SIZE;
+	float d0 = eye_depth(SCREEN_UV, INV_PROJECTION_MATRIX);
+	vec3 n0 = texture(normal_tex, SCREEN_UV).rgb * 2.0 - 1.0;
+	float dd = 0.0;
+	float nd = 0.0;
+	vec2 offs[4] = vec2[](vec2(px.x, 0.0), vec2(-px.x, 0.0), vec2(0.0, px.y), vec2(0.0, -px.y));
+	for (int i = 0; i < 4; i++) {
+		vec2 uv = SCREEN_UV + offs[i];
+		dd += abs(eye_depth(uv, INV_PROJECTION_MATRIX) - d0);
+		nd += 1.0 - dot(texture(normal_tex, uv).rgb * 2.0 - 1.0, n0);
+	}
+	// Depth steps are judged relative to distance and to how steeply the
+	// surface runs away from the eye, so floors and long walls stay clean.
+	float slope = 1.0 / max(abs(n0.z), 0.2);
+	float edge = max(smoothstep(0.05, 0.12, dd / (max(d0, 0.05) * slope)), smoothstep(0.55, 1.2, nd));
+	edge *= 1.0 - smoothstep(9.0, 20.0, d0);
+	ALBEDO = line_color.rgb;
+	ALPHA = clamp(edge, 0.0, 1.0) * strength;
+}
+"""
+	var m := ShaderMaterial.new()
+	m.shader = sh
+	m.render_priority = 100
+	var quad := QuadMesh.new()
+	quad.size = Vector2(2, 2)
+	outline = MeshInstance3D.new()
+	outline.mesh = quad
+	outline.material_override = m
+	outline.extra_cull_margin = 16384.0
+	outline.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	add_child(outline)
+
+
+func apply_prefs() -> void:
+	player.sensitivity = 0.0009 + 0.0034 * float(Prefs.get_v("look"))
+	player.bob = bool(Prefs.get_v("shake"))
+	player.camera.fov = float(Prefs.get_v("fov"))
+	outline.visible = bool(Prefs.get_v("outline"))
+
+
+func cam() -> Camera3D:
+	return player.camera if view == "play" else stage
+
+
 # ---------------------------------------------------------------------------
-# State sync
+# Views
 # ---------------------------------------------------------------------------
+
+func set_view(v: String) -> void:
+	## "play": through your eyes. "menu" and "setup": a camera on you.
+	view = v
+	var first_person := v == "play"
+	player.body.visible = not first_person
+	player.hand.visible = first_person
+	if first_person:
+		player.camera.make_current()
+		return
+	if v == "menu":
+		# You, on the sofa, in the right-hand half of the frame.
+		_stage_from = Vector3(-5.75, 1.36, 5.25)
+		_stage_at = Vector3(-4.8, 0.74, 2.3)
+		stage.fov = 48.0
+	else:
+		var p := player.global_position
+		var f := -player.global_transform.basis.z
+		_stage_from = p + f * 3.3 + Vector3(0, 1.25, 0)
+		_stage_at = p + Vector3(0, 0.9, 0)
+		stage.fov = 38.0
+	stage.global_position = _stage_from
+	stage.look_at(_stage_at, Vector3.UP)
+	stage.make_current()
+
 
 func place_player(p: Vector3, yaw: float) -> void:
 	player.stand_up()
 	player.stop()
 	player.global_position = Vector3(p.x, 0, p.z)
-	player.rotation = Vector3(0, yaw, 0)
+	player.set_view(yaw, 0.0)
 	player.velocity = Vector3.ZERO
 
 
@@ -116,12 +223,15 @@ func sync_from_state() -> void:
 	_at_desktop = false
 	_using = null
 	player.body.set_look(Game.player, str(Game.home.outfit))
+	player.dress(Game.player, str(Game.home.outfit))
 	var pos: Array = Game.player_pos
 	if pos.size() >= 3:
 		place_player(Vector3(float(pos[0]), 0, float(pos[1])), float(pos[2]))
+		if pos.size() >= 4:
+			player.set_view(float(pos[2]), float(pos[3]))
 	else:
 		place_player(Vector3(3.0, 0, -3.6), PI * 0.5)
-	rig.snap_to(player.global_position + Vector3(0, 0.9, 0))
+	_sync_items(true)
 	if Game.activities.busy():
 		_on_activity_started(Game.activities.current)
 	elif Game.presence.at_desk:
@@ -134,7 +244,16 @@ func _store_position() -> void:
 	var p := player.global_position
 	if player.seated and _using != null:
 		p = _using.use_point()
-	Game.player_pos = [p.x, p.z, player.rotation.y]
+	Game.player_pos = [p.x, p.z, player.rotation.y, player.pitch]
+	# Where everything was left lying.
+	for id in bodies:
+		var b: Holdable = bodies[id]
+		var it := Game.home.item(str(id))
+		if it.is_empty() or b.carried:
+			continue
+		var q := b.global_transform.basis.get_rotation_quaternion()
+		var o := b.global_position
+		it.at = [o.x, o.y, o.z, q.x, q.y, q.z, q.w]
 
 
 func _on_day_started(_day: int) -> void:
@@ -146,31 +265,259 @@ func _on_day_started(_day: int) -> void:
 		_using = null
 		_at_desktop = false
 		place_player(apartment.things["bed"].use_point(), PI * 0.5)
-		rig.snap_to(player.global_position + Vector3(0, 0.9, 0))
+
+
+# ---------------------------------------------------------------------------
+# Loose items
+# ---------------------------------------------------------------------------
+
+func _sync_items(reset: bool = false) -> void:
+	## Bring the bodies in the flat in line with Game.home.items.
+	if reset:
+		for id in bodies:
+			(bodies[id] as Holdable).queue_free()
+		bodies.clear()
+		held = null
+		player.carried_size = Vector3.ZERO
+	if not Game.active:
+		return
+	var seen := {}
+	for it in Game.home.items:
+		var id := str(it.id)
+		seen[id] = true
+		var b: Holdable = bodies.get(id)
+		if b == null:
+			b = _spawn(it)
+		else:
+			b.refresh(it)
+	for id in bodies.keys():
+		if not seen.has(id):
+			var gone: Holdable = bodies[id]
+			if gone == held:
+				held = null
+				player.carried_size = Vector3.ZERO
+			if gone == focused_item:
+				focused_item = null
+			bodies.erase(id)
+			gone.queue_free()
+	# The hand follows the rules: Game.home.held is the truth.
+	var want: Holdable = bodies.get(Game.home.held)
+	if want != held:
+		if held != null:
+			_release_body(held, Vector3.ZERO)
+		if want != null:
+			_take_body(want)
+	if held != null:
+		player.carried_size = held.size
+	player.show_arm(held != null)
+
+
+func _spawn(it: Dictionary) -> Holdable:
+	var b := Holdable.new()
+	add_child(b)
+	b.setup(it)
+	bodies[str(it.id)] = b
+	var at: Array = it.get("at", [])
+	var spot := str(it.get("spot", ""))
+	if at.size() >= 7:
+		b.global_transform = Transform3D(Basis(Quaternion(float(at[3]), float(at[4]), float(at[5]), float(at[6]))), Vector3(float(at[0]), float(at[1]), float(at[2])))
+		b.freeze = true
+	elif apartment.spots.has(spot):
+		b.global_position = apartment.spots[spot]
+		b.rotation.y = fposmod(float(str(it.id).hash() % 628) / 100.0, TAU)
+		b.freeze = true                 # resting where it was put: it wakes when touched
+	else:
+		# No place for it: it turns up at your feet.
+		b.global_position = player.global_position + (-player.global_transform.basis.z) * 0.6 + Vector3(0, 0.6, 0)
+	return b
+
+
+func _take_body(b: Holdable) -> void:
+	held = b
+	b.pick_up()
+	b.reparent(player.hand, false)
+	b.position = Vector3(0, -b.size.y * 0.5, 0)
+	b.rotation = Vector3.ZERO
+	player.carried_size = b.size
+	player.show_arm(true)
+
+
+func _release_body(b: Holdable, velocity: Vector3, spin: Vector3 = Vector3.ZERO) -> void:
+	var xf := b.global_transform
+	b.reparent(self, false)
+	b.global_transform = xf
+	b.let_go(velocity, spin)
+	if held == b:
+		held = null
+		player.carried_size = Vector3.ZERO
+		player.show_arm(false)
+
+
+func pick_up(b: Holdable) -> bool:
+	if b == null or not Game.active or b.carried:
+		return false
+	if held != null:
+		put_down()
+	if not Game.home.hold(b.item_id):
+		return false
+	Bus.sfx.emit("pickup")
+	return true
+
+
+func _drop_point() -> Dictionary:
+	## Where the thing in your hand would be set down: {pos, on_surface}.
+	var from := player.eye_position()
+	var to := from + player.aim() * 1.5
+	var q := PhysicsRayQueryParameters3D.create(from, to)
+	q.collision_mask = SOLID
+	var hit := get_world_3d().direct_space_state.intersect_ray(q)
+	if hit.is_empty():
+		return {"pos": to, "on_surface": false}
+	var n: Vector3 = hit.normal
+	if n.y > 0.6:
+		return {"pos": hit.position, "on_surface": true}
+	return {"pos": (hit.position as Vector3) + n * 0.12, "on_surface": false}
+
+
+func put_down() -> void:
+	## Set the held item down where you are looking (or let it drop).
+	if held == null:
+		return
+	var b := held
+	var spot := _drop_point()
+	Game.home.release()
+	if held == b:
+		_release_body(b, Vector3.ZERO)
+	var pos: Vector3 = spot.pos
+	b.global_position = pos + Vector3(0, 0.01 if bool(spot.on_surface) else 0.0, 0)
+	b.rotation = Vector3(0, player.rotation.y + PI, 0)
+	b.linear_velocity = Vector3.ZERO
+	Bus.sfx.emit("putdown")
+
+
+func throw_held() -> void:
+	if held == null:
+		return
+	var b := held
+	var dir := player.aim()
+	Game.home.release()
+	if held == b:
+		_release_body(b, Vector3.ZERO)
+	b.global_position = player.eye_position() + dir * 0.45 + Vector3(0, -0.12, 0)
+	b.let_go(dir * THROW + Vector3(0, 1.6, 0) + player.velocity, Vector3(randf_range(-5, 5), randf_range(-5, 5), randf_range(-5, 5)))
+	b.set_meta("thrown_from", player.global_position)
+	player.bite()
+	Bus.sfx.emit("whoosh")
+
+
+func use_held() -> void:
+	## The main thing you do with what is in your hand: eat it, squeeze it.
+	if held == null or not Game.active or Game.paused:
+		return
+	var it := Game.home.item(held.item_id)
+	if it.is_empty():
+		return
+	if Game.home.is_toy(it):
+		if Game.home.fidget(held.item_id):
+			player.bite()
+		return
+	if bool(it.trash):
+		Bus.toast.emit("Rubbish. Throw it at a bin (Q), or carry it to the kitchen.", "info")
+		return
+	var drink: bool = str(Game.home.food(it).get("group", "")) == "drink"
+	var res := Game.home.eat(held.item_id)
+	if bool(res.ok):
+		player.bite()
+		Bus.sfx.emit("gulp" if drink else "bite")
+
+
+func _on_bitten(_it: Dictionary, _left: int) -> void:
+	pass          # the body is refreshed by items_changed; kept for views that animate bites
+
+
+func _on_binned(body: Node) -> void:
+	var b := body as Holdable
+	if b == null or b.carried or not Game.active:
+		return
+	var from: Vector3 = b.get_meta("thrown_from", b.global_position)
+	var far := from.distance_to(b.global_position) > 2.5
+	var was_trash := bool(Game.home.item(b.item_id).get("trash", false))
+	if Game.home.bin(b.item_id):
+		if far and was_trash:
+			Game.stats.add("health", 1.0, "Nothing but net")
+			Bus.toast.emit("Nothing but net.", "good")
+	else:
+		# It bounces back out (you would miss it).
+		b.linear_velocity = Vector3(randf_range(-1, 1), 3.0, randf_range(-1, 1))
 
 
 # ---------------------------------------------------------------------------
 # Interaction
 # ---------------------------------------------------------------------------
 
+func _look_hits() -> Dictionary:
+	## What the crosshair is on: {thing, item}. Loose items win over the
+	## furniture they are lying on; nothing is reachable through a wall.
+	var out := {"thing": null, "item": null}
+	var from := player.eye_position()
+	var to := from + player.aim() * REACH
+	var space := get_world_3d().direct_space_state
+	var wall := PhysicsRayQueryParameters3D.create(from, to)
+	wall.collision_mask = SOLID
+	var solid := space.intersect_ray(wall)
+	var limit := REACH + 1.0
+	if not solid.is_empty():
+		limit = from.distance_to(solid.position) + 0.4
+	var exclude: Array[RID] = []
+	for hop in 5:
+		var q := PhysicsRayQueryParameters3D.create(from, to)
+		q.collide_with_areas = true
+		q.collide_with_bodies = false
+		q.collision_mask = Interactable.PICK_LAYER
+		q.exclude = exclude
+		var hit := space.intersect_ray(q)
+		if hit.is_empty() or from.distance_to(hit.position) > limit:
+			break
+		var area: Area3D = hit.collider
+		exclude.append(area.get_rid())
+		if area.has_meta("item"):
+			var b: Holdable = area.get_meta("item")
+			if is_instance_valid(b) and not b.carried:
+				out.item = b
+				break
+		elif area.has_meta("thing") and out.thing == null:
+			out.thing = area.get_meta("thing")
+	return out
+
+
 func nearest_thing() -> Interactable:
+	## The object you are standing closest to (used by the scripted captures).
 	var best: Interactable = null
-	var best_d := REACH
+	var best_d := 1.25
 	var pp := player.global_position
 	for id in apartment.things:
 		var t: Interactable = apartment.things[id]
 		var d := pp.distance_to(t.use_point())
-		# Standing right against the object also counts.
-		var c := t.global_position
-		d = minf(d, Vector2(pp.x - c.x, pp.z - c.z).length() - 0.35)
 		if d < best_d:
 			best_d = d
 			best = t
 	return best
 
 
+func press_use() -> void:
+	## E / F: do the obvious thing with whatever the crosshair is on.
+	if not Game.active:
+		return
+	if Game.activities.busy():
+		Game.activities.stop()
+	elif focused_item != null:
+		pick_up(focused_item)
+	elif focused != null:
+		use_thing(focused)
+
+
 func interact(t: Interactable) -> void:
-	## Walk to an object (if needed) and use it or open its menu.
+	## Walk to an object and use it. Autopilot: tests and scripted captures.
 	if t == null or not Game.active or Game.activities.busy() or _at_desktop:
 		return
 	var up := t.use_point()
@@ -187,7 +534,13 @@ func _arrived_at(t: Interactable) -> void:
 	_pending_thing = null
 	if not Game.active or Game.activities.busy():
 		return
-	player.face(t.focus_point())
+	player.face(t.focus_point(), true)
+	use_thing(t)
+
+
+func use_thing(t: Interactable) -> void:
+	if t == null or not Game.active or Game.activities.busy():
+		return
 	var opts := Game.home.options(t.thing_id)
 	if opts.is_empty():
 		return
@@ -206,17 +559,13 @@ func choose(t: Interactable, opt_id: String) -> void:
 
 
 func after_use(t: Interactable) -> void:
-	## Visual follow-up for instant (non-timed) options.
 	if not Game.active:
 		return
 	player.body.set_outfit(str(Game.home.outfit))
+	player.dress(Game.player, str(Game.home.outfit))
 	if not Game.activities.busy() and not _at_desktop:
-		player.pose("use")
-		get_tree().create_timer(0.45).timeout.connect(func():
-			if is_instance_valid(player) and not player.seated and player.body.anim == "use":
-				player.pose("idle")
-		)
-	if t.thing_id == focused_id():
+		player.bite()
+	if t == focused:
 		focus_changed.emit(focused)
 
 
@@ -242,20 +591,14 @@ func _on_activity_started(a: Dictionary) -> void:
 	if id == "" and _at_desktop:
 		return                                  # working at the desk: already seated
 	if _at_desktop and id == "workstation":
-		player.body.anim = "type"
 		return
 	_using = t
-	var anim := str(a.get("anim", "idle"))
-	if anim == "sleep" and t != null and t.thing_id == "bed":
-		_seat_player(t, "sleep")
-	else:
-		_seat_player(t, anim)
+	_seat_player(t, str(a.get("anim", "idle")))
 	Game.presence.set_at_desk(t != null and t.thing_id == "chair")
 
 
 func _on_activity_ended(a: Dictionary, _completed: bool) -> void:
 	if _at_desktop:
-		player.body.anim = "type"
 		return
 	if str(a.get("id", "")) == "desk_nap":
 		Game.presence.set_at_desk(false)
@@ -270,12 +613,12 @@ func _on_desktop_opened() -> void:
 	var t: Interactable = apartment.things["workstation"]
 	_using = t
 	player.sit(t.seat_transform(), false, "type")
-	rig.close_up = true
+	player.pitch = deg_to_rad(4.0)
+	player.head.rotation.x = player.pitch
 
 
 func _on_desktop_closed() -> void:
 	_at_desktop = false
-	rig.close_up = false
 	if Game.active and Game.activities.busy():
 		return
 	if player.seated:
@@ -284,7 +627,7 @@ func _on_desktop_closed() -> void:
 
 
 func sit_at(thing_id: String, anim: String) -> void:
-	## Used by the shop: sit somewhere without an activity.
+	## Sit somewhere without an activity (the shop, the menus).
 	var t: Interactable = apartment.things[thing_id]
 	_using = t
 	_seat_player(t, anim)
@@ -300,105 +643,78 @@ func leave_seat() -> void:
 # Input
 # ---------------------------------------------------------------------------
 
-func _pick(screen: Vector2) -> Dictionary:
-	var from := rig.cam.project_ray_origin(screen)
-	var dir := rig.cam.project_ray_normal(screen)
-	var q := PhysicsRayQueryParameters3D.create(from, from + dir * 200.0)
-	q.collide_with_areas = true
-	q.collide_with_bodies = true
-	q.collision_mask = Interactable.PICK_LAYER | 1
-	return get_world_3d().direct_space_state.intersect_ray(q)
-
-
-func _thing_under(screen: Vector2) -> Interactable:
-	var from := rig.cam.project_ray_origin(screen)
-	var dir := rig.cam.project_ray_normal(screen)
-	var q := PhysicsRayQueryParameters3D.create(from, from + dir * 200.0)
-	q.collide_with_areas = true
-	q.collide_with_bodies = false
-	q.collision_mask = Interactable.PICK_LAYER
-	var hit := get_world_3d().direct_space_state.intersect_ray(q)
-	if hit.is_empty():
-		return null
-	return hit.collider.get_meta("thing", null)
+func playing() -> bool:
+	return view == "play" and not demo and interactive and Game.active and not Game.paused
 
 
 func _unhandled_input(e: InputEvent) -> void:
-	if demo or not interactive or not Game.active or Game.paused:
+	if not playing():
+		return
+	if e is InputEventMouseMotion:
+		if Input.mouse_mode == Input.MOUSE_MODE_CAPTURED and not _at_desktop:
+			player.look((e as InputEventMouseMotion).relative)
 		return
 	if e.is_action_pressed("interact"):
-		if Game.activities.busy():
-			Game.activities.stop()
-		elif focused != null:
-			interact(focused)
+		press_use()
 		get_viewport().set_input_as_handled()
-	elif e is InputEventMouseButton and e.pressed and e.button_index == MOUSE_BUTTON_LEFT:
-		if Game.activities.busy():
-			return
-		var t := _thing_under(e.position)
-		if t != null:
-			interact(t)
-			Bus.sfx.emit("click")
-		else:
-			var hit := _pick(e.position)
-			if not hit.is_empty():
-				var p: Vector3 = hit.position
-				if absf(p.y) < 0.4:
-					player.go_to(Vector3(p.x, 0, p.z))
+	elif e.is_action_pressed("throw"):
+		throw_held()
 		get_viewport().set_input_as_handled()
+	elif e is InputEventMouseButton and e.pressed:
+		if Input.mouse_mode != Input.MOUSE_MODE_CAPTURED:
+			return                      # the click that takes the mouse back does nothing else
+		if e.button_index == MOUSE_BUTTON_LEFT:
+			# With something in your hand, a click is for it. Empty-handed, a
+			# click does what E does.
+			if held != null:
+				use_held()
+			elif not Game.activities.busy():
+				press_use()
+			get_viewport().set_input_as_handled()
+		elif e.button_index == MOUSE_BUTTON_RIGHT:
+			put_down()
+			get_viewport().set_input_as_handled()
 
 
 func _process(delta: float) -> void:
 	_t += delta
-	player.cam_yaw = rig.yaw
-	var playing := Game.active and not demo
-	player.controllable = playing and interactive and not Game.paused and not Game.activities.busy() and not _at_desktop
-	rig.input_enabled = playing and interactive and not Game.paused
-	_update_focus(playing)
-	_update_walls(delta)
+	var live := Game.active and not demo and view == "play"
+	player.controllable = live and interactive and not Game.paused and not Game.activities.busy() and not _at_desktop
+	_update_focus(live)
 	_update_sky(delta)
-	_update_props(delta, playing)
-	rig.shake = 0.0
-	if playing and Game.stats.has_buff("wired") and not _at_desktop and bool(Prefs.get_v("shake")):
-		rig.shake = 0.6
+	_update_props(delta, live)
+	if view != "play":
+		# The menu camera drifts a little, so the room feels lived in.
+		var drift := Vector3(sin(_t * 0.23) * 0.12, sin(_t * 0.31) * 0.04, cos(_t * 0.19) * 0.1) if view == "menu" else Vector3.ZERO
+		stage.global_position = _stage_from + drift
+		stage.look_at(_stage_at, Vector3.UP)
+	elif live and Game.stats.has_buff("wired") and not _at_desktop and bool(Prefs.get_v("shake")):
+		player.nudge(0.5)
 
 
-func _update_focus(playing: bool) -> void:
+func _update_focus(live: bool) -> void:
 	var want: Interactable = null
-	var hover: Interactable = null
-	if playing and interactive and not Game.paused and not Game.activities.busy() and not _at_desktop and not player.seated:
-		hover = _thing_under(get_viewport().get_mouse_position())
+	var want_item: Holdable = null
+	if live and interactive and not Game.paused and not Game.activities.busy() and not _at_desktop and not player.seated:
 		if _pending_thing != null and player.walking_to_target():
 			want = _pending_thing
 		else:
-			want = nearest_thing()
-	if hover != hovered:
-		if hovered != null and hovered != focused:
-			hovered.set_highlight(false)
-		hovered = hover
+			var hits := _look_hits()
+			want_item = hits.item
+			want = hits.thing if want_item == null else null
+	if want_item != focused_item:
+		if focused_item != null and is_instance_valid(focused_item):
+			focused_item.set_highlight(false)
+		focused_item = want_item
+		if focused_item != null:
+			focused_item.set_highlight(true)
 	if want != focused:
-		if focused != null and focused != hovered:
+		if focused != null:
 			focused.set_highlight(false)
 		focused = want
 		focus_changed.emit(focused)
-	if focused != null:
-		focused.set_highlight(true)
-	if hovered != null:
-		hovered.set_highlight(true)
-
-
-func _update_walls(delta: float) -> void:
-	var to_cam := rig.to_camera_dir()
-	for side in apartment.outer:
-		var d: Dictionary = apartment.outer[side]
-		var facing: float = (d.normal as Vector3).dot(to_cam)
-		var tall: Node3D = d.tall
-		var low: Node3D = d.low
-		var want_tall := facing < 0.1
-		var target := 1.0 if want_tall else 0.02
-		tall.scale.y = lerpf(tall.scale.y, target, minf(1.0, delta * 9.0))
-		tall.visible = tall.scale.y > 0.05
-		low.visible = not tall.visible
+		if focused != null:
+			focused.set_highlight(true)
 
 
 func _sky_at(minute: float) -> Array:
@@ -424,11 +740,10 @@ func _update_sky(delta: float) -> void:
 		minute = Game.time.clock()
 	var k: Array = _sky_at(minute)
 	sun.light_color = k[0]
-	sun.light_energy = k[1]
+	sun.light_energy = float(k[1]) * 0.42
 	env.ambient_light_color = k[2]
-	env.ambient_light_energy = k[3]
+	env.ambient_light_energy = float(k[3]) * 0.95
 	env.background_color = k[4]
-	# The sun arcs from the east in the morning to the west in the evening.
 	var day_f := clampf((fposmod(minute, 1440.0) - 360.0) / 840.0, 0.0, 1.0)
 	var azimuth := lerpf(deg_to_rad(-70.0), deg_to_rad(110.0), day_f)
 	var elevation := deg_to_rad(28.0 + 30.0 * sin(day_f * PI))
@@ -437,24 +752,28 @@ func _update_sky(delta: float) -> void:
 		var wm: StandardMaterial3D = m
 		wm.albedo_color = k[5]
 		wm.emission = k[5]
-		wm.emission_energy_multiplier = 0.45 + 0.4 * float(k[1])
+		wm.emission_energy_multiplier = 0.22 + 0.3 * float(k[1])
 	var lamp_level := float(k[6])
 	for i in apartment.lamps.size():
 		var l: OmniLight3D = apartment.lamps[i]
 		l.light_energy = lerpf(l.light_energy, float(_lamp_base[i]) * lamp_level, minf(1.0, delta * 3.0))
 		l.visible = l.light_energy > 0.02
+	# Ceiling lights are on all day: dim against daylight, full in the evening.
+	for i in apartment.ceiling_lights.size():
+		var c: OmniLight3D = apartment.ceiling_lights[i]
+		c.light_energy = lerpf(c.light_energy, float(_ceiling_base[i]) * lerpf(0.5, 1.0, lamp_level), minf(1.0, delta * 3.0))
 
 
-func _update_props(delta: float, playing: bool) -> void:
+func _update_props(delta: float, live: bool) -> void:
 	var p: Dictionary = apartment.parts
-	var act := str(Game.activities.current.get("id", "")) if playing and Game.activities.busy() else ""
+	var act := str(Game.activities.current.get("id", "")) if live and Game.activities.busy() else ""
 	var router_on := true
 	var jiggler := false
 	var bird := false
 	var docked := false
 	var updating := false
 	var ringing := false
-	if playing:
+	if live:
 		router_on = Game.home.router_on()
 		jiggler = Game.automation.can("presence")
 		bird = Game.automation.can("illusion")
@@ -513,9 +832,10 @@ func _update_props(delta: float, playing: bool) -> void:
 	tl.visible = tl.light_energy > 0.02
 	# Kitchen
 	var md: StandardMaterial3D = p.microwave_door
-	md.emission = Color("ffd166") if act == "burrito" else Color("2f2c3e")
+	var nuking := act == "burrito" or act == "heat"
+	md.emission = Color("ffd166") if nuking else Color("2f2c3e")
 	md.albedo_color = md.emission
-	md.emission_energy_multiplier = 2.4 if act == "burrito" else 0.05
+	md.emission_energy_multiplier = 2.4 if nuking else 0.05
 	var steam: Node3D = p.steam
 	steam.visible = act == "brew"
 	if steam.visible:
@@ -525,7 +845,7 @@ func _update_props(delta: float, playing: bool) -> void:
 	var paper: Node3D = p.printer_paper
 	paper.position.z = 0.3 + (fmod(_t * 0.5, 0.12) if act == "forge" else 0.0)
 	var pl: StandardMaterial3D = p.printer_led
-	var jam := playing and bool(Game.home.things.get("jam", false))
+	var jam := live and bool(Game.home.things.get("jam", false))
 	pl.emission = Color("ff5d73") if jam else Color("5ad17a")
 	pl.albedo_color = pl.emission
 	pl.emission_energy_multiplier = (2.0 + sin(_t * 10.0) * 2.0) if jam else 2.0

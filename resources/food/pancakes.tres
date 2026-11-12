@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="FoodDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/food_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = "pancakes"
+display_name = "Stack of Pancakes"
+group = "hot"
+model = "pancakes"
+tint = Color(1, 1, 1, 1)
+bites = 5
+energy = 13.0
+health = 3.0
+fullness = 30.0
+blurb = "Breakfast is a mindset, not a time."

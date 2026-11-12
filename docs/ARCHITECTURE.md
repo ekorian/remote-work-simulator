@@ -30,8 +30,8 @@ scripts/automation/  AutomationManager
 scripts/events/      EventDirector, Dialogue, Tutorial
 scripts/npcs/        NPCManager, Social
 scripts/data/        Resource classes (one per content type) and Db
-scripts/player/      Player, Character, CameraRig
-scripts/apartment/   World, Apartment, Interactable, Kit
+scripts/player/      Player (first person), Character (the body in the menus)
+scripts/apartment/   World, Apartment, Interactable, Holdable, Kit, FoodKit
 scripts/ui/          HUD, SynerOS desktop, dialogs, menus, shared widgets
 resources/           all authored content, as .tres
 tests/               headless tests and the screenshot/autoplay harness
@@ -107,6 +107,7 @@ in `scripts/data/`:
 | `resources/tasks` | TaskDef | Tickets |
 | `resources/balancing` | DifficultyDef | The four difficulties |
 | `resources/text` | TextBankDef | Flavour lines |
+| `resources/food` | FoodDef | Junk food: name, model, bites, energy, health, fullness, what it leaves |
 
 `Db.load_all()` reads them once into dictionaries keyed by id. The files are
 the source of truth and can be edited in the Godot inspector or as text.
@@ -266,13 +267,41 @@ A dialogue beat may carry an `if` too: beats whose condition does not hold
 are skipped, which is how a call branches on what was said a moment ago or
 earlier in the week.
 
+## Loose items
+
+The rules for things you can pick up live in `Home`, like everything else
+about the flat: `Home.items` is a list of dictionaries (`id`, `food`, `bites`,
+`hot`, `trash`, `spot`, `at`), `Home.held` is the id in your hand, and
+`eat`, `bin`, `hold`, `release`, `add_item` are the only ways they change.
+Headless tests use exactly that. A `FoodDef` says what an item is; where it
+turns up is a *spot name* (`"desk"`, `"doormat"`), which only the apartment
+can turn into a position.
+
+The view follows: `World._sync_items()` runs on `Bus.items_changed` and makes
+the `Holdable` bodies match the list (spawn, refresh, remove, put the held one
+in the hand). A `Holdable` is a `RigidBody3D` built by `FoodKit` from the
+item's model id, with a slightly generous pick volume for the crosshair.
+Positions are the view's business until a save, when they are written back
+into `at`. What lies about each morning is drawn from its own random stream
+(seeded from the run and the day), so it cannot change what else happens.
+
 ## Views
 
-- `World` instantiates the apartment, player and camera from scenes, drives
-  lighting from the clock, and turns clicks into `Game.home.use(...)`.
-- `Apartment` builds meshes, colliders, pick volumes and an `AStarGrid2D`
-  procedurally. An `Interactable` only knows its `thing_id`.
-- `Character` is a procedural rig with code-driven animation.
+- `World` owns what you see: lighting from the clock, the crosshair's ray
+  (`_look_hits`: pick volumes, loose items first, nothing through a wall),
+  the hand, and turning E and clicks into `Game.home.use(...)`. In the menus
+  it switches to a second camera that looks at your character from outside.
+- `Player` is a first-person `CharacterBody3D`: mouse look, WASD, a head that
+  moves to seat height when you sit or lie, and a hand under the camera.
+  It also has an autopilot (`go_to`, `face`) along the apartment's nav grid;
+  only the tests and the scripted captures use it.
+- `Apartment` builds meshes, colliders, pick volumes, named item spots, bin
+  triggers and an `AStarGrid2D` procedurally. An `Interactable` only knows
+  its `thing_id`.
+- `Character` is a procedural rig with code-driven animation. In play it is
+  hidden (you are inside it); the menus show it.
+- The ink outline is one full-screen quad drawn after the scene, comparing
+  depth and normals between neighbouring pixels. It can be switched off.
 - UI is built in code from the helpers in `ui.gd`; each screen is a scene
   with one script. `main.gd` owns the screen flow and decides who has input
   and whether the clock runs.
@@ -314,6 +343,9 @@ earlier in the week.
   makes it part of someone's story; `pool = "weird"` makes it a strange call.
 - **An apartment object:** add it to `Home.THINGS`, give it options in
   `Home.options()`/`use()`, and build its mesh in `apartment.gd`.
+- **A junk food:** add a `FoodDef` and a model to `FoodKit` (a function that
+  builds it from `Kit` primitives and says which parts vanish as it is
+  eaten). `tests/harness/food_sheet.tscn` renders it next to the others.
 - **An action:** declare it in `WorkSystem.DEFS` first. Undeclared ids are
   rejected with a warning.
 
@@ -323,10 +355,14 @@ cache is refreshed). `tools/validate.sh` checks every reference.
 ## Known limitations
 
 - Tickets, prompts, meetings and mails are Dictionaries, not typed classes.
-- One save version (3); older saves are rejected rather than migrated.
+- One save version (4); older saves are rejected rather than migrated.
+- Held items are drawn in the world, not on a separate layer: pressed against
+  a wall, what you are holding can poke into it.
+- The windows are lit panes, not openings: there is nothing outside.
 - Ambience is not positional.
 - Text is English only and not routed through Godot's translation system.
-- Keyboard and mouse only; no gamepad mapping or rebinding UI.
+- Keyboard and mouse only; no gamepad mapping or rebinding UI. Menus and the
+  work computer are still mouse-driven 2D screens over the first-person view.
 - Voices are gibberish. The text carries the meaning; nothing is lip-synced
   and the meter on the call screen follows a clock, not the audio.
 - Colleagues exist in chat and on calls only: none of them visits the flat.

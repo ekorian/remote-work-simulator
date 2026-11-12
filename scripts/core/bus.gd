@@ -21,6 +21,8 @@ signal comms_changed()                               # generic "something in the
 signal action_performed(id: String, cls: int, ctx: Dictionary)
 signal activity_started(act: Dictionary)
 signal activity_ended(act: Dictionary, completed: bool)
+signal items_changed()                                  ## loose items in the flat were added, eaten, moved or binned
+signal item_bitten(item: Dictionary, left: int)         ## a bite was taken (views animate it)
 signal thing_changed(thing_id: String)               # router toggled, phone docked, ...
 signal gadget_changed(gadget_id: String)
 

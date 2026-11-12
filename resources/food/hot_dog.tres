@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="FoodDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/food_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = "hot_dog"
+display_name = "Hot Dog"
+group = "hot"
+model = "hot_dog"
+tint = Color(1, 1, 1, 1)
+bites = 3
+energy = 12.0
+health = 2.0
+fullness = 26.0
+blurb = "Don't ask what's in it. It didn't ask what's in you."

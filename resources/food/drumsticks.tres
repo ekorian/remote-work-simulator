@@ -1,0 +1,18 @@
+[gd_resource type="Resource" script_class="FoodDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/food_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = "drumsticks"
+display_name = "Bucket of Drumsticks"
+group = "hot"
+model = "drumsticks"
+tint = Color(1, 1, 1, 1)
+bites = 4
+energy = 18.0
+health = 3.0
+fullness = 44.0
+blurb = "A bucket. For one. On a Tuesday."
+trash = "trash_box"
+trash_name = "Greasy Bucket"

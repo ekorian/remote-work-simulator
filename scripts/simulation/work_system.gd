@@ -97,6 +97,7 @@ const DEFS := {
 	"gift": {"cls": Cls.SOCIAL, "label": "Send a gift card", "en": 0},
 	# --- Leisure and upkeep ------------------------------------------------
 	"leisure": {"cls": Cls.LEISURE, "label": "Relax", "en": 0},
+	"eat": {"cls": Cls.LEISURE, "label": "Eat", "en": 0},
 	"maintain": {"cls": Cls.UPKEEP, "label": "Service the gadgets", "en": -8},
 	"fix_printer": {"cls": Cls.UPKEEP, "label": "Clear the paper jam", "en": -7},
 	"toggle_gadget": {"cls": Cls.UPKEEP, "label": "Toggle a gadget", "en": 0},

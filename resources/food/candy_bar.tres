@@ -1,0 +1,18 @@
+[gd_resource type="Resource" script_class="FoodDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/food_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = "candy_bar"
+display_name = "Nougat Bar"
+group = "sweet"
+model = "candy_bar"
+tint = Color(1, 0.3647, 0.451, 1)
+bites = 3
+energy = 8.0
+health = 0.0
+fullness = 12.0
+blurb = "Mostly air and regret."
+trash = "trash_wrapper"
+trash_name = "Wrapper"

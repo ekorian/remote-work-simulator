@@ -1,0 +1,18 @@
+[gd_resource type="Resource" script_class="FoodDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/food_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = "milkshake"
+display_name = "Strawberry Milkshake"
+group = "drink"
+model = "milkshake"
+tint = Color(1, 0.702, 0.8196, 1)
+bites = 4
+energy = 10.0
+health = 3.0
+fullness = 20.0
+blurb = "Too thick for the straw. You will persevere."
+trash = "trash_cup"
+trash_name = "Empty Cup"

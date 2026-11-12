@@ -4,15 +4,15 @@ extends Node3D
 ## collision, the mouse-pick volumes and the navigation grid.
 ##
 ## Convention: props are modelled with their FRONT facing +Z, then rotated.
-## The default camera sits to the south-east, so north and west walls are the
-## "back" walls and furniture placed against them faces the player.
+## The flat is seen from the inside at eye height: full-height walls with
+## doorways between the rooms, a ceiling, and furniture against the walls.
 
 const X0 := -7.0
 const X1 := 7.0
 const Z0 := -5.5
 const Z1 := 5.5
 const WALL_H := 2.7
-const PART_H := 1.0
+const DOOR_H := 2.08
 const WALL_T := 0.2
 const CELL := 0.25
 
@@ -29,6 +29,9 @@ const C_WHITE := Color("f7f5f0")
 var things: Dictionary = {}            ## id -> Interactable
 var parts: Dictionary = {}             ## named nodes / materials for live visuals
 var lamps: Array = []                  ## OmniLight3D switched on at night
+var ceiling_lights: Array = []         ## OmniLight3D on all day, brighter in the evening
+var spots: Dictionary = {}             ## name -> Vector3 where loose items are put down
+var bins: Array = []                   ## Area3D: what falls in is thrown away
 var window_mats: Array = []            ## emissive panes tinted by time of day
 var outer: Dictionary = {}             ## side -> {tall: Node3D, low: Node3D, normal: Vector3}
 var nav := AStarGrid2D.new()
@@ -38,6 +41,7 @@ var _blocked: Array = []               ## Rect2 footprints (x,z) for the nav gri
 func _ready() -> void:
 	_floors()
 	_walls()
+	_ceiling()
 	_office()
 	_bedroom()
 	_living()
@@ -90,8 +94,7 @@ func _rug(pos: Vector3, size: Vector2, color: Color, edge: Color) -> void:
 
 
 func _walls() -> void:
-	# Exterior walls: a tall version (shown when it is behind the scene) and a
-	# low kerb (shown when it would block the camera).
+	# Exterior walls.
 	var sides := {
 		"n": {"a": Vector3(X0, 0, Z0), "b": Vector3(X1, 0, Z0), "normal": Vector3(0, 0, -1)},
 		"s": {"a": Vector3(X0, 0, Z1), "b": Vector3(X1, 0, Z1), "normal": Vector3(0, 0, 1)},
@@ -107,17 +110,14 @@ func _walls() -> void:
 		var along_x := absf(b.x - a.x) > 0.1
 		var length := (b - a).length() + WALL_T * 2.0
 		var size_tall := Vector3(length, WALL_H, WALL_T) if along_x else Vector3(WALL_T, WALL_H, length)
-		var size_low := Vector3(length, 0.14, WALL_T) if along_x else Vector3(WALL_T, 0.14, length)
 		var tall := Kit.node(self, Vector3.ZERO, "Wall_%s_tall" % side)
 		var wall := Kit.box(tall, size_tall, mid + Vector3(0, WALL_H / 2.0, 0), C_WALL)
 		wall.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 		var trim_size := Vector3(length, 0.12, 0.04) if along_x else Vector3(0.04, 0.12, length)
 		var trim := Kit.box(tall, trim_size, (a + b) / 2.0 - normal * 0.02 + Vector3(0, 0.06, 0), C_TRIM)
 		trim.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-		var low := Kit.node(self, Vector3.ZERO, "Wall_%s_low" % side)
-		Kit.box(low, size_low, mid + Vector3(0, 0.07, 0), C_WALL_ACCENT)
 		Kit.solid(self, size_tall, mid + Vector3(0, WALL_H / 2.0, 0))
-		outer[side] = {"tall": tall, "low": low, "normal": normal}
+		outer[side] = {"tall": tall, "normal": normal}
 	# Windows and wall decor live on the tall walls so they hide with them.
 	_window(outer.w.tall, Vector3(X0, 1.75, -3.9), true, 1.3)
 	_window(outer.n.tall, Vector3(4.4, 1.85, Z0), false, 1.5)
@@ -126,34 +126,73 @@ func _walls() -> void:
 	_whiteboard(outer.n.tall, Vector3(-1.4, 1.7, Z0 + 0.03))
 	_poster(outer.n.tall, Vector3(2.6, 1.75, Z0 + 0.03), Color("ff8c5a"), Color("ffd166"))
 	_poster(outer.w.tall, Vector3(X0 + 0.03, 1.8, -1.5), Color("6c5ce7"), Color("5ad1c8"), true)
-	_door(outer.s.tall, Vector3(-1.4, 0, Z1 - 0.02))
+	_door(outer.s.tall, Vector3(-4.5, 0, Z1 - 0.02))
 	_window(outer.e.tall, Vector3(X1, 1.7, 2.6), true, 1.6)
 	_window(outer.s.tall, Vector3(4.2, 1.7, Z1), false, 1.6)
 	_window(outer.e.tall, Vector3(X1, 1.75, -2.8), true, 1.4)
-	# Interior partitions (low, so every room stays readable).
+	# Things on the walls.
+	_picture(Vector3(-0.9, 1.6, 0.115), 0.0, Vector2(0.7, 0.5), Color("9fd0f0"), Color("73d05c"))
+	_picture(Vector3(0.05, 1.7, 0.115), 0.0, Vector2(0.4, 0.5), Color("ffb38a"), Color("8a5a36"))
+	_picture(Vector3(-5.6, 1.62, 0.115), 0.0, Vector2(0.5, 0.4), Color("b48cff"), Color("5ad1c8"))
+	_picture(Vector3(0.115, 1.6, -3.9), 90.0, Vector2(0.8, 0.55), Color("ffd6ae"), Color("ff9ecb"))
+	_picture(Vector3(3.0, 1.65, -0.115), 180.0, Vector2(0.55, 0.42), Color("9fd0f0"), Color("ffd166"))
+	_picture(Vector3(-0.115, 1.62, -4.4), -90.0, Vector2(0.5, 0.4), Color("ffd166"), Color("ff8c5a"))
+	_clock(Vector3(1.115, 1.95, 1.1), 90.0)
+	_picture(Vector3(1.115, 1.55, 4.7), 90.0, Vector2(0.5, 0.62), Color("fff1cf"), Color("ff5d73"))
+	# Interior walls, with a doorway between each pair of rooms.
 	_partition(Vector3(X0, 0, 0), Vector3(-4.0, 0, 0))
+	_doorway(Vector3(-4.0, 0, 0), Vector3(-2.6, 0, 0))            # office <-> living room
 	_partition(Vector3(-2.6, 0, 0), Vector3(5.3, 0, 0))
+	_doorway(Vector3(5.3, 0, 0), Vector3(6.6, 0, 0))              # bedroom <-> kitchen
 	_partition(Vector3(6.6, 0, 0), Vector3(X1, 0, 0))
 	_partition(Vector3(0, 0, Z0), Vector3(0, 0, -2.2))
+	_doorway(Vector3(0, 0, -2.2), Vector3(0, 0, -0.9))            # office <-> bedroom
 	_partition(Vector3(0, 0, -0.9), Vector3(0, 0, 0))
 	_partition(Vector3(1, 0, 0), Vector3(1, 0, 2.2))
+	_doorway(Vector3(1, 0, 2.2), Vector3(1, 0, 3.8))              # living room <-> kitchen
 	_partition(Vector3(1, 0, 3.8), Vector3(1, 0, Z1))
 
 
 func _partition(a: Vector3, b: Vector3) -> void:
 	var along_x := absf(b.x - a.x) > 0.1
 	var length := (b - a).length()
-	var size := Vector3(length, PART_H, WALL_T) if along_x else Vector3(WALL_T, PART_H, length)
+	var size := Vector3(length, WALL_H, WALL_T) if along_x else Vector3(WALL_T, WALL_H, length)
 	var mid := (a + b) / 2.0
-	Kit.box(self, size, mid + Vector3(0, PART_H / 2.0, 0), C_WALL)
-	var cap := Vector3(length + 0.04, 0.06, WALL_T + 0.08) if along_x else Vector3(WALL_T + 0.08, 0.06, length + 0.04)
-	Kit.box(self, cap, mid + Vector3(0, PART_H + 0.03, 0), C_WOOD_LIGHT)
-	Kit.solid(self, Vector3(size.x, 2.0, size.z), mid + Vector3(0, 1.0, 0))
+	Kit.box(self, size, mid + Vector3(0, WALL_H / 2.0, 0), C_WALL)
+	# Skirting board on both faces.
+	var skirt := Vector3(length, 0.12, WALL_T + 0.05) if along_x else Vector3(WALL_T + 0.05, 0.12, length)
+	Kit.box(self, skirt, mid + Vector3(0, 0.06, 0), C_TRIM)
+	Kit.solid(self, size, mid + Vector3(0, WALL_H / 2.0, 0))
 	_block(Rect2(mid.x - size.x / 2.0, mid.z - size.z / 2.0, size.x, size.z))
 
 
+func _doorway(a: Vector3, b: Vector3) -> void:
+	## An opening in an interior wall: the wall above it, and a frame.
+	var along_x := absf(b.x - a.x) > 0.1
+	var length := (b - a).length()
+	var mid := (a + b) / 2.0
+	var top := WALL_H - DOOR_H
+	var lintel := Vector3(length, top, WALL_T) if along_x else Vector3(WALL_T, top, length)
+	Kit.box(self, lintel, mid + Vector3(0, DOOR_H + top / 2.0, 0), C_WALL)
+	Kit.solid(self, lintel, mid + Vector3(0, DOOR_H + top / 2.0, 0))
+	var head := Vector3(length + 0.16, 0.09, WALL_T + 0.07) if along_x else Vector3(WALL_T + 0.07, 0.09, length + 0.16)
+	Kit.box(self, head, mid + Vector3(0, DOOR_H - 0.045, 0), C_TRIM)
+	for end in [a, b]:
+		var jamb := Vector3(0.08, DOOR_H, WALL_T + 0.07) if along_x else Vector3(WALL_T + 0.07, DOOR_H, 0.08)
+		Kit.box(self, jamb, (end as Vector3) + Vector3(0, DOOR_H / 2.0, 0), C_TRIM)
+
+
+func _ceiling() -> void:
+	var c := Kit.box(self, Vector3(X1 - X0 + 0.4, 0.2, Z1 - Z0 + 0.4), Vector3(0, WALL_H + 0.1, 0), C_TRIM)
+	c.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	Kit.solid(self, Vector3(X1 - X0 + 0.4, 0.2, Z1 - Z0 + 0.4), Vector3(0, WALL_H + 0.1, 0))
+
+
+const CURTAINS := {"Home office": Color("5ad1c8"), "Bedroom": Color("ff9ecb"), "Living room": Color("ff9f5a"), "Kitchen": Color("ffd166")}
+
+
 func _window(parent: Node3D, pos: Vector3, on_x_wall: bool, width: float) -> void:
-	## A glowing pane mounted on the inside face of an exterior wall.
+	## A glowing pane mounted on the inside face of an exterior wall, with curtains.
 	var inward := Vector3(signf(-pos.x), 0, 0) if on_x_wall else Vector3(0, 0, signf(-pos.z))
 	var n := Kit.node(parent, pos + inward * 0.03)
 	var h := 1.15
@@ -177,6 +216,16 @@ func _window(parent: Node3D, pos: Vector3, on_x_wall: bool, width: float) -> voi
 	Kit.box(n, bar_b, inward * 0.05, C_TRIM)
 	var sill := Vector3(0.2, 0.05, width + 0.24) if on_x_wall else Vector3(width + 0.24, 0.05, 0.2)
 	Kit.box(n, sill, inward * 0.08 + Vector3(0, -h / 2.0 - 0.1, 0), C_TRIM)
+	# Curtains, drawn back, in the colour of the room.
+	var cloth: Color = CURTAINS.get(room_at(pos + inward * 0.5), Color("ff9f5a"))
+	var along := Vector3(0, 0, 1) if on_x_wall else Vector3(1, 0, 0)
+	var rod := Vector3(0.03, 0.03, width + 0.7) if on_x_wall else Vector3(width + 0.7, 0.03, 0.03)
+	Kit.box(n, rod, inward * 0.1 + Vector3(0, h / 2.0 + 0.2, 0), C_WOOD_DARK)
+	for side in [-1.0, 1.0]:
+		for fold in 3:
+			var drape := Vector3(0.05, h + 0.42, 0.09) if on_x_wall else Vector3(0.09, h + 0.42, 0.05)
+			var off: Vector3 = along * side * (width / 2.0 + 0.1 + 0.085 * float(fold))
+			Kit.box(n, drape, inward * (0.09 + 0.012 * float(fold % 2)) + off + Vector3(0, -0.02, 0), cloth.darkened(0.07 * float(fold % 2)))
 
 
 func _whiteboard(parent: Node3D, pos: Vector3) -> void:
@@ -201,12 +250,40 @@ func _poster(parent: Node3D, pos: Vector3, a: Color, b: Color, on_x_wall: bool =
 	Kit.box(n, Vector3(0.4, 0.06, 0.04), Vector3(0, -0.26, 0.004), C_WHITE)
 
 
+func _picture(pos: Vector3, yaw_deg: float, size: Vector2, sky: Color, land: Color) -> void:
+	## A framed picture: a hill, a sun, the kind every house has.
+	var n := Kit.node(self, pos)
+	n.rotation_degrees.y = yaw_deg
+	Kit.box(n, Vector3(size.x + 0.08, size.y + 0.08, 0.03), Vector3.ZERO, C_WOOD_DARK)
+	Kit.box(n, Vector3(size.x, size.y, 0.034), Vector3(0, 0, 0.002), C_WHITE)
+	Kit.box(n, Vector3(size.x - 0.08, size.y - 0.08, 0.036), Vector3(0, 0, 0.004), sky)
+	Kit.box(n, Vector3(size.x - 0.08, (size.y - 0.08) * 0.36, 0.038), Vector3(0, -(size.y - 0.08) * 0.32, 0.005), land)
+	var sun_disc := Kit.cyl(n, size.y * 0.11, 0.04, Vector3(size.x * 0.2, size.y * 0.14, 0.006), Color("ffd166"), 12)
+	sun_disc.rotation.x = PI / 2.0
+
+
+func _clock(pos: Vector3, yaw_deg: float) -> void:
+	var n := Kit.node(self, pos)
+	n.rotation_degrees.y = yaw_deg
+	Kit.cyl(n, 0.19, 0.04, Vector3.ZERO, C_DARK, 16).rotation.x = PI / 2.0
+	Kit.cyl(n, 0.165, 0.045, Vector3(0, 0, 0.002), C_WHITE, 16).rotation.x = PI / 2.0
+	Kit.box(n, Vector3(0.014, 0.11, 0.05), Vector3(0, 0.05, 0.004), C_DARK)
+	var hand := Kit.box(n, Vector3(0.012, 0.08, 0.05), Vector3(0.03, -0.02, 0.004), Color("ff5d73"))
+	hand.rotation.z = 2.2
+
+
 func _door(parent: Node3D, pos: Vector3) -> void:
 	var n := Kit.node(parent, pos)
 	Kit.box(n, Vector3(1.1, 2.15, 0.06), Vector3(0, 1.07, 0), C_TRIM)
 	Kit.box(n, Vector3(0.94, 2.0, 0.08), Vector3(0, 1.0, -0.01), Color("6c5ce7"))
+	for panel in [Vector3(0, 1.5, -0.055), Vector3(0, 0.52, -0.055)]:
+		Kit.box(n, Vector3(0.66, 0.72 if panel.y > 1.0 else 0.66, 0.02), panel, Color("7d6ff0"))
 	Kit.ball(n, 0.05, Vector3(0.36, 1.0, -0.07), Color("ffd166"), 8)
+	Kit.box(n, Vector3(0.3, 0.035, 0.02), Vector3(0, 1.05, -0.06), Color("ffd166"))               # letterbox
+	var peep := Kit.cyl(n, 0.022, 0.02, Vector3(0, 1.6, -0.06), C_DARK, 8)
+	peep.rotation.x = PI / 2.0
 	Kit.box(self, Vector3(1.0, 0.02, 0.6), Vector3(pos.x, 0.02, pos.z - 0.4), Color("8a5a36"), 1.0)   # doormat
+	spots["doormat"] = Vector3(pos.x, 0.035, pos.z - 0.42)
 
 
 # ---------------------------------------------------------------------------
@@ -262,7 +339,35 @@ func _floor_lamp(pos: Vector3, color: Color = Color("ffd9a0")) -> void:
 
 
 func _ceiling_light(pos: Vector3, energy: float = 2.6, light_range: float = 7.5) -> void:
-	lamps.append(Kit.lamp(self, pos, Color("ffe2b8"), energy, light_range, true))
+	var at := Vector3(pos.x, WALL_H, pos.z)
+	Kit.cyl(self, 0.24, 0.05, at - Vector3(0, 0.025, 0), C_TRIM, 16)
+	var shade := Kit.dome(self, 0.2, at - Vector3(0, 0.05, 0), Color("fff1cf"), 14)
+	shade.rotation.x = PI
+	shade.material_override = Kit.mat(Color("fff1cf"), 0.5, 1.4)
+	shade.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	ceiling_lights.append(Kit.lamp(self, at - Vector3(0, 0.45, 0), Color("ffe9c9"), energy, light_range, true))
+
+
+func _spot(name: String, parent: Node3D, local: Vector3) -> void:
+	## A named place where a loose item can sit (in world space, once built).
+	spots[name] = parent.to_global(local) if parent.is_inside_tree() else parent.position + local
+
+
+func _bin_trigger(pos: Vector3, radius: float) -> void:
+	## Anything that falls through this is in the bin.
+	var area := Area3D.new()
+	area.position = pos
+	area.collision_layer = 0
+	area.collision_mask = Holdable.LAYER
+	area.monitorable = false
+	var cs := CollisionShape3D.new()
+	var shape := CylinderShape3D.new()
+	shape.radius = radius
+	shape.height = 0.3
+	cs.shape = shape
+	area.add_child(cs)
+	add_child(area)
+	bins.append(area)
 
 
 func _chair(parent: Node3D, pos: Vector3, yaw_deg: float, color: Color) -> Node3D:
@@ -336,9 +441,12 @@ func _office() -> void:
 	Kit.box(mug, Vector3(0.03, 0.07, 0.02), Vector3(0.075, 0.06, 0), Color("ff8c5a"))
 	Kit.box(mug, Vector3(0.2, 0.006, 0.2), Vector3(0, 0.003, 0), C_WOOD_DARK)        # coaster
 	# Desk clutter (not interactive).
-	Kit.box(desk, Vector3(0.24, 0.02, 0.32), Vector3(-0.52, 0.81, 0.14), C_WHITE)
+	Kit.box(desk, Vector3(0.24, 0.02, 0.32), Vector3(-0.42, 0.81, -0.2), C_WHITE)
 	Kit.box(desk, Vector3(0.1, 0.1, 0.1), Vector3(0.52, 0.85, -0.26), Color("ffd166"))
 	Kit.cyl(desk, 0.05, 0.14, Vector3(1.28, 0.87, -0.22), Color("5ad1c8"), 8)
+	_spot("desk", desk, Vector3(-0.52, 0.8, 0.16))
+	_spot("desk_left", desk, Vector3(-1.27, 0.8, 0.22))
+	_spot("desk_right", desk, Vector3(1.27, 0.8, 0.2))
 	# Office chair.
 	var chair_root := _prop(Vector3(-4.2, 0, -4.02), 180.0, Vector2(0.55, 0.55), 0.9, "OfficeChair")
 	var chair := _thing("chair", chair_root, Vector3.ZERO, Vector3(0.6, 1.1, 0.6), Vector3(0, 0.55, 0), Vector3(-0.85, 0, -0.1))
@@ -430,7 +538,14 @@ func _office() -> void:
 	parts["router_plug"] = plug
 	_plant(Vector3(-0.55, 0, -0.5), 1.1)
 	_plant(Vector3(-6.55, 0, -4.95), 0.8)
-	Kit.box(self, Vector3(0.5, 0.4, 0.34), Vector3(-2.75, 0.2, -5.2), Color("5ad1c8"))            # recycling bin
+	# Recycling bin: open-topped, so things can be thrown into it.
+	var rb := Kit.node(self, Vector3(-2.75, 0, -5.2))
+	for sx in [-1.0, 1.0]:
+		Kit.box(rb, Vector3(0.03, 0.42, 0.34), Vector3(0.235 * sx, 0.21, 0), Color("5ad1c8"))
+		Kit.box(rb, Vector3(0.5, 0.42, 0.03), Vector3(0, 0.21, 0.155 * sx), Color("5ad1c8"))
+	Kit.box(rb, Vector3(0.5, 0.03, 0.34), Vector3(0, 0.015, 0), Color("4ab8b0"))
+	Kit.solid(self, Vector3(0.5, 0.2, 0.34), Vector3(-2.75, 0.1, -5.2))
+	_bin_trigger(Vector3(-2.75, 0.36, -5.2), 0.2)
 	_block(Rect2(-3.0, -5.4, 0.5, 0.4))
 
 
@@ -466,6 +581,7 @@ func _bedroom() -> void:
 	Kit.box(phone, Vector3(0.08, 0.004, 0.155), Vector3(0, 0.008, 0), Color("4fb3ff"), 0.3, 1.2)
 	phone.visible = false
 	parts["phone"] = phone
+	_spot("nightstand", ns, Vector3(0.14, 0.5, 0.14))
 	Kit.cyl(ch, 0.05, 0.14, Vector3(0.16, 0.07, -0.1), C_WHITE, 8)                                  # lamp base
 	Kit.cyl(ch, 0.1, 0.14, Vector3(0.16, 0.2, -0.1), Color("ffd9a0"), 8, 0.06, 0.8)
 	lamps.append(Kit.lamp(ch, Vector3(0.16, 0.3, -0.1), Color("ffd9a0"), 1.2, 3.5))
@@ -521,8 +637,9 @@ func _living() -> void:
 	Kit.box(pad, Vector3(0.16, 0.035, 0.09), Vector3.ZERO, C_DARK)
 	Kit.ball(pad, 0.014, Vector3(-0.04, 0.022, 0), Color("ff5d73"), 6)
 	Kit.ball(pad, 0.014, Vector3(0.04, 0.022, 0), Color("5ad17a"), 6)
-	Kit.cyl(table, 0.07, 0.03, Vector3(-0.4, 0.425, 0.05), Color("ffd166"), 10)                    # a plate
-	Kit.box(table, Vector3(0.2, 0.03, 0.14), Vector3(-0.38, 0.425, -0.14), Color("ff5d73"))        # a magazine
+	Kit.box(table, Vector3(0.2, 0.03, 0.14), Vector3(-0.44, 0.425, -0.2), Color("ff5d73"))         # a magazine
+	_spot("coffee_table", table, Vector3(-0.3, 0.41, 0.06))
+	_spot("tv_stand", stand, Vector3(0.82, 0.455, 0.06))
 	# Sofa, facing the TV.
 	var sofa_root := _prop(Vector3(-3.4, 0, 2.9), -90.0, Vector2(2.3, 0.95), 0.8, "Sofa")
 	var sofa := _thing("sofa", sofa_root, Vector3.ZERO, Vector3(2.3, 0.95, 0.95), Vector3(0, 0.45, 0), Vector3(-0.7, 0, 0.95))
@@ -534,6 +651,7 @@ func _living() -> void:
 	Kit.box(sofa, Vector3(0.36, 0.34, 0.14), Vector3(-0.72, 0.6, -0.2), Color("5ad1c8")).rotation_degrees.x = -14
 	Kit.box(sofa, Vector3(0.36, 0.34, 0.14), Vector3(0.74, 0.6, -0.2), Color("ffd166")).rotation_degrees.x = -14
 	sofa.seat = {"pos": Vector3(0.1, 0.0, 0.16), "yaw": PI, "lie": false}
+	_spot("sofa", sofa_root, Vector3(-0.72, 0.45, 0.14))
 	tv.seat = {"pos": Vector3(-0.4, 0.0, 0.16), "yaw": PI, "lie": false, "root": sofa_root}
 	con.seat = {"pos": Vector3(0.5, 0.0, 0.16), "yaw": PI, "lie": false, "root": sofa_root}
 	# Bookshelf on the west wall.
@@ -636,6 +754,8 @@ func _kitchen() -> void:
 	Kit.ball(ct, 0.06, Vector3(-0.38, 1.0, 0.02), Color("ff5d73"), 8)
 	Kit.ball(ct, 0.06, Vector3(-0.3, 1.0, 0.05), Color("5ad17a"), 8)
 	Kit.box(ct, Vector3(0.16, 0.22, 0.12), Vector3(1.36, 1.03, -0.14), C_WOOD)                      # knife block
+	_spot("counter_a", ct, Vector3(-1.32, 0.92, 0.08))
+	_spot("counter_b", ct, Vector3(0.55, 0.92, 0.14))
 	# Kitchen table + chairs.
 	var tb_root := _prop(Vector3(4.2, 0, 3.55), 0.0, Vector2(1.4, 0.9), 0.78, "KitchenTable")
 	var tb := _thing("table", tb_root, Vector3.ZERO, Vector3(1.4, 0.9, 0.9), Vector3(0, 0.45, 0), Vector3(0, 0, -0.98))
@@ -644,6 +764,7 @@ func _kitchen() -> void:
 		for sz in [-1.0, 1.0]:
 			Kit.box(tb, Vector3(0.07, 0.72, 0.07), Vector3(0.6 * sx, 0.36, 0.36 * sz), C_WOOD)
 	Kit.cyl(tb, 0.14, 0.02, Vector3(-0.3, 0.79, 0.0), C_WHITE, 12)
+	_spot("kitchen_table", tb, Vector3(-0.3, 0.8, 0.0))
 	Kit.cyl(tb, 0.05, 0.11, Vector3(0.05, 0.835, 0.12), Color("4fb3ff"), 8)
 	Kit.cyl(tb, 0.06, 0.22, Vector3(0.38, 0.89, -0.1), Color("5ad17a"), 8)                          # vase
 	Kit.ball(tb, 0.08, Vector3(0.38, 1.06, -0.1), Color("ff9ecb"), 6)
@@ -655,9 +776,19 @@ func _kitchen() -> void:
 	Kit.solid(self, Vector3(0.45, 0.9, 0.45), Vector3(5.2, 0.45, 3.55))
 	tb.seat = {"pos": Vector3(0, 0.02, 0.0), "yaw": PI, "lie": false, "root": c1}
 	# Decor.
-	var bin := _prop(Vector3(6.55, 0, 0.5), 0.0, Vector2(0.45, 0.45), 0.6)
-	Kit.cyl(bin, 0.19, 0.55, Vector3(0, 0.27, 0), C_METAL, 10)
-	Kit.cyl(bin, 0.2, 0.04, Vector3(0, 0.56, 0), C_DARK, 10)
+	# Kitchen bin: lid flipped back, open on top.
+	var bin_root := _prop(Vector3(6.45, 0, 0.62), 0.0, Vector2(0.46, 0.46), 0.3)
+	var bin := _thing("bin", bin_root, Vector3.ZERO, Vector3(0.5, 0.7, 0.5), Vector3(0, 0.35, 0), Vector3(-0.75, 0, 0.35))
+	for i in 10:
+		var a := TAU * float(i) / 10.0
+		var slat := Kit.box(bin, Vector3(0.135, 0.56, 0.02), Vector3(cos(a) * 0.2, 0.28, sin(a) * 0.2), C_METAL)
+		slat.rotation.y = -a + PI / 2.0
+	Kit.cyl(bin, 0.2, 0.03, Vector3(0, 0.015, 0), C_DARK, 10)
+	Kit.torus(bin, 0.205, 0.016, Vector3(0, 0.56, 0), C_DARK, 14, 6)
+	var lid := Kit.cyl(bin, 0.21, 0.03, Vector3(0, 0.66, -0.2), C_DARK, 12)
+	lid.rotation.x = -1.25
+	Kit.box(bin, Vector3(0.14, 0.03, 0.1), Vector3(0, 0.03, 0.24), C_DARK)                           # pedal
+	_bin_trigger(Vector3(6.45, 0.42, 0.62), 0.2)
 	_plant(Vector3(6.5, 0, 5.0), 1.1)
 	var wallshelf := Kit.node(self, Vector3(1.12, 1.45, 4.6))
 	Kit.box(wallshelf, Vector3(0.02, 0.02, 0.02), Vector3.ZERO, C_WOOD)

@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="FoodDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/food_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = "pizza_slice"
+display_name = "Slice of Pizza"
+group = "hot"
+model = "pizza_slice"
+tint = Color(1, 1, 1, 1)
+bites = 3
+energy = 11.0
+health = 2.0
+fullness = 22.0
+blurb = "Cold. Better cold. Don't argue."

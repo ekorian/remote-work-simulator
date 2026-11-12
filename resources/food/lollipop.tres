@@ -1,0 +1,18 @@
+[gd_resource type="Resource" script_class="FoodDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/food_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = "lollipop"
+display_name = "Lollipop"
+group = "sweet"
+model = "lollipop"
+tint = Color(1, 0.3647, 0.451, 1)
+bites = 3
+energy = 4.0
+health = 1.0
+fullness = 4.0
+blurb = "The dentist gave you this. For being brave."
+trash = "trash_stick"
+trash_name = "Lolly Stick"

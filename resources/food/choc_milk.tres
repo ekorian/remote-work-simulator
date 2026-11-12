@@ -1,0 +1,18 @@
+[gd_resource type="Resource" script_class="FoodDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/food_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = "choc_milk"
+display_name = "Chocolate Milk"
+group = "drink"
+model = "choc_milk"
+tint = Color(0.4784, 0.2902, 0.1647, 1)
+bites = 3
+energy = 7.0
+health = 2.0
+fullness = 12.0
+blurb = "You are an adult and nobody can stop you."
+trash = "trash_wrapper"
+trash_name = "Squashed Carton"

@@ -7,6 +7,7 @@ const PATH := "user://settings.cfg"
 const DEFAULTS := {
 	"master": 0.9, "music": 0.55, "sfx": 0.85, "ambience": 0.6,
 	"fullscreen": false, "vsync": true, "shake": true, "hints": true,
+	"look": 0.42, "fov": 74.0, "outline": true,
 }
 
 var data: Dictionary = DEFAULTS.duplicate()

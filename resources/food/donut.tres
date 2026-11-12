@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="FoodDef" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/food_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = "donut"
+display_name = "Glazed Donut"
+group = "sweet"
+model = "donut"
+tint = Color(1, 0.4941, 0.7137, 1)
+bites = 3
+energy = 9.0
+health = 1.0
+fullness = 16.0
+blurb = "Pink. Sprinkled. Legally a breakfast."
