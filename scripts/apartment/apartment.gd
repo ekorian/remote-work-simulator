@@ -23,7 +23,8 @@ const DOOR_H := 2.08
 const WALL_T := 0.2
 const CELL := 0.25
 
-const C_WALL := Color("f3e7d6")
+const C_WALL := Color("a7bd9a")
+const C_CEILING := Color("565d71")
 const C_WALL_ACCENT := Color("e8d4bd")
 const C_TRIM := Color("fffaf2")
 const C_WOOD := Color("b9834f")
@@ -68,32 +69,18 @@ func _floors() -> void:
 	Kit.box(self, Vector3(X1 - X0 + 0.4, 0.3, Z1 - Z0 + 0.4), Vector3(0, -0.16, 0), Color("4a4270"))
 	var floor_body := Kit.solid(self, Vector3(40, 1, 40), Vector3(0, -0.5, 0))
 	floor_body.name = "Floor"
-	# Office: warm planks
-	_planks(Rect2(X0, Z0, 7.0, 5.5), Color("c79462"), Color("bd8a59"), true)
-	# Bedroom: soft carpet
-	Kit.box(self, Vector3(7.0, 0.02, 5.5), Vector3(3.5, 0.0, -2.75), Color("c9b8e6"), 1.0)
-	# Living room: light planks
-	_planks(Rect2(X0, 0.0, 8.0, 5.5), Color("e3bf90"), Color("dab583"), false)
-	# Kitchen: checker tiles
-	for ix in 12:
-		for iz in 11:
-			var col := Color("f6f1e7") if (ix + iz) % 2 == 0 else Color("9fd3cc")
-			Kit.box(self, Vector3(0.5, 0.02, 0.5), Vector3(1.25 + ix * 0.5, 0.0, 0.25 + iz * 0.5), col, 0.5)
+	# Office: dark boards
+	Kit.slab(self, Vector3(7.0, 0.02, 5.5), Vector3(-3.5, 0.0, -2.75), "wood_x", Color("9a4a1a"), 2.4)
+	# Bedroom: worn carpet
+	Kit.slab(self, Vector3(7.0, 0.02, 5.5), Vector3(3.5, 0.0, -2.75), "carpet", Color("8a7a9c"), 1.2)
+	# Living room: the same boards, laid the other way
+	Kit.slab(self, Vector3(8.0, 0.02, 5.5), Vector3(-3.0, 0.0, 2.75), "wood_z", Color("8f4416"), 2.4)
+	# Kitchen: tiles
+	Kit.slab(self, Vector3(6.0, 0.02, 5.5), Vector3(4.0, 0.0, 2.75), "tiles", Color("cbe0ed"), 1.0)
 	# Rugs
 	_rug(Vector3(-4.2, 0, -3.1), Vector2(2.6, 1.7), Color("6c5ce7"), Color("a29bfe"))
 	_rug(Vector3(3.2, 0, -1.9), Vector2(2.4, 1.6), Color("ff9ecb"), Color("ffd3e6"))
 	_rug(Vector3(-4.7, 0, 2.9), Vector2(2.9, 2.6), Color("5ad1c8"), Color("d6f5f2"))
-
-
-func _planks(r: Rect2, a: Color, b: Color, along_x: bool) -> void:
-	var w := 0.5
-	var n := int((r.size.y if along_x else r.size.x) / w)
-	for i in n:
-		var col := a if i % 2 == 0 else b
-		if along_x:
-			Kit.box(self, Vector3(r.size.x, 0.02, w), Vector3(r.position.x + r.size.x / 2.0, 0.0, r.position.y + w * (i + 0.5)), col, 0.7)
-		else:
-			Kit.box(self, Vector3(w, 0.02, r.size.y), Vector3(r.position.x + w * (i + 0.5), 0.0, r.position.y + r.size.y / 2.0), col, 0.7)
 
 
 func _rug(pos: Vector3, size: Vector2, color: Color, edge: Color) -> void:
@@ -206,7 +193,7 @@ func _doorway(a: Vector3, b: Vector3) -> void:
 
 
 func _ceiling() -> void:
-	var c := Kit.box(self, Vector3(X1 - X0 + 0.4, 0.2, Z1 - Z0 + 0.4), Vector3(0, WALL_H + 0.1, 0), C_TRIM)
+	var c := Kit.box(self, Vector3(X1 - X0 + 0.4, 0.2, Z1 - Z0 + 0.4), Vector3(0, WALL_H + 0.1, 0), C_CEILING)
 	c.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	Kit.solid(self, Vector3(X1 - X0 + 0.4, 0.2, Z1 - Z0 + 0.4), Vector3(0, WALL_H + 0.1, 0))
 

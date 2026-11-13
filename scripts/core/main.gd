@@ -93,7 +93,7 @@ func _build_ui() -> void:
 	new_game = _screen("res://scenes/main_menu/new_game.tscn")
 	pause = _screen("res://scenes/ui/pause_menu.tscn")
 	fade = ColorRect.new()
-	fade.color = Color(0.105, 0.094, 0.165, 1.0)
+	fade.color = Color(0.078, 0.094, 0.102, 1.0)
 	fade.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	UI.full(fade)
 	ui_root.add_child(fade)

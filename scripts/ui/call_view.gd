@@ -36,7 +36,7 @@ func _ready() -> void:
 	setup(0.86)
 	visible = false
 	var p := PanelContainer.new()
-	p.add_theme_stylebox_override("panel", UI.shadowed(UI.sb(Color("1f1b33"), 22, 2, UI.LINE, 24, 20), 30, 0.5))
+	p.add_theme_stylebox_override("panel", UI.shadowed(UI.sb(Color("1a2022"), 22, 2, UI.LINE, 24, 20), 30, 0.5))
 	p.custom_minimum_size = Vector2(980, 0)
 	center(p)
 	var v := UI.vbox(12)
@@ -145,7 +145,7 @@ func _show_beat() -> void:
 	var solo := cast.size() == 1
 	for id in cast:
 		var on: bool = id == who
-		var tile := UI.panel(Color("2b2542") if not on else Color("3a3260"), 14, 10, 3 if on else 1, UI.ACCENT if on else UI.LINE)
+		var tile := UI.panel(UI.PANEL if not on else UI.PANEL2, 14, 10, 3 if on else 1, UI.ACCENT if on else UI.LINE)
 		tile.custom_minimum_size = Vector2(150, 0)
 		var tv := UI.vbox(5)
 		tv.alignment = BoxContainer.ALIGNMENT_CENTER
@@ -167,7 +167,7 @@ func _show_beat() -> void:
 				tv.add_child(fp)
 		tile.add_child(tv)
 		_tiles.add_child(tile)
-	var you := UI.panel(Color("1f3a2b"), 14, 10, 1, UI.GREEN)
+	var you := UI.panel(Color("1f3328"), 14, 10, 1, UI.GREEN)
 	you.custom_minimum_size = Vector2(150, 0)
 	var yv := UI.vbox(5)
 	yv.alignment = BoxContainer.ALIGNMENT_CENTER

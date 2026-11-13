@@ -54,7 +54,7 @@ func show_result(res: Dictionary) -> void:
 		sub += "\nYour mistake: \"%s\"." % str(res.action)
 	elif not bool(res.won) and str(res.reason) != "":
 		sub += "\nThe final straw: %s." % str(res.reason)
-	hv.add_child(UI.wrap(sub, 16, Color("e6dcff")))
+	hv.add_child(UI.wrap(sub, 16, UI.TEXT))
 	head.add_child(hv)
 	var gp := UI.panel(Color(col, 0.16), 20, 14, 3, col)
 	gp.custom_minimum_size = Vector2(130, 130)

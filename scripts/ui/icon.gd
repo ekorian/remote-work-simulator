@@ -94,6 +94,6 @@ func _draw() -> void:
 			draw_rect(Rect2(Vector2(0.14, 0.58) * s, Vector2(0.74, 0.28) * s), c)
 		"moon":
 			draw_circle(Vector2(0.5, 0.5) * s, 0.4 * s, c)
-			draw_circle(Vector2(0.64, 0.4) * s, 0.32 * s, Color(0.1, 0.09, 0.17))
+			draw_circle(Vector2(0.64, 0.4) * s, 0.32 * s, Color(0.08, 0.094, 0.1))
 		_:
 			draw_circle(Vector2(0.5, 0.5) * s, 0.3 * s, c)

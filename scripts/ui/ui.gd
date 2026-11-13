@@ -3,21 +3,22 @@ extends RefCounted
 ## UI — palette, fonts, theme and small widget factories shared by every screen.
 ## Everything is built in code so the project has no hand-edited scene files.
 
-# Game chrome (dark, cosy)
-const BG := Color("1b182a")
-const PANEL := Color("2b2542")
-const PANEL2 := Color("3a3260")
-const LINE := Color("4d4478")
-const TEXT := Color("f6f2ff")
-const DIM := Color("aaa3cc")
-const ACCENT := Color("ffd166")
-const GREEN := Color("5ad17a")
-const RED := Color("ff5d73")
-const BLUE := Color("4fb3ff")
-const PURPLE := Color("b48cff")
-const ORANGE := Color("ff8c5a")
-const TEAL := Color("5ad1c8")
-const INK := Color("1b182a")
+# Game chrome: dark slate, plain, square. The colours of an overcast evening.
+const BG := Color("14181a")
+const PANEL := Color("20272a")
+const PANEL2 := Color("323b3d")
+const LINE := Color("4b5654")
+const TEXT := Color("e9eae0")
+const DIM := Color("9aa39b")
+const ACCENT := Color("dcc66c")
+const GREEN := Color("7dbb86")
+const RED := Color("e0626c")
+const BLUE := Color("6ea8cf")
+const PURPLE := Color("a998cc")
+const ORANGE := Color("dd8d5c")
+const TEAL := Color("6cb8ae")
+const INK := Color("14181a")
+const CORNER := 0.3              ## every corner is this much as round as it was drawn
 
 # SynerOS (the in-fiction corporate desktop: light, sterile)
 const OS_BG := Color("e9edf5")
@@ -49,11 +50,8 @@ static func _weight(base: Font, w: int) -> Font:
 static func setup() -> Theme:
 	if theme != null:
 		return theme
-	var fred: Font = load("res://assets/fonts/Fredoka.ttf")
 	var inter: Font = load("res://assets/fonts/Inter.ttf")
-	font_title = _weight(fred, 600)
-	# Fredoka's kerning collapses pairs like "VIV" at display sizes.
-	(font_title as FontVariation).opentype_features = {TextServerManager.get_primary_interface().name_to_tag("kern"): 0}
+	font_title = _weight(inter, 800)
 	font_body = _weight(inter, 500)
 	font_bold = _weight(inter, 700)
 	var t := Theme.new()
@@ -108,7 +106,7 @@ static func setup() -> Theme:
 static func sb(color: Color, radius: int = 12, border: int = 0, border_color: Color = Color.TRANSPARENT, pad_x: int = 0, pad_y: int = 0) -> StyleBoxFlat:
 	var s := StyleBoxFlat.new()
 	s.bg_color = color
-	s.set_corner_radius_all(radius)
+	s.set_corner_radius_all(int(round(radius * CORNER)))
 	s.set_border_width_all(border)
 	s.border_color = border_color
 	s.content_margin_left = pad_x

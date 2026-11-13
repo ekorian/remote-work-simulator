@@ -300,6 +300,51 @@ func _ready() -> void:
 		var built := FoodKit.build(str(Db.foods[fid].model), holder)
 		check(not (built.pieces as Array).is_empty() or built.body != null or str(Db.foods[fid].group) == "drink", "'%s' visibly gets smaller as you eat it" % fid)
 	holder.queue_free()
+	print("== the look")
+	for c in [Color("ff0000"), Color("5ad1c8"), Color("ffd166"), Color("f7f5f0"), Color("2f2c3e"), Color(0.2, 0.6, 1.0, 0.4)]:
+		var shown := Kit.tone(c)
+		check(shown.s < c.s or c.s < 0.02, "%s loses colour on the way to a surface (%.2f -> %.2f)" % [c.to_html(), c.s, shown.s])
+		check(shown.v <= c.v + 0.08 and is_equal_approx(shown.a, c.a), "%s does not get brighter, and keeps its alpha" % c.to_html())
+		check(c.s < 0.15 or absf(angle_difference(shown.h * TAU, c.h * TAU)) < 0.5, "%s is still the same sort of colour" % c.to_html())
+	check(Kit.mat(Color("ff5d73")).albedo_color.is_equal_approx(Kit.tone(Color("ff5d73"))), "every material is made in the toned colour")
+	for kind in ["wood_x", "wood_z", "tiles", "slabs", "carpet", "grit"]:
+		var tex := Kit.texture(kind)
+		var img := tex.get_image()
+		check(tex.get_width() == tex.get_height() and tex.get_width() >= 32 and img.has_mipmaps(), "texture '%s' is square, small and mip-mapped" % kind)
+		var lo := 1.0
+		var hi := 0.0
+		for y in range(0, img.get_height(), 3):
+			for x in range(0, img.get_width(), 3):
+				lo = minf(lo, img.get_pixel(x, y).r)
+				hi = maxf(hi, img.get_pixel(x, y).r)
+		check(hi - lo > 0.06 and hi > 0.85, "texture '%s' has something drawn on it (%.2f..%.2f)" % [kind, lo, hi])
+	check(Kit.texture("wood_x") == Kit.texture("wood_x") and Kit.texture("wood_x") != Kit.texture("wood_z"), "textures are made once and shared")
+	var textured := 0
+	for m in Kit.meshes_in(apt):
+		var sm := (m as MeshInstance3D).material_override as StandardMaterial3D
+		if sm != null and sm.albedo_texture != null:
+			textured += 1
+			check(sm.texture_filter == BaseMaterial3D.TEXTURE_FILTER_NEAREST_WITH_MIPMAPS_ANISOTROPIC and sm.uv1_world_triplanar, "a textured surface shows square texels, laid out in world space")
+	check(textured >= 10, "the floors, the pavements and the lawn are textured (%d surfaces)" % textured)
+	var width := (World.SKY[0] as Array).size()
+	for row in World.SKY:
+		check((row as Array).size() == width, "the sky table has %d columns at minute %d" % [width, int(row[0])])
+	for minute in range(0, 1440, 45):
+		var k: Array = world._sky_at(float(minute))
+		check(k.size() == width - 1 and k[4] is Color and k[5] is Color and float(k[8]) >= 0.0 and float(k[8]) <= 1.0, "there is a sky at %02d:%02d" % [int(minute / 60.0), minute % 60])
+	check(world.env.fog_enabled and world.env.fog_density > 0.0 and not world.env.glow_enabled and not world.env.ssao_enabled, "haze, and no bloom or contact shadows")
+	check(world.sky != null and world.sky.global_position.distance_to(world.cam().global_position) < 0.5, "the sky goes where the camera goes")
+	check(World.block_for(1.0, 1080) == 1 and World.block_for(1.0, 2160) == 2, "pixel size 1 is a sharp picture on an ordinary screen")
+	check(World.block_for(3.0, 1080) == 3 and World.block_for(3.0, 900) == 3 and World.block_for(3.0, 1440) == 4 and World.block_for(3.0, 2160) == 6, "the picture has about the same number of lines on any screen")
+	check(World.block_for(4.0, 1080) == 4 and World.block_for(4.0, 200) == 1 and World.block_for(0.0, 1080) == 1, "and a square is never smaller than a pixel")
+	check(World.block_for(float(Prefs.DEFAULTS.pixel), 1080) > 1, "the default is low resolution")
+	var port := get_viewport()
+	for px in [1.0, 2.0, 3.0, 4.0]:
+		Prefs.set_v("pixel", px)
+		var block := World.block_for(px, port.size.y)
+		check(is_equal_approx(port.scaling_3d_scale, 1.0 / float(block)), "pixel size %d draws the 3D view at 1/%d here" % [int(px), block])
+		check((port.scaling_3d_mode == Viewport.SCALING_3D_MODE_NEAREST and port.msaa_3d == Viewport.MSAA_DISABLED) == (block > 1), "and blows it up unsmoothed when it is small")
+	Prefs.set_v("pixel", float(Prefs.DEFAULTS.pixel))
 	print("== sitting and standing")
 	Engine.time_scale = 6.0
 	for id in ["workstation", "sofa", "bed", "table", "exercise", "gaming_pc"]:

@@ -16,7 +16,7 @@ func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	UI.full(self)
 	var p := PanelContainer.new()
-	p.add_theme_stylebox_override("panel", UI.shadowed(UI.sb(Color("15131f"), 34, 3, Color("4d4478"), 14, 16), 30, 0.5))
+	p.add_theme_stylebox_override("panel", UI.shadowed(UI.sb(UI.BG.darkened(0.25), 34, 3, UI.LINE, 14, 16), 30, 0.5))
 	p.set_anchors_preset(Control.PRESET_BOTTOM_LEFT)
 	p.anchor_top = 1.0
 	p.anchor_bottom = 1.0

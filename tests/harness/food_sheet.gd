@@ -31,12 +31,11 @@ func _ready() -> void:
 	var row_step := 0.62
 	var env := Environment.new()
 	env.background_mode = Environment.BG_COLOR
-	env.background_color = Color("6f66b0")
+	env.background_color = Color("565d58")
 	env.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
-	env.ambient_light_color = Color("e6eeff")
-	env.ambient_light_energy = 0.55
+	env.ambient_light_color = Color("a7b1a9")
+	env.ambient_light_energy = 0.75
 	env.tonemap_mode = Environment.TONE_MAPPER_FILMIC
-	env.ssao_enabled = true
 	var we := WorldEnvironment.new()
 	we.environment = env
 	add_child(we)
@@ -45,7 +44,7 @@ func _ready() -> void:
 	sun.shadow_enabled = true
 	sun.light_energy = 0.85
 	add_child(sun)
-	Kit.box(self, Vector3(cols * step + 2.0, 0.02, rows * row_step + 2.0), Vector3(0, -0.01, 0), Color("8a80c8"))
+	Kit.box(self, Vector3(cols * step + 2.0, 0.02, rows * row_step + 2.0), Vector3(0, -0.01, 0), Color("93a08c"))
 	for i in ids.size():
 		var id: String = ids[i]
 		var cx := (float(i % cols) - float(cols - 1) / 2.0) * step

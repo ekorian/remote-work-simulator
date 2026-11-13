@@ -13,8 +13,10 @@ Sitting and lying move your eyes to where your head would be, and you can
 still look around from the sofa. The work computer, the phone and calls are
 flat screens over the view, and the mouse becomes a pointer while they are up.
 
-The look is a cartoon family home: saturated colours, chunky low-poly
-furniture, soft lighting, and a dark ink line around everything.
+The look is a drab low-poly house under an overcast sky: flat faces, colours
+with most of the colour taken out, dark floorboards, a haze that takes the far
+side of every room, and a picture drawn small and blown up so its pixels show.
+The jokes are bright; the house is not.
 
 ## The loop
 

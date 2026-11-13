@@ -10,9 +10,11 @@ const ROAD_Z1 := 15.0
 const SHOP_Z := 17.0             ## shop fronts
 const BACK_Z := 24.8
 const SHOP_H := 3.0
-const GRASS := Color("8fd18a")
-const PAVE := Color("d9d4cc")
-const TAR := Color("5b5a66")
+const GRASS := Color("6f9a5c")
+const PAVE := Color("b9b6ad")
+const TAR := Color("4a4a54")
+const PINE := Color("3f6a52")
+const HILL := Color("5d7462")
 
 ## Shop id -> [x0, x1, wall colour, awning colour]
 const SHOPS := {
@@ -49,6 +51,7 @@ static func build(apt: Apartment) -> void:
 		_shop(apt, str(id))
 	_street(apt)
 	_park(apt)
+	_backdrop(apt)
 
 
 static func _wall(apt: Apartment, x0: float, x1: float, z0: float, z1: float, h: float, color: Color, y0: float = 0.0, see_through: bool = false) -> void:
@@ -63,10 +66,10 @@ static func _wall(apt: Apartment, x0: float, x1: float, z0: float, z1: float, h:
 
 
 static func _ground(apt: Apartment) -> void:
-	Kit.box(apt, Vector3(70, 0.1, 50), Vector3(3, -0.07, 14), GRASS, 1.0)
-	Kit.box(apt, Vector3(46, 0.06, ROAD_Z0 - PAVE_Z), Vector3(3, 0.0, (PAVE_Z + ROAD_Z0) / 2.0), PAVE, 0.9)
-	Kit.box(apt, Vector3(46, 0.06, SHOP_Z - ROAD_Z1), Vector3(3, 0.0, (ROAD_Z1 + SHOP_Z) / 2.0), PAVE, 0.9)
-	Kit.box(apt, Vector3(46, 0.04, ROAD_Z1 - ROAD_Z0), Vector3(3, -0.012, (ROAD_Z0 + ROAD_Z1) / 2.0), TAR, 0.95)
+	Kit.slab(apt, Vector3(240, 0.1, 240), Vector3(3, -0.07, 14), "grit", GRASS, 2.2)
+	Kit.slab(apt, Vector3(46, 0.06, ROAD_Z0 - PAVE_Z), Vector3(3, 0.0, (PAVE_Z + ROAD_Z0) / 2.0), "slabs", PAVE, 1.8)
+	Kit.slab(apt, Vector3(46, 0.06, SHOP_Z - ROAD_Z1), Vector3(3, 0.0, (ROAD_Z1 + SHOP_Z) / 2.0), "slabs", PAVE, 1.8)
+	Kit.slab(apt, Vector3(46, 0.04, ROAD_Z1 - ROAD_Z0), Vector3(3, -0.012, (ROAD_Z0 + ROAD_Z1) / 2.0), "grit", TAR, 2.6)
 	for i in 15:
 		Kit.box(apt, Vector3(1.4, 0.005, 0.14), Vector3(-18.0 + i * 3.0, 0.012, 12.5), Color("f4f0e6"))
 	# Zebra crossings in front of the house and by the park.
@@ -104,10 +107,6 @@ static func _house_front(apt: Apartment) -> void:
 		Kit.box(apt, Vector3(1.5, 1.2, 0.05), Vector3(wx, 1.75, Apartment.Z1 + Apartment.WALL_T + 0.02), Color("cdeaff"), 0.3, 0.3)
 		Kit.box(apt, Vector3(1.66, 0.08, 0.12), Vector3(wx, 1.1, Apartment.Z1 + Apartment.WALL_T + 0.05), Apartment.C_TRIM)
 		Kit.box(apt, Vector3(0.06, 1.2, 0.07), Vector3(wx, 1.75, Apartment.Z1 + Apartment.WALL_T + 0.03), Apartment.C_TRIM)
-	for i in 7:
-		var cloud := Kit.ball(apt, 3.0, Vector3(-30.0 + i * 11.0, 26.0 + (i % 3) * 3.0, 34.0 - (i % 2) * 22.0), Color("ffffff"), 8)
-		cloud.scale = Vector3(1.8, 0.45, 1.0)
-		cloud.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	# A letterbox on a post.
 	Kit.box(apt, Vector3(0.08, 1.0, 0.08), Vector3(-6.2, 0.5, 7.9), Color("8a5a36"))
 	Kit.box(apt, Vector3(0.3, 0.22, 0.42), Vector3(-6.2, 1.1, 7.9), Color("e63946"))
@@ -151,9 +150,7 @@ static func _shop(apt: Apartment, id: String) -> void:
 	var t := 0.2
 	# Floor, back and sides.
 	# A chequered floor in the shop's own colours.
-	for ix in 8:
-		for iz in 8:
-			Kit.box(apt, Vector3((x1 - x0) / 8.0, 0.05, (BACK_Z - SHOP_Z) / 8.0), Vector3(x0 + (ix + 0.5) * (x1 - x0) / 8.0, 0.0, SHOP_Z + (iz + 0.5) * (BACK_Z - SHOP_Z) / 8.0), awning.lerp(Color("f4f0e6"), 0.55) if (ix + iz) % 2 == 0 else Color("efe9dc"), 0.8)
+	Kit.slab(apt, Vector3(x1 - x0, 0.05, BACK_Z - SHOP_Z), Vector3(cx, 0.0, (SHOP_Z + BACK_Z) / 2.0), "tiles", awning.lerp(Color("e4dfd2"), 0.72), 2.0)
 	_wall(apt, x0 - 0.5, x0 + t, SHOP_Z, BACK_Z, SHOP_H, wall)
 	_wall(apt, x1 - t, x1 + 0.5, SHOP_Z, BACK_Z, SHOP_H, wall)
 	# Front: a doorway in the middle, a shop window either side.
@@ -282,12 +279,46 @@ static func _street(apt: Apartment) -> void:
 	apt._block(Rect2(-7.15, 16.35, 0.5, 0.5))
 
 
+static func _pine(apt: Apartment, pos: Vector3, s: float = 1.0, turn: float = 0.0) -> Node3D:
+	## A fir tree: a trunk and a stack of skirts, each smaller than the one below.
+	var n := Kit.node(apt, pos)
+	n.rotation.y = turn
+	Kit.cyl(n, 0.14 * s, 1.2 * s, Vector3(0, 0.6 * s, 0), Color("6b4a35"), 6)
+	for i in 4:
+		var r := (1.25 - 0.27 * i) * s
+		var h := (1.5 - 0.12 * i) * s
+		var skirt := Kit.cone(n, r, h, Vector3(0, (1.55 + 0.82 * i) * s, 0), PINE.darkened(0.06 * (i % 2)), 7)
+		skirt.rotation.y = 0.45 * i
+	return n
+
+
 static func _tree(apt: Apartment, pos: Vector3, s: float = 1.0) -> void:
-	Kit.cyl(apt, 0.16 * s, 1.6 * s, pos + Vector3(0, 0.8 * s, 0), Color("8a5a36"), 7)
-	Kit.ball(apt, 1.0 * s, pos + Vector3(0, 2.3 * s, 0), Color("5aa55f"), 7)
-	Kit.ball(apt, 0.7 * s, pos + Vector3(0.5 * s, 3.0 * s, 0.2 * s), Color("6fc070"), 6)
+	_pine(apt, pos, s, pos.x)
 	Kit.solid(apt, Vector3(0.4 * s, 2.0, 0.4 * s), pos + Vector3(0, 1.0, 0))
 	apt._block(Rect2(pos.x - 0.25, pos.z - 0.25, 0.5, 0.5))
+
+
+static func _backdrop(apt: Apartment) -> void:
+	## What lies beyond the street, where you cannot go: fir trees and low
+	## hills, most of the way to being the same colour as the sky.
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 1984
+	var cx := 3.0
+	var cz := 12.0
+	for i in 70:
+		var ang := rng.randf_range(0.0, TAU)
+		var dist := rng.randf_range(30.0, 62.0)
+		var p := Vector3(cx + cos(ang) * dist * 1.25, 0, cz + sin(ang) * dist)
+		var tree := _pine(apt, p, rng.randf_range(1.5, 3.4), ang)
+		for m in Kit.meshes_in(tree):
+			(m as MeshInstance3D).cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	for i in 9:
+		var ang := TAU * (float(i) + rng.randf_range(-0.25, 0.25)) / 9.0
+		var dist := rng.randf_range(72.0, 96.0)
+		var hill := Kit.ball(apt, 1.0, Vector3(cx + cos(ang) * dist * 1.2, -3.0, cz + sin(ang) * dist), HILL, 9)
+		hill.scale = Vector3(rng.randf_range(26.0, 44.0), rng.randf_range(11.0, 22.0), rng.randf_range(20.0, 34.0))
+		hill.rotation.y = rng.randf_range(0.0, PI)
+		hill.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 
 
 static func _bench(apt: Apartment, pos: Vector3, thing: bool) -> void:

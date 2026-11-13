@@ -25,8 +25,8 @@ difficulties, 20 to 40 minutes per run.
 
 - Engine: Godot 4.7 (Forward+), typed GDScript only
 - Platforms: Linux and Windows
-- First person, in a flat seen from the inside: cartoon colours, chunky low-poly
-  furniture and an ink outline on everything
+- First person, in a flat seen from the inside: drab low-poly rooms drawn at
+  low resolution, dark floorboards, haze, and an overcast sky over the street
 - No imported art or audio: every mesh, icon and sound is generated in code
 
 ## Run it
@@ -62,7 +62,8 @@ To open the project in the editor:
 | Alt (hold) | Free the mouse pointer to click things on screen |
 | Esc | Leave the desk / close / pause |
 
-Mouse sensitivity, field of view, head bob and the ink outlines are in Settings.
+Mouse sensitivity, field of view, head bob and the pixel size (1 is a sharp
+picture, 4 is the chunkiest) are in Settings.
 
 The workday runs 09:00 to 17:00. Four resources decide whether you make it:
 

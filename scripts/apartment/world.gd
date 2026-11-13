@@ -11,18 +11,25 @@ const REACH := 2.1               ## how far the crosshair reaches
 const THROW := 6.5
 const SOLID := 1
 
-## minute -> [sun colour, sun energy, ambient colour, ambient energy, sky colour, window colour, lamp level]
+const LINES := 1080.0            ## the "pixel" setting is the size of one picture square on a 1080-line screen
+const HAZE_IN := 0.024           ## fog density indoors
+const HAZE_OUT := 0.017          ## and in the street, where there is further to see
+const BAND := Color("cdc48c")    ## the light left along the horizon at dawn and dusk
+
+## minute -> [sun colour, sun energy, ambient colour, ambient energy, sky overhead, sky at the horizon,
+##            horizon glow, window colour, lamp level]
+## An overcast town: the day is grey, and the only real colour in the sky is at either end of it.
 const SKY := [
-	[0, Color("6f7fd0"), 0.10, Color("5560a8"), 0.55, Color("141428"), Color("1d2547"), 1.0],
-	[330, Color("6f7fd0"), 0.10, Color("5560a8"), 0.55, Color("161630"), Color("222b55"), 1.0],
-	[420, Color("ffb37a"), 0.75, Color("d9b3b8"), 0.70, Color("f2b596"), Color("ffd6ae"), 0.35],
-	[540, Color("fff1d6"), 0.98, Color("d6e4ff"), 0.66, Color("a9d6f2"), Color("cdeaff"), 0.0],
-	[840, Color("fffaf0"), 1.05, Color("dbe8ff"), 0.70, Color("9fd0f0"), Color("d6efff"), 0.0],
-	[990, Color("ffd9a6"), 0.98, Color("f2d9cc"), 0.66, Color("f6c79a"), Color("ffdcae"), 0.0],
-	[1080, Color("ff9d6b"), 0.80, Color("d9a9b3"), 0.68, Color("e9907a"), Color("ffb38a"), 0.45],
-	[1170, Color("8f7fd0"), 0.25, Color("7a6fb8"), 0.60, Color("3d3466"), Color("6a5aa8"), 0.9],
-	[1260, Color("6f7fd0"), 0.10, Color("5560a8"), 0.55, Color("16162e"), Color("222b55"), 1.0],
-	[1640, Color("6f7fd0"), 0.10, Color("5560a8"), 0.55, Color("141428"), Color("1d2547"), 1.0],
+	[0, Color("5a6a8a"), 0.08, Color("3d4758"), 0.56, Color("0e1219"), Color("1c232b"), 0.0, Color("1a212e"), 1.0],
+	[330, Color("5a6a8a"), 0.08, Color("3d4758"), 0.56, Color("10141c"), Color("1f262e"), 0.0, Color("1d2532"), 1.0],
+	[420, Color("d9b48e"), 0.56, Color("868c8a"), 0.64, Color("434f5c"), Color("7d8a88"), 0.90, Color("c9c2a6"), 0.35],
+	[540, Color("e6e2d2"), 0.74, Color("9aa49e"), 0.66, Color("4f5e69"), Color("86948f"), 0.35, Color("c5d0ce"), 0.0],
+	[840, Color("ece8da"), 0.78, Color("9ea8a1"), 0.68, Color("526270"), Color("8b9892"), 0.25, Color("cbd5d2"), 0.0],
+	[990, Color("e2d2b2"), 0.72, Color("9a9e95"), 0.66, Color("4b5a67"), Color("858f86"), 0.60, Color("cfcdb4"), 0.0],
+	[1080, Color("c99c7a"), 0.52, Color("7e8587"), 0.64, Color("3d4a58"), Color("727f7c"), 1.0, Color("bfb48e"), 0.45],
+	[1170, Color("6a7696"), 0.20, Color("545e6e"), 0.60, Color("252d39"), Color("48535e"), 0.40, Color("495365"), 0.9],
+	[1260, Color("5a6a8a"), 0.08, Color("3d4758"), 0.56, Color("10141c"), Color("1f262e"), 0.0, Color("1d2532"), 1.0],
+	[1640, Color("5a6a8a"), 0.08, Color("3d4758"), 0.56, Color("0e1219"), Color("1c232b"), 0.0, Color("1a212e"), 1.0],
 ]
 
 var apartment: Apartment
@@ -30,7 +37,7 @@ var player: Player
 var stage: Camera3D                ## looks at you from outside, for the menus
 var sun: DirectionalLight3D
 var env: Environment
-var outline: MeshInstance3D
+var sky: MeshInstance3D            ## a dome that goes wherever the camera goes
 var focused: Interactable          ## the object under the crosshair
 var focused_item: Holdable         ## the loose item under the crosshair
 var held: Holdable                 ## what is in your hand
@@ -54,6 +61,8 @@ var _at_desktop := false
 var _ring_flash := 0.0
 var _stage_from := Vector3.ZERO
 var _stage_at := Vector3.ZERO
+var _sky_mat: ShaderMaterial
+var _outside := 0.0                ## 0 indoors .. 1 in the street, eased, for the haze
 
 
 func _ready() -> void:
@@ -78,9 +87,10 @@ func _ready() -> void:
 	stage.near = 0.05
 	stage.far = 160.0
 	add_child(stage)
-	_build_outline()
+	_build_sky()
 	apply_prefs()
 	Prefs.changed.connect(apply_prefs)
+	get_viewport().size_changed.connect(apply_prefs)
 	player.blocked.connect(func(): _pending_thing = null)
 	Bus.activity_started.connect(_on_activity_started)
 	Bus.activity_ended.connect(_on_activity_ended)
@@ -98,22 +108,25 @@ func _ready() -> void:
 func _environment() -> void:
 	env = Environment.new()
 	env.background_mode = Environment.BG_COLOR
-	env.background_color = Color("a9d6f2")
+	env.background_color = Color("a9b3ad")
 	env.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
-	env.ambient_light_color = Color("d6e4ff")
-	env.ambient_light_energy = 0.8
+	env.reflected_light_source = Environment.REFLECTION_SOURCE_DISABLED
+	env.ambient_light_color = Color("a2aca5")
+	env.ambient_light_energy = 0.7
 	env.tonemap_mode = Environment.TONE_MAPPER_FILMIC
-	env.tonemap_white = 1.6
-	env.ssao_enabled = true
-	env.ssao_radius = 0.9
-	env.ssao_intensity = 1.8
-	env.glow_enabled = true
-	env.glow_intensity = 0.45
-	env.glow_bloom = 0.03
-	env.glow_hdr_threshold = 1.15
+	env.tonemap_white = 1.9
+	# No bloom, no contact shadows, no line art: flat faces, and a haze that
+	# takes the far side of every room.
+	env.fog_enabled = true
+	env.fog_mode = Environment.FOG_MODE_EXPONENTIAL
+	env.fog_light_color = Color("656b67")
+	env.fog_density = HAZE_IN
+	env.fog_sun_scatter = 0.0
+	env.fog_aerial_perspective = 0.0
+	env.fog_sky_affect = 0.0
 	env.adjustment_enabled = true
-	env.adjustment_saturation = 1.14
-	env.adjustment_contrast = 1.05
+	env.adjustment_saturation = 0.94
+	env.adjustment_contrast = 0.97
 	var we := WorldEnvironment.new()
 	we.environment = env
 	add_child(we)
@@ -128,67 +141,63 @@ func _environment() -> void:
 	add_child(sun)
 
 
-func _build_outline() -> void:
-	## A dark line around everything, drawn after the scene from its depth and normals.
+func _build_sky() -> void:
+	## The sky is a dome that travels with the camera: slate overhead, paler
+	## towards the ground, with a band of leftover light along the horizon.
 	var sh := Shader.new()
 	sh.code = """
 shader_type spatial;
-render_mode unshaded, depth_test_disabled, depth_draw_never, cull_disabled, shadows_disabled, fog_disabled;
-uniform sampler2D depth_tex : hint_depth_texture, filter_nearest, repeat_disable;
-uniform sampler2D normal_tex : hint_normal_roughness_texture, filter_nearest, repeat_disable;
-uniform vec4 line_color : source_color = vec4(0.16, 0.12, 0.27, 1.0);
-uniform float width = 1.4;
-uniform float strength = 0.82;
+render_mode unshaded, cull_front, depth_draw_never, shadows_disabled, fog_disabled;
+uniform vec3 top : source_color = vec3(0.31, 0.36, 0.42);
+uniform vec3 low : source_color = vec3(0.56, 0.60, 0.58);
+uniform vec3 band : source_color = vec3(0.79, 0.75, 0.54);
+uniform float band_amount = 0.0;
+varying vec3 dir;
 
 void vertex() {
-	POSITION = vec4(VERTEX.xy, 1.0, 1.0);
-}
-
-float eye_depth(vec2 uv, mat4 inv_proj) {
-	float d = texture(depth_tex, uv).r;
-	vec4 v = inv_proj * vec4(uv * 2.0 - 1.0, d, 1.0);
-	return -v.z / v.w;
+	dir = VERTEX;
 }
 
 void fragment() {
-	vec2 px = width / VIEWPORT_SIZE;
-	float d0 = eye_depth(SCREEN_UV, INV_PROJECTION_MATRIX);
-	vec3 n0 = texture(normal_tex, SCREEN_UV).rgb * 2.0 - 1.0;
-	float dd = 0.0;
-	float nd = 0.0;
-	vec2 offs[4] = vec2[](vec2(px.x, 0.0), vec2(-px.x, 0.0), vec2(0.0, px.y), vec2(0.0, -px.y));
-	for (int i = 0; i < 4; i++) {
-		vec2 uv = SCREEN_UV + offs[i];
-		dd += abs(eye_depth(uv, INV_PROJECTION_MATRIX) - d0);
-		nd += 1.0 - dot(texture(normal_tex, uv).rgb * 2.0 - 1.0, n0);
-	}
-	// Depth steps are judged relative to distance and to how steeply the
-	// surface runs away from the eye, so floors and long walls stay clean.
-	float slope = 1.0 / max(abs(n0.z), 0.2);
-	float edge = max(smoothstep(0.05, 0.12, dd / (max(d0, 0.05) * slope)), smoothstep(0.55, 1.2, nd));
-	edge *= 1.0 - smoothstep(9.0, 20.0, d0);
-	ALBEDO = line_color.rgb;
-	ALPHA = clamp(edge, 0.0, 1.0) * strength;
+	float h = normalize(dir).y;
+	vec3 c = mix(low, top, smoothstep(0.0, 0.46, h));
+	c = mix(c, band, band_amount * exp(-max(h, 0.0) * 6.0));
+	c = mix(c, low * 0.72, clamp(-h * 3.0, 0.0, 1.0));
+	ALBEDO = c;
 }
 """
-	var m := ShaderMaterial.new()
-	m.shader = sh
-	m.render_priority = 100
-	var quad := QuadMesh.new()
-	quad.size = Vector2(2, 2)
-	outline = MeshInstance3D.new()
-	outline.mesh = quad
-	outline.material_override = m
-	outline.extra_cull_margin = 16384.0
-	outline.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-	add_child(outline)
+	_sky_mat = ShaderMaterial.new()
+	_sky_mat.shader = sh
+	var ball := SphereMesh.new()
+	ball.radius = 130.0
+	ball.height = 260.0
+	ball.radial_segments = 20
+	ball.rings = 10
+	sky = MeshInstance3D.new()
+	sky.mesh = ball
+	sky.material_override = _sky_mat
+	sky.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	sky.extra_cull_margin = 16384.0
+	add_child(sky)
 
 
 func apply_prefs() -> void:
 	player.sensitivity = 0.0009 + 0.0034 * float(Prefs.get_v("look"))
 	player.bob = bool(Prefs.get_v("shake"))
 	player.camera.fov = float(Prefs.get_v("fov"))
-	outline.visible = bool(Prefs.get_v("outline"))
+	# A small picture, blown up: every pixel of the 3D view is a square of
+	# `block` screen pixels. The interface on top stays sharp.
+	var port := get_viewport()
+	var block := block_for(float(Prefs.get_v("pixel")), port.size.y)
+	port.scaling_3d_mode = Viewport.SCALING_3D_MODE_NEAREST if block > 1 else Viewport.SCALING_3D_MODE_BILINEAR
+	port.scaling_3d_scale = 1.0 / float(block)
+	port.msaa_3d = Viewport.MSAA_DISABLED if block > 1 else Viewport.MSAA_2X
+
+
+static func block_for(pixel: float, screen_lines: int) -> int:
+	## How many screen pixels across one square of the picture is: the "pixel"
+	## setting on a 1080-line screen, more on a bigger one, never less than 1.
+	return maxi(1, int(round(pixel * float(screen_lines) / LINES)))
 
 
 func cam() -> Camera3D:
@@ -912,10 +921,13 @@ func _sky_at(minute: float) -> Array:
 		if m >= float(a[0]) and m <= float(b[0]):
 			var f := (m - float(a[0])) / maxf(1.0, float(b[0]) - float(a[0]))
 			f = smoothstep(0.0, 1.0, f)
-			return [
-				(a[1] as Color).lerp(b[1], f), lerpf(a[2], b[2], f), (a[3] as Color).lerp(b[3], f),
-				lerpf(a[4], b[4], f), (a[5] as Color).lerp(b[5], f), (a[6] as Color).lerp(b[6], f), lerpf(a[7], b[7], f),
-			]
+			var out: Array = []
+			for j in range(1, a.size()):
+				if a[j] is Color:
+					out.append((a[j] as Color).lerp(b[j], f))
+				else:
+					out.append(lerpf(a[j], b[j], f))
+			return out
 	return SKY[0].slice(1)
 
 
@@ -931,17 +943,29 @@ func _update_sky(delta: float) -> void:
 	sun.light_energy = float(k[1]) * (1.0 if outdoors else 0.42)
 	env.ambient_light_color = k[2]
 	env.ambient_light_energy = float(k[3]) * (1.05 if outdoors else 0.95)
-	env.background_color = k[4]
+	var top: Color = k[4]
+	var low: Color = k[5]
+	env.background_color = low
+	_sky_mat.set_shader_parameter("top", top)
+	_sky_mat.set_shader_parameter("low", low)
+	_sky_mat.set_shader_parameter("band", BAND)
+	_sky_mat.set_shader_parameter("band_amount", float(k[6]))
+	sky.global_position = cam().global_position
+	# Haze: the colour of the horizon in the street, the colour of a dim room indoors.
+	var roofed := outdoors and player.global_position.z > Town.SHOP_Z and player.global_position.x < 10.5
+	_outside = move_toward(_outside, 1.0 if outdoors and not roofed else 0.0, delta * 1.6)
+	env.fog_light_color = ((k[2] as Color) * 0.62).lerp(low, _outside)
+	env.fog_density = lerpf(HAZE_IN, HAZE_OUT, _outside)
 	var day_f := clampf((fposmod(minute, 1440.0) - 360.0) / 840.0, 0.0, 1.0)
 	var azimuth := lerpf(deg_to_rad(-70.0), deg_to_rad(110.0), day_f)
 	var elevation := deg_to_rad(28.0 + 30.0 * sin(day_f * PI))
 	sun.rotation = Vector3(-elevation, azimuth, 0)
 	for m in apartment.window_mats:
 		var wm: StandardMaterial3D = m
-		wm.albedo_color = k[5]
-		wm.emission = k[5]
+		wm.albedo_color = k[7]
+		wm.emission = k[7]
 		wm.emission_energy_multiplier = 0.22 + 0.3 * float(k[1])
-	var lamp_level := float(k[6])
+	var lamp_level := float(k[8])
 	for i in apartment.lamps.size():
 		var l: OmniLight3D = apartment.lamps[i]
 		l.light_energy = lerpf(l.light_energy, float(_lamp_base[i]) * lamp_level, minf(1.0, delta * 3.0))

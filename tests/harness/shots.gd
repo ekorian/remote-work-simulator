@@ -13,6 +13,11 @@ func _ready() -> void:
 	for a in OS.get_cmdline_user_args():
 		if a.begins_with("--scene="):
 			scene = a.trim_prefix("--scene=")
+		elif a.begins_with("--pref="):
+			# --pref=pixel:1  (numbers only): render with a setting changed.
+			var kv := a.trim_prefix("--pref=").split(":")
+			Prefs.persist = false
+			Prefs.set_v(kv[0], float(kv[1]))
 	DirAccess.make_dir_recursive_absolute(out_dir)
 	Game.saves.enabled = false
 	Prefs.persist = false

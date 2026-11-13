@@ -19,7 +19,7 @@ enum Tier { HOSTILE, COLD, NEUTRAL, FRIENDLY, FRIEND }
 const TIERS := [
 	{"name": "Has it in for you", "at": 0.0, "snitch": 1.6, "gossip": 2.0, "color": Color("ff5d73")},
 	{"name": "Cold", "at": 25.0, "snitch": 1.15, "gossip": 1.4, "color": Color("ff8c5a")},
-	{"name": "Colleague", "at": 42.0, "snitch": 0.7, "gossip": 1.0, "color": Color("aaa3cc")},
+	{"name": "Colleague", "at": 42.0, "snitch": 0.7, "gossip": 1.0, "color": Color("9aa39b")},
 	{"name": "Friendly", "at": 62.0, "snitch": 0.0, "gossip": 0.0, "color": Color("5ad1c8")},
 	{"name": "Partner in crime", "at": 80.0, "snitch": 0.0, "gossip": 0.0, "color": Color("5ad17a")},
 ]

@@ -14,7 +14,7 @@ signal escalated(level: int)
 
 const MOOD_INFO := {
 	"pleased": {"label": "pleased with you", "trust": 6.0, "color": Color("5ad17a")},
-	"neutral": {"label": "neutral", "trust": 0.0, "color": Color("aaa3cc")},
+	"neutral": {"label": "neutral", "trust": 0.0, "color": Color("9aa39b")},
 	"annoyed": {"label": "annoyed", "trust": -2.0, "color": Color("ffd166")},
 	"suspicious": {"label": "suspicious", "trust": -4.0, "color": Color("ff8c5a")},
 	"furious": {"label": "furious", "trust": -7.0, "color": Color("ff5d73")},

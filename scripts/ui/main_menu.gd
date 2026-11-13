@@ -16,9 +16,9 @@ func _ready() -> void:
 	visible = false
 	var shade := TextureRect.new()
 	var grad := Gradient.new()
-	grad.set_color(0, Color(0.07, 0.06, 0.13, 0.94))
-	grad.set_color(1, Color(0.07, 0.06, 0.13, 0.0))
-	grad.add_point(0.45, Color(0.07, 0.06, 0.13, 0.72))
+	grad.set_color(0, Color(0.055, 0.065, 0.07, 0.94))
+	grad.set_color(1, Color(0.055, 0.065, 0.07, 0.0))
+	grad.add_point(0.45, Color(0.055, 0.065, 0.07, 0.72))
 	var gt := GradientTexture2D.new()
 	gt.gradient = grad
 	gt.width = 256
@@ -45,7 +45,7 @@ func _ready() -> void:
 	t2.add_theme_constant_override("outline_size", 14)
 	t2.add_theme_color_override("font_outline_color", UI.INK)
 	left.add_child(t2)
-	var tag := UI.title("Get paid. Do nothing. Don't get caught.", 24, Color("e6dcff"))
+	var tag := UI.title("Get paid. Do nothing. Don't get caught.", 24, UI.TEXT)
 	tag.add_theme_constant_override("outline_size", 8)
 	tag.add_theme_color_override("font_outline_color", UI.INK)
 	left.add_child(tag)

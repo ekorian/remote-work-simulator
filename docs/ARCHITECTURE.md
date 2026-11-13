@@ -330,8 +330,14 @@ The rules stay in the simulation and know nothing of the street's shape:
   its `thing_id`.
 - `Character` is a procedural rig with code-driven animation. In play it is
   hidden (you are inside it); the menus show it.
-- The ink outline is one full-screen quad drawn after the scene, comparing
-  depth and normals between neighbouring pixels. It can be switched off.
+- The look is made in three places. `Kit.tone` drains and darkens every
+  colour on its way into a material, so the palette is drab without any
+  model knowing about it; `Kit.surface` adds small generated textures
+  (boards, tiles, paving) shown unfiltered. `World` owns the light: no bloom
+  or ambient occlusion, exponential fog whose colour follows the hour, and a
+  gradient sky dome that travels with the camera. And the 3D view is rendered
+  small and scaled up without smoothing (`World.apply_prefs`, the "pixel"
+  setting), while the interface is drawn over it at full resolution.
 - UI is built in code from the helpers in `ui.gd`; each screen is a scene
   with one script. `main.gd` owns the screen flow and decides who has input
   and whether the clock runs.

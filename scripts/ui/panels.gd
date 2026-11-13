@@ -8,7 +8,8 @@ static func settings_panel() -> Control:
 	var v := UI.vbox(10)
 	# [label, key, min, max, step]
 	for row in [["Master volume", "master", 0.0, 1.0, 0.05], ["Music", "music", 0.0, 1.0, 0.05], ["Sound effects", "sfx", 0.0, 1.0, 0.05], ["Ambience", "ambience", 0.0, 1.0, 0.05],
-			["Mouse sensitivity", "look", 0.05, 1.0, 0.05], ["Field of view", "fov", 60.0, 100.0, 2.0]]:
+			["Mouse sensitivity", "look", 0.05, 1.0, 0.05], ["Field of view", "fov", 60.0, 100.0, 2.0],
+			["Pixel size", "pixel", 1.0, 4.0, 1.0]]:
 		var h := UI.hbox(12)
 		var l := UI.label(str(row[0]), 15)
 		l.custom_minimum_size = Vector2(150, 0)
@@ -29,7 +30,7 @@ static func settings_panel() -> Control:
 		)
 		h.add_child(s)
 		v.add_child(h)
-	for row in [["Fullscreen", "fullscreen"], ["V-Sync", "vsync"], ["Head bob", "shake"], ["Ink outlines", "outline"], ["Contextual tips", "hints"]]:
+	for row in [["Fullscreen", "fullscreen"], ["V-Sync", "vsync"], ["Head bob", "shake"], ["Contextual tips", "hints"]]:
 		var h := UI.hbox(12)
 		var l := UI.label(str(row[0]), 15)
 		l.custom_minimum_size = Vector2(150, 0)

@@ -20,7 +20,7 @@ func _ready() -> void:
 	visible = false
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	var shade := ColorRect.new()
-	shade.color = Color(0.07, 0.06, 0.13, 0.5)
+	shade.color = Color(0.055, 0.065, 0.07, 0.5)
 	UI.full(shade)
 	shade.mouse_filter = Control.MOUSE_FILTER_STOP
 	add_child(shade)

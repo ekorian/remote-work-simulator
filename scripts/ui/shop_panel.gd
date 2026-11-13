@@ -13,7 +13,7 @@ func _ready() -> void:
 	visible = false
 	# Same footprint as the work desktop: the HUD column keeps the right strip.
 	var p := PanelContainer.new()
-	p.add_theme_stylebox_override("panel", UI.sb(Color("14121f"), 16, 2, Color("b48cff"), 22, 16))
+	p.add_theme_stylebox_override("panel", UI.sb(Color("121617"), 16, 2, UI.PURPLE, 22, 16))
 	UI.full(p)
 	p.offset_left = 12
 	p.offset_top = 12
@@ -26,7 +26,7 @@ func _ready() -> void:
 	v.add_child(head)
 	var tv := UI.vbox(0)
 	tv.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	tv.add_child(UI.title("ShadyDeals.biz", 32, Color("b48cff")))
+	tv.add_child(UI.title("ShadyDeals.biz", 32, UI.PURPLE))
 	tv.add_child(UI.label("\"Solutions\" for the modern remote professional. No refunds. No questions.", 13, UI.DIM))
 	head.add_child(tv)
 	_money = UI.title("$0", 28, UI.ACCENT)
@@ -64,7 +64,7 @@ func _gadget_tile(id: String) -> Control:
 	var owned := lv > 0
 	var maxed := lv >= top
 	var why := auto.locked_reason(id)
-	var p := UI.panel(Color("1f3a2b") if owned else Color("211d36"), 14, 14, 1, UI.GREEN if owned else UI.LINE)
+	var p := UI.panel(Color("1f3328") if owned else UI.BG.lightened(0.04), 14, 14, 1, UI.GREEN if owned else UI.LINE)
 	p.custom_minimum_size = Vector2(300, 250)
 	p.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	var v := UI.vbox(6)
@@ -129,7 +129,7 @@ func _build() -> void:
 	for id in Db.gadget_order():
 		_grid.add_child(_gadget_tile(id))
 	# The gift card: buy a favour.
-	var gp := UI.panel(Color("211d36"), 14, 14, 1, UI.LINE)
+	var gp := UI.panel(UI.BG.lightened(0.04), 14, 14, 1, UI.LINE)
 	gp.custom_minimum_size = Vector2(300, 250)
 	gp.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	var gv := UI.vbox(6)

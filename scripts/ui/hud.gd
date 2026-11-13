@@ -252,7 +252,7 @@ func _build_column() -> void:
 	v.add_child(_buffs)
 	# Tutorial
 	_tut = _card()
-	_tut.add_theme_stylebox_override("panel", UI.shadowed(UI.sb(Color("3b2f6b"), 16, 2, UI.ACCENT, 14, 12), 14, 0.28))
+	_tut.add_theme_stylebox_override("panel", UI.shadowed(UI.sb(Color("2b3436"), 16, 2, UI.ACCENT, 14, 12), 14, 0.28))
 	_column.add_child(_tut)
 	_tut_body = UI.vbox(6)
 	_tut.add_child(_tut_body)
@@ -770,7 +770,7 @@ func _rebuild_lists() -> void:
 		_tut_body.add_child(head)
 		if not st.is_empty():
 			_tut_body.add_child(UI.title(Game.comms.fmt(str(st.title)), 19))
-			_tut_body.add_child(UI.wrap(Game.comms.fmt(str(st.text)), 13, Color("e6dcff")))
+			_tut_body.add_child(UI.wrap(Game.comms.fmt(str(st.text)), 13, UI.TEXT))
 		if bool(Game.time.hold):
 			_tut_body.add_child(UI.wrap("The clock is paused until you use something.", 12, UI.TEAL))
 	# Stories on record: what you must not do while each one lasts.
